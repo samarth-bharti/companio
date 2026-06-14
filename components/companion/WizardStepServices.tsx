@@ -48,7 +48,7 @@ export function WizardStepServices({ data, onChange }: Props) {
         What do you enjoy doing?
       </h2>
       <p className="font-sans text-sm mb-8" style={{ color: 'var(--color-ink-muted)' }}>
-        Members filter by activity — pick everything you genuinely enjoy.
+        Members filter by activity, pick everything you genuinely enjoy.
       </p>
 
       {/* Activity tiles */}
@@ -96,7 +96,7 @@ export function WizardStepServices({ data, onChange }: Props) {
           </span>
         </label>
         <p className="font-sans text-xs mb-4" style={{ color: 'var(--color-ink-muted)' }}>
-          Most companions in {cityName} charge ₹449–549
+          Most companions in {cityName} charge ₹449-549
         </p>
 
         <div className="relative h-5 flex items-center">

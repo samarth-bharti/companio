@@ -39,7 +39,7 @@ export function ForgotFlow({ state, email, err, setEmail, setErr, onSubmit, onBa
         <p className="font-sans text-sm mb-6" style={{ color: 'var(--color-ink-muted)' }}>
           Reset link sent to{' '}
           <strong style={{ color: 'var(--color-ink)' }}>{email}</strong>
-          {' '}— demo mode, no real email sent.
+          {' '}, demo mode, no real email sent.
         </p>
         <button
           type="button"

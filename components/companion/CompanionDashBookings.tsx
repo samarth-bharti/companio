@@ -19,8 +19,8 @@ interface MockRequest {
 }
 
 const MOCK: MockRequest[] = [
-  { id: 'req1', member: 'Arjun M.', activity: 'City Walk', date: 'Sat, 14 Jun', time: 'Morning · 7–9 AM', area: 'Bandra West', rate: 499 },
-  { id: 'req2', member: 'Meera K.', activity: 'Café Chat', date: 'Sun, 15 Jun', time: 'Afternoon · 3–5 PM', area: 'Juhu', rate: 499 },
+  { id: 'req1', member: 'Arjun M.', activity: 'City Walk', date: 'Sat, 14 Jun', time: 'Morning · 7-9 AM', area: 'Bandra West', rate: 499 },
+  { id: 'req2', member: 'Meera K.', activity: 'Café Chat', date: 'Sun, 15 Jun', time: 'Afternoon · 3-5 PM', area: 'Juhu', rate: 499 },
 ];
 
 export function CompanionDashBookings() {

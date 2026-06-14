@@ -16,7 +16,7 @@ interface Pillar {
 }
 
 const PILLARS: Pillar[] = [
-  { icon: Heart,       label: "Strictly platonic — zero tolerance",  desc: "Anyone who violates our platonic standard is permanently removed." },
+  { icon: Heart,       label: "Strictly platonic, zero tolerance",  desc: "Anyone who violates our platonic standard is permanently removed." },
   { icon: MapPin,      label: "Public-place meetups",                desc: "All first meetups must be in listed public venues." },
   { icon: Phone,       label: "In-app SOS & live-share",            desc: "Share your live location with a trusted contact from within the app." },
   { icon: ShieldAlert, label: "Report & instant block",             desc: "One tap to report. Instant block while we investigate." },
@@ -65,7 +65,7 @@ export function SafetyBand() {
             Platonic, and we mean it.
           </h2>
           <p className="text-lead text-ink-muted mt-4 max-w-xl mx-auto">
-            Companio is for company — not dating. Anyone who breaks that is
+            Companio is for company, not dating. Anyone who breaks that is
             removed. Your safety is the whole product.
           </p>
         </Reveal>

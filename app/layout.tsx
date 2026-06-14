@@ -22,7 +22,7 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Companio — Trusted. Verified. Companionship.",
+  title: "Companio, Trusted. Verified. Companionship.",
   description:
     "Book ID-verified companions for city guiding, events, gym, conversation, and more. Strictly platonic. Indian market.",
 };

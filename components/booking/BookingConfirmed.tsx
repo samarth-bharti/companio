@@ -146,7 +146,7 @@ export function BookingConfirmed({ companion, booking }: Props) {
               >
                 <p className="font-sans font-bold text-sm" style={{ color: 'var(--color-azure-deep)' }}>
                   {booking.usedCredit
-                    ? '₹0 today — included meeting used'
+                    ? '₹0 today, included meeting used'
                     : '₹499 · UPI (demo)'}
                 </p>
                 <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>

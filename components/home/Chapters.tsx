@@ -84,7 +84,7 @@ function ChapterCard({ chapter, index }: { chapter: Chapter; index: number }) {
           <Link
             href={`/explore?category=${chapter.slug}`}
             className="block w-full h-full focus-visible:outline-navy rounded-[--radius-md]"
-            aria-label={`${chapter.name} — ${chapter.line}`}
+            aria-label={`${chapter.name}, ${chapter.line}`}
           >
             <PassportCard
               className={cn(
@@ -148,7 +148,7 @@ export function Chapters() {
             Pick your chapter.
           </h2>
           <p className="text-lead text-ink-muted mt-4 max-w-lg mx-auto">
-            Whatever you need company for — there&apos;s a verified companion for it.
+            Whatever you need company for, there&apos;s a verified companion for it.
           </p>
         </Reveal>
 

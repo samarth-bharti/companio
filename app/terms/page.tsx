@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
 
-export const metadata: Metadata = { title: 'Terms of service — Companio' };
+export const metadata: Metadata = { title: 'Terms of service, Companio' };
 
 export default function TermsPage() {
   return (
@@ -13,7 +13,7 @@ export default function TermsPage() {
         {
           heading: '1. What Companio is',
           body: [
-            'Companio connects members with Aadhaar-verified companions for shared activities — city walks, gym sessions, café conversations, live events, elder company, and everyday help.',
+            'Companio connects members with Aadhaar-verified companions for shared activities, city walks, gym sessions, café conversations, live events, elder company, and everyday help.',
             'Companio is not a dating, romance, or intimacy service of any kind. Any solicitation of romantic or sexual services results in an immediate permanent ban and, where applicable, a report to authorities.',
           ],
         },
@@ -27,7 +27,7 @@ export default function TermsPage() {
           heading: '3. Bookings & payments',
           body: [
             'All payments run through the platform and are held in escrow until your meetup has happened. Companions are paid after the session completes. Paying or accepting payment off-platform breaks these terms and removes every protection we offer.',
-            'Meetup credits never expire. The one-time profile unlock is a single payment — there is no auto-debit and no recurring charge unless you explicitly subscribe to Companio Plus, which you can cancel anytime in two taps.',
+            'Meetup credits never expire. The one-time profile unlock is a single payment, there is no auto-debit and no recurring charge unless you explicitly subscribe to Companio Plus, which you can cancel anytime in two taps.',
           ],
         },
         {

@@ -71,7 +71,7 @@ export const SEED_POSTS: FeedPost[] = [
     author: { name: 'Rohan Desai', avatar: AV.rohan, area: 'Andheri West' },
     timeAgo: '18 min ago', activityTag: 'Morning Run', reactions: 11,
     goingCount: 5, spotsLeft: 3, joinedLastHour: 3,
-    text: 'Forming a Sunday morning trek group to Sanjay Gandhi park — 3 spots left! Starting 6:30 AM from Borivali gate. Easy trail, 2 hrs, chai after.',
+    text: 'Forming a Sunday morning trek group to Sanjay Gandhi park, 3 spots left! Starting 6:30 AM from Borivali gate. Easy trail, 2 hrs, chai after.',
     comments: [
       { id: 'c1', author: 'Zara S.', text: 'Joining! Love the Borivali trail.' },
       { id: 'c2', author: 'Nidhi V.', text: 'Count me in for the chai part at minimum 😄' },
@@ -105,7 +105,7 @@ export const SEED_POSTS: FeedPost[] = [
     author: { name: 'Zara Sheikh', avatar: AV.zara, area: 'Juhu' },
     timeAgo: '3 hrs ago', activityTag: 'Morning Run', reactions: 15,
     goingCount: 4, spotsLeft: 4,
-    text: "Sunrise beach run this Saturday at Juhu — who's in? 6 AM sharp at the lifeguard post near JVPD. Flat 5K, all paces welcome, pani puri after 🌅",
+    text: "Sunrise beach run this Saturday at Juhu, who's in? 6 AM sharp at the lifeguard post near JVPD. Flat 5K, all paces welcome, pani puri after 🌅",
     comments: [
       { id: 'c6', author: 'Kabir M.', text: 'Already sold on the pani puri. 6 AM confirmed.' },
     ],
@@ -114,7 +114,7 @@ export const SEED_POSTS: FeedPost[] = [
     id: 'p5', type: 'event',
     author: { name: 'Priya Nair', avatar: AV.priya, area: 'Colaba' },
     timeAgo: '4 hrs ago', activityTag: 'Book Browsing', reactions: 19, goingCount: 6,
-    title: 'Saturday Bookshop Meetup — Kitab Khana',
+    title: 'Saturday Bookshop Meetup, Kitab Khana',
     dateTime: 'Sat 15 Jun · 3:30 PM', place: 'Kitab Khana, Fort',
     goingAvatars: [AV.rohan, AV.aarav, AV.kiran],
     comments: [
@@ -138,7 +138,7 @@ export const SEED_POSTS: FeedPost[] = [
     author: { name: 'Ananya Iyer', avatar: AV.ananya, area: 'Bandra West' },
     timeAgo: '6 hrs ago', activityTag: 'Museum', reactions: 9,
     goingCount: 2, spotsLeft: 5,
-    text: "Heading to CSMVS this Sunday afternoon — solo museum visits feel lonely. Anyone want to explore together? No agenda, just slow looking and good talk.",
+    text: "Heading to CSMVS this Sunday afternoon, solo museum visits feel lonely. Anyone want to explore together? No agenda, just slow looking and good talk.",
     comments: [
       { id: 'c10', author: 'Priya N.', text: "I've been meaning to go for months. Count me in!" },
     ],
@@ -147,7 +147,7 @@ export const SEED_POSTS: FeedPost[] = [
     id: 'p8', type: 'event',
     author: { name: 'Rohan Desai', avatar: AV.rohan, area: 'Andheri West' },
     timeAgo: '8 hrs ago', activityTag: 'Street Food Tour', reactions: 27, goingCount: 9,
-    title: 'Versova Street Food Trail — Saturday Night',
+    title: 'Versova Street Food Trail, Saturday Night',
     dateTime: 'Sat 15 Jun · 7:30 PM', place: 'Versova Jetty, Andheri',
     goingAvatars: [AV.zara, AV.priya, AV.ananya, AV.aarav],
     comments: [
@@ -171,7 +171,7 @@ export const SEED_POSTS: FeedPost[] = [
     id: 'p10', type: 'event',
     author: { name: 'Kiran Patil', avatar: AV.kiran, area: 'Dadar' },
     timeAgo: 'Yesterday', activityTag: 'Yoga', reactions: 16, goingCount: 12,
-    title: 'Sunday Yoga in Shivaji Park — Open to All',
+    title: 'Sunday Yoga in Shivaji Park, Open to All',
     dateTime: 'Sun 16 Jun · 7:00 AM', place: 'Shivaji Park, Dadar',
     goingAvatars: [AV.ananya, AV.zara, AV.rohan],
     comments: [
@@ -183,10 +183,10 @@ export const SEED_POSTS: FeedPost[] = [
     author: { name: 'Aarav Mehta', avatar: AV.aarav, area: 'Powai' },
     timeAgo: 'Yesterday', activityTag: 'City Walk', reactions: 13,
     goingCount: 3,
-    text: 'Quiet evening walk around Powai Lake — the light hits the water perfectly at 6:30 PM. Low-key, no fixed pace, bring a flask of coffee if you like.',
+    text: 'Quiet evening walk around Powai Lake, the light hits the water perfectly at 6:30 PM. Low-key, no fixed pace, bring a flask of coffee if you like.',
     comments: [
       { id: 'c16', author: 'Riya C.', text: 'Powai Lake in the evening is so underrated.' },
-      { id: 'c17', author: 'Sunita G.', text: 'Flask of coffee — already packing it 😄' },
+      { id: 'c17', author: 'Sunita G.', text: 'Flask of coffee, already packing it 😄' },
     ],
   },
   {
@@ -206,7 +206,7 @@ export const SEED_POSTS: FeedPost[] = [
     author: { name: 'Zara Sheikh', avatar: AV.zara, area: 'Juhu' },
     timeAgo: '2 days ago', activityTag: 'Live Events', reactions: 18,
     goingCount: 6, spotsLeft: 2,
-    text: 'Intimate live jazz set at a Bandra venue tonight — 2 spots left if anyone wants to join. 8:30 PM, ₹350 cover, bring good conversation energy.',
+    text: 'Intimate live jazz set at a Bandra venue tonight, 2 spots left if anyone wants to join. 8:30 PM, ₹350 cover, bring good conversation energy.',
     comments: [
       { id: 'c20', author: 'Dev R.', text: 'On my way! Grabbing the last spot.' },
     ],

@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Design System — Companio (internal)",
+  title: "Design System, Companio (internal)",
   robots: { index: false, follow: false },
 };
 
@@ -55,7 +55,7 @@ export default function Styleguide() {
             Design System
           </h1>
           <p className="text-lead text-ink-muted mt-3">
-            Passport · Ledger · Trust — the visual language.
+            Passport · Ledger · Trust, the visual language.
           </p>
         </div>
 
@@ -88,40 +88,40 @@ export default function Styleguide() {
         <Section title="Type Scale">
           <div className="space-y-5">
             <div>
-              <p className="label-eyebrow text-ink-muted mb-1">Display — Fraunces</p>
+              <p className="label-eyebrow text-ink-muted mb-1">Display, Fraunces</p>
               <p className="font-display text-display text-ink leading-none tracking-tight">
                 Trusted.
               </p>
             </div>
             <div>
-              <p className="label-eyebrow text-ink-muted mb-1">H1 — Fraunces</p>
+              <p className="label-eyebrow text-ink-muted mb-1">H1, Fraunces</p>
               <p className="font-display text-h1 text-ink leading-tight">
                 Find your companion
               </p>
             </div>
             <div>
-              <p className="label-eyebrow text-ink-muted mb-1">H2 — Fraunces</p>
+              <p className="label-eyebrow text-ink-muted mb-1">H2, Fraunces</p>
               <p className="font-display text-h2 text-ink">Verified members only</p>
             </div>
             <div>
-              <p className="label-eyebrow text-ink-muted mb-1">H3 — Plus Jakarta</p>
+              <p className="label-eyebrow text-ink-muted mb-1">H3, Plus Jakarta</p>
               <p className="font-sans text-h3 font-semibold text-ink">
                 City guiding · Events · Gym
               </p>
             </div>
             <div>
-              <p className="label-eyebrow text-ink-muted mb-1">Lead — Plus Jakarta</p>
+              <p className="label-eyebrow text-ink-muted mb-1">Lead, Plus Jakarta</p>
               <p className="font-sans text-lead text-ink-muted">
                 Book ID-verified companions for any activity, strictly platonic.
               </p>
             </div>
             <div>
               <p className="label-eyebrow text-ink-muted mb-1">
-                Member Statement — Lora (serif)
+                Member Statement, Lora (serif)
               </p>
               <p className="font-serif text-base text-ink italic leading-relaxed">
                 &ldquo;The best evening I&apos;ve had exploring a new city. Priya was
-                brilliant company — knowledgeable, kind, completely professional.&rdquo;
+                brilliant company, knowledgeable, kind, completely professional.&rdquo;
               </p>
             </div>
           </div>
@@ -187,7 +187,7 @@ export default function Styleguide() {
         </Section>
 
         {/* ── Trust Signals ── */}
-        <Section title="Trust Signals — PassportStack">
+        <Section title="Trust Signals, PassportStack">
           <PassportStack />
         </Section>
 
@@ -227,7 +227,7 @@ export default function Styleguide() {
               <p className="label-eyebrow text-brass-ink mb-1">Confirmed</p>
               <p className="font-display text-h3 text-ink">City Walk · Colaba</p>
               <p className="text-sm text-ink-muted mt-1">
-                Sat 14 Jun · 10:00–13:00 · with Priya S.
+                Sat 14 Jun · 10:00-13:00 · with Priya S.
               </p>
               <p className="text-sm text-ink mt-2 font-semibold">₹2,400</p>
             </TicketStub>

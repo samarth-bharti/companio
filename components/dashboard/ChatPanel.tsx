@@ -123,7 +123,7 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
 
       {blocked && (
         <p className="font-sans text-xs mb-1 px-1" style={{ color: 'var(--color-ink-muted)' }}>
-          Numbers and emails are hidden until you&apos;ve met — it keeps everyone safe.
+          Numbers and emails are hidden until you&apos;ve met, it keeps everyone safe.
         </p>
       )}
 

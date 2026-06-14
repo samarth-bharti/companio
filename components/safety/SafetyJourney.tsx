@@ -27,7 +27,7 @@ const PILLARS: Pillar[] = [
   { icon: Fingerprint, title: 'Aadhaar & KYC verified',   color: '#2E6BFF',
     body: "Every companion's identity is verified via Aadhaar before their profile is activated. No exceptions, no shortcuts." },
   { icon: Lock,        title: '₹ held in escrow',          color: '#7A4FE0',
-    body: 'Your payment is locked in escrow until after you meet. No meeting, no charge — your money is always protected.' },
+    body: 'Your payment is locked in escrow until after you meet. No meeting, no charge, your money is always protected.' },
   { icon: Siren,       title: 'SOS & live-share',          color: '#FFB23E', id: 'sos',
     body: 'One tap activates emergency contact sharing and location broadcast during any active booking.' },
   { icon: ShieldCheck, title: 'Strictly platonic promise', color: '#1FAE6B', id: 'promise',
@@ -94,7 +94,7 @@ export function SafetyJourney() {
 
           <Reveal delay={0.2}>
             <p className="text-lead" style={{ color: 'rgba(244,242,255,0.62)' }}>
-              We built every layer of Companio so you can meet confidently — whether it&apos;s your
+              We built every layer of Companio so you can meet confidently, whether it&apos;s your
               first session or your fiftieth.
             </p>
           </Reveal>

@@ -5,7 +5,7 @@ import { Footer } from '@/components/layout/Footer';
 import { ExploreClient } from '@/components/explore/ExploreClient';
 
 export const metadata: Metadata = {
-  title: 'Explore companions — Companio',
+  title: 'Explore companions, Companio',
   description:
     'Browse Aadhaar-verified companions for city walks, gym sessions, café chats, and more in Mumbai and across India. Strictly platonic.',
 };

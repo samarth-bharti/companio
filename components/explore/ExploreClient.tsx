@@ -195,7 +195,7 @@ export function ExploreClient() {
               border: '1.5px solid rgba(122,79,224,0.22)',
               color: 'var(--color-violet)',
             }}
-            aria-label="Surprise me — highlight a great activity match"
+            aria-label="Surprise me, highlight a great activity match"
           >
             🎲 Surprise me
           </motion.button>

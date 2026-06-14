@@ -56,7 +56,7 @@ export function StepVerify({ form, patch, onBack, onNext }: Props) {
 
   function sendOtp() {
     if (!phoneValid) {
-      setPhoneErr('Please enter a valid 10-digit Indian mobile number starting with 6–9.');
+      setPhoneErr('Please enter a valid 10-digit Indian mobile number starting with 6-9.');
       setPhoneShakeKey(k => k + 1);
       return;
     }
@@ -219,7 +219,7 @@ export function StepVerify({ form, patch, onBack, onNext }: Props) {
             <div
               className="flex gap-2 justify-center"
               role="group"
-              aria-label="One-time password — 6 digits"
+              aria-label="One-time password, 6 digits"
             >
               {otp.map((d, i) => (
                 /* Scale pop when digit fills — subtle tactile feedback */
@@ -258,7 +258,7 @@ export function StepVerify({ form, patch, onBack, onNext }: Props) {
                 className="font-sans text-xs underline underline-offset-2"
                 style={{ color: 'var(--color-azure)' }}
               >
-                Demo mode — tap to autofill
+                Demo mode, tap to autofill
               </button>
             </p>
           </div>
@@ -308,7 +308,7 @@ export function StepVerify({ form, patch, onBack, onNext }: Props) {
                 </a>
                 . I understand Companio is a{' '}
                 <strong style={{ color: 'var(--color-ink)' }}>strictly platonic platform</strong>
-                {' '}— no romantic or sexual content of any kind.
+                {' '}, no romantic or sexual content of any kind.
               </span>
             </label>
             {termsErr && (

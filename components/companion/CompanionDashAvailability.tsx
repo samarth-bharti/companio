@@ -77,7 +77,7 @@ export function CompanionDashAvailability() {
                   key={key}
                   type="button"
                   aria-pressed={on}
-                  aria-label={`${DAYS[di]} ${slot} — ${on ? 'available' : 'unavailable'}`}
+                  aria-label={`${DAYS[di]} ${slot}, ${on ? 'available' : 'unavailable'}`}
                   onClick={() => toggle(key)}
                   className={cn(
                     'h-9 w-full rounded-lg transition-colors',

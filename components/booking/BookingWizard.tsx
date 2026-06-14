@@ -78,7 +78,7 @@ export function BookingWizard() {
     });
     addNotification({
       title: 'Meetup confirmed',
-      body: `You're meeting ${companion.firstName} on ${formatDate(form.dateISO)} — ₹ held in escrow.`,
+      body: `You're meeting ${companion.firstName} on ${formatDate(form.dateISO)}, ₹ held in escrow.`,
     });
     setBooking(b);
     setConfirmed(true);

@@ -108,7 +108,7 @@ export function UnlockSheet({
               <PaymentMethodTiles selected={sel} onSelect={setSel} />
               <div aria-live="polite" aria-atomic="true">
                 <Button variant="cta" size="xl" className="w-full" onClick={doPay} disabled={pay !== "idle"}>
-                  {pay === "idle" && "Pay ₹199 — unlock everything."}
+                  {pay === "idle" && "Pay ₹199, unlock everything."}
                   {pay === "processing" && (
                     <span className="flex items-center gap-2">
                       {reduced
@@ -142,7 +142,7 @@ export function UnlockSheet({
                   <span style={{ fontFamily: "var(--font-serif)" }} className="italic">
                     &ldquo;Verification meant my family was relaxed about it too.&rdquo;
                   </span>
-                  {" "}— Meena T., Delhi
+                  {" "}, Meena T., Delhi
                 </p>
               </div>
             </motion.div>

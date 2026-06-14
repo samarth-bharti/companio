@@ -6,9 +6,9 @@ import { spring, stagger, calm } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 const TIME_SLOTS = [
-  { id: 'morning',   label: 'Morning',   sub: '7–10 AM', icon: '🌅' },
-  { id: 'afternoon', label: 'Afternoon', sub: '12–3 PM', icon: '☀️' },
-  { id: 'evening',   label: 'Evening',   sub: '5–8 PM',  icon: '🌆' },
+  { id: 'morning',   label: 'Morning',   sub: '7-10 AM', icon: '🌅' },
+  { id: 'afternoon', label: 'Afternoon', sub: '12-3 PM', icon: '☀️' },
+  { id: 'evening',   label: 'Evening',   sub: '5-8 PM',  icon: '🌆' },
 ];
 
 interface Props {

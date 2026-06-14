@@ -8,7 +8,7 @@ import { ApplySteps } from "@/components/companion/ApplySteps";
 import { VerificationTimeline } from "@/components/companion/VerificationTimeline";
 
 export const metadata: Metadata = {
-  title: "Become a Companion — Companio",
+  title: "Become a Companion, Companio",
   description: "Join Companio as a verified companion. Set your own schedule, earn on your terms, and meet interesting people across India.",
 };
 
@@ -16,7 +16,7 @@ const BENEFITS = [
   {
     icon: Clock,
     title: "Your schedule, your pace",
-    body: "Accept bookings when it suits you. No minimums, no pressure. Full-time or weekend gigs — you decide.",
+    body: "Accept bookings when it suits you. No minimums, no pressure. Full-time or weekend gigs, you decide.",
     color: "#2E6BFF",
     bg: "#EBF1FF",
   },
@@ -75,7 +75,7 @@ export default function BecomeACompanionPage() {
               </em>
             </h1>
             <p className="text-lead mb-10" style={{ color: "rgba(244,242,255,0.62)" }}>
-              Meet interesting people, guide them through your city, and get paid fairly — all on your own schedule. Strictly platonic, always professional.
+              Meet interesting people, guide them through your city, and get paid fairly, all on your own schedule. Strictly platonic, always professional.
             </p>
             <Link
               href="/become-a-companion/apply"
@@ -148,7 +148,7 @@ export default function BecomeACompanionPage() {
                 Safe for everyone
               </h2>
               <p className="font-sans text-base" style={{ color: "rgba(244,242,255,0.62)" }}>
-                Warm, professional company — with the trust signals that make it real.
+                Warm, professional company, with the trust signals that make it real.
               </p>
             </div>
             <div className="rounded-2xl p-6 md:p-8" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
@@ -160,7 +160,7 @@ export default function BecomeACompanionPage() {
                 className="inline-flex items-center justify-center h-14 px-10 rounded-pill font-sans font-bold text-lg text-white transition-all hover:opacity-90 focus-visible:outline-white"
                 style={{ background: "var(--grad-cta)", boxShadow: "var(--glow-azure)" }}
               >
-                Apply now — it takes 5 minutes
+                Apply now, it takes 5 minutes
               </Link>
               <Link href="/" className="block mt-4 font-sans text-sm hover:underline underline-offset-4" style={{ color: "rgba(244,242,255,0.5)" }}>
                 ← Back to home

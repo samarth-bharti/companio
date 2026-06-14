@@ -118,7 +118,7 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
           &ldquo;{topReview.text.slice(0, 90)}{topReview.text.length > 90 ? '…' : ''}&rdquo;
         </p>
         <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-          — {topReview.name}
+, {topReview.name}
         </p>
       </div>
 

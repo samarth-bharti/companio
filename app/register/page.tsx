@@ -5,7 +5,7 @@ import { Footer } from '@/components/layout/Footer';
 import { RegisterWizard } from '@/components/auth/RegisterWizard';
 
 export const metadata: Metadata = {
-  title: 'Create Account — Companio',
+  title: 'Create Account, Companio',
   description:
     'Join Companio and connect with Aadhaar-verified companions for platonic activities across India.',
 };

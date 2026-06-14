@@ -1,20 +1,20 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
 
-export const metadata: Metadata = { title: 'About — Companio' };
+export const metadata: Metadata = { title: 'About, Companio' };
 
 export default function AboutPage() {
   return (
     <InfoPage
       eyebrow="Company"
       title="Why Companio exists."
-      intro="Cities are full of people and still easy to feel alone in. Companio is a safe, verified way to share the ordinary good moments — a walk, a workout, a coffee, a gig — with warm, real company."
+      intro="Cities are full of people and still easy to feel alone in. Companio is a safe, verified way to share the ordinary good moments, a walk, a workout, a coffee, a gig, with warm, real company."
       sections={[
         {
           heading: 'The idea',
           body: [
             'Loneliness is not a niche problem. People move cities for work, arrive knowing nobody, and slowly stop doing the things they love because doing them alone feels worse than not doing them at all.',
-            'Companio connects you with Aadhaar-verified companions for strictly platonic activities — so you never have to skip the gig, the walk, or the museum just because you would have gone alone.',
+            'Companio connects you with Aadhaar-verified companions for strictly platonic activities, so you never have to skip the gig, the walk, or the museum just because you would have gone alone.',
           ],
         },
         {

@@ -4,7 +4,7 @@ import { Footer } from '@/components/layout/Footer';
 import { ApplyWizard } from '@/components/companion/ApplyWizard';
 
 export const metadata: Metadata = {
-  title: 'Apply to become a companion — Companio',
+  title: 'Apply to become a companion, Companio',
   description:
     'Apply to join Companio as a verified companion. Set your own schedule, choose your activities, and earn fairly.',
 };

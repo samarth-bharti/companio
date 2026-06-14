@@ -5,7 +5,7 @@ import { Footer } from '@/components/layout/Footer';
 import { DashboardClient } from '@/components/dashboard/DashboardClient';
 
 export const metadata = {
-  title: 'Dashboard — Companio',
+  title: 'Dashboard, Companio',
   description: 'Your meetups, messages, and membership in one place.',
 };
 

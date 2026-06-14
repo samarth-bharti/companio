@@ -21,7 +21,7 @@ function buildLines(answers: QuizAnswers): string[] {
 
   return [
     `Scanning 2,300+ verified members in ${city}…`,
-    `Matching your activities — ${topActivities}…`,
+    `Matching your activities, ${topActivities}…`,
     `Checking who's free ${timePref}…`,
     answers.comfort.sameGender
       ? 'Filtering for same-gender companions…'
@@ -77,7 +77,7 @@ export function LaborIllusion({ answers, onDone }: LaborIllusionProps) {
     >
       <div className="flex flex-col items-center gap-8 w-full max-w-md">
         <MilestoneSeal
-          label={`Hold on, ${answers.name || 'there'} — finding your people…`}
+          label={`Hold on, ${answers.name || 'there'}, finding your people…`}
           size={64}
         />
 

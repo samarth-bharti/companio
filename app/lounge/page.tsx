@@ -4,7 +4,7 @@ import { Footer } from '@/components/layout/Footer';
 import { LoungeClient } from '@/components/lounge/LoungeClient';
 
 export const metadata: Metadata = {
-  title: 'Lounge — Companio',
+  title: 'Lounge, Companio',
   description:
     'Join group activity rooms or start a direct conversation. Mumbai\'s most fun platonic social space.',
 };

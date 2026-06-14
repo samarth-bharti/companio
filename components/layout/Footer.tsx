@@ -70,7 +70,7 @@ export function Footer() {
           >
             In-app SOS &amp; live-share
           </Link>{" "}
-          — every booking includes emergency contact sharing.
+, every booking includes emergency contact sharing.
         </p>
       </div>
 

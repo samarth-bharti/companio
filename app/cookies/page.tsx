@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
 
-export const metadata: Metadata = { title: 'Cookie policy — Companio' };
+export const metadata: Metadata = { title: 'Cookie policy, Companio' };
 
 export default function CookiesPage() {
   return (

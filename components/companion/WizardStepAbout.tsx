@@ -54,7 +54,7 @@ export function WizardStepAbout({ data, onChange }: Props) {
           required
         />
         <p className="font-sans text-xs mt-1.5" style={{ color: 'var(--color-ink-muted)' }}>
-          Use a first name and last initial — shown publicly on your profile.
+          Use a first name and last initial, shown publicly on your profile.
         </p>
       </div>
 
@@ -80,7 +80,7 @@ export function WizardStepAbout({ data, onChange }: Props) {
           </option>
           {CITIES.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name} — {c.state}
+              {c.name}, {c.state}
             </option>
           ))}
         </select>
@@ -99,7 +99,7 @@ export function WizardStepAbout({ data, onChange }: Props) {
           id="wiz-bio"
           rows={4}
           maxLength={BIO_MAX}
-          placeholder="Tell members what kind of company you bring — your city, favourite spots, what a meetup with you feels like. Warm, honest, and specific works best."
+          placeholder="Tell members what kind of company you bring, your city, favourite spots, what a meetup with you feels like. Warm, honest, and specific works best."
           value={data.bio}
           onChange={(e) => onChange({ bio: e.target.value })}
           className="w-full px-4 py-3 font-sans text-sm resize-none"
@@ -107,7 +107,7 @@ export function WizardStepAbout({ data, onChange }: Props) {
         />
         <div className="flex justify-between mt-1">
           <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-            Optional — you can add this later from your profile.
+            Optional, you can add this later from your profile.
           </p>
           <span
             className="font-sans text-xs tabular-nums"

@@ -20,7 +20,7 @@ const HIGHLIGHTS: Highlight[] = [
     id: 'h1', name: 'Ananya', activity: 'City Walk',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80',
     ringColor: '#2E6BFF',
-    caption: 'Morning stroll through Kala Ghoda — the light was perfect and so was the chai.',
+    caption: 'Morning stroll through Kala Ghoda, the light was perfect and so was the chai.',
   },
   {
     id: 'h2', name: 'Rohan', activity: 'Morning Run',

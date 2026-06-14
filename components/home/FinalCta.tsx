@@ -82,7 +82,7 @@ export function FinalCta() {
             Your first stamp is waiting.
           </h2>
           <p className="text-lead text-ink-muted mb-10 max-w-md mx-auto">
-            Real company, on your terms — warm, verified, and strictly platonic.
+            Real company, on your terms, warm, verified, and strictly platonic.
           </p>
         </Reveal>
 

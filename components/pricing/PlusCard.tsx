@@ -39,7 +39,7 @@ export function PlusCard({ isPlus, onUpgrade }: PlusCardProps) {
           You&apos;re a Plus member
         </p>
         <p className="text-sm" style={{ color: 'rgba(244,242,255,0.65)' }}>
-          All benefits active — cancel anytime in two taps.
+          All benefits active, cancel anytime in two taps.
         </p>
       </motion.div>
     );
@@ -115,7 +115,7 @@ export function PlusCard({ isPlus, onUpgrade }: PlusCardProps) {
 
         {/* Commitment-friction removal */}
         <p className="mt-3 text-xs text-center" style={{ color: 'rgba(244,242,255,0.45)' }}>
-          Cancel anytime in two taps — no lock-in, no fine print.
+          Cancel anytime in two taps, no lock-in, no fine print.
         </p>
       </div>
     </motion.div>

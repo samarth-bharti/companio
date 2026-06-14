@@ -1,10 +1,10 @@
 import { Zap, TrendingUp } from 'lucide-react';
 
 const NEARBY = [
-  { label: 'Morning Run — Juhu Beach',       tag: 'Morning Run',  time: 'Sat 6 AM',     count: 4  },
-  { label: 'Café Chat — Blue Tokai, Powai',  tag: 'Café Chat',    time: 'Today 5 PM',   count: 7  },
-  { label: 'Photography Walk — Colaba',       tag: 'Photography',  time: 'Sun 7 AM',     count: 3  },
-  { label: 'Book Browsing — Kitab Khana',     tag: 'Books',        time: 'Sat 3:30 PM',  count: 6  },
+  { label: 'Morning Run, Juhu Beach',       tag: 'Morning Run',  time: 'Sat 6 AM',     count: 4  },
+  { label: 'Café Chat, Blue Tokai, Powai',  tag: 'Café Chat',    time: 'Today 5 PM',   count: 7  },
+  { label: 'Photography Walk, Colaba',       tag: 'Photography',  time: 'Sun 7 AM',     count: 3  },
+  { label: 'Book Browsing, Kitab Khana',     tag: 'Books',        time: 'Sat 3:30 PM',  count: 6  },
 ];
 
 const TRENDING = [

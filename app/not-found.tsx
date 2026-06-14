@@ -33,7 +33,7 @@ export default function NotFound() {
               This page is coming soon.
             </h1>
             <p className="text-lead mb-10" style={{ color: "var(--color-ink-muted)" }}>
-              We&apos;re building something here. In the meantime, explore what&apos;s already live — verified companions are waiting.
+              We&apos;re building something here. In the meantime, explore what&apos;s already live, verified companions are waiting.
             </p>
             <div className="flex items-center justify-center gap-4 flex-wrap">
               <Link

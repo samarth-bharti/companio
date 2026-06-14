@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
 
-export const metadata: Metadata = { title: 'Press — Companio' };
+export const metadata: Metadata = { title: 'Press, Companio' };
 
 export default function PressPage() {
   return (
@@ -13,7 +13,7 @@ export default function PressPage() {
         {
           heading: 'In one line',
           body: [
-            'Companio is a safe, Aadhaar-verified marketplace for strictly platonic companionship — city walks, gym sessions, café conversations, live events, and elder company across India.',
+            'Companio is a safe, Aadhaar-verified marketplace for strictly platonic companionship, city walks, gym sessions, café conversations, live events, and elder company across India.',
           ],
         },
         {
@@ -25,7 +25,7 @@ export default function PressPage() {
         {
           heading: 'Get in touch',
           body: [
-            'For interviews, assets, or fact-checks, write to press@companio.example. (Demo site — this address is illustrative.)',
+            'For interviews, assets, or fact-checks, write to press@companio.example. (Demo site, this address is illustrative.)',
           ],
         },
       ]}

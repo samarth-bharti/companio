@@ -33,7 +33,7 @@ const PACKS: Pack[] = [
     price: 1999,
     credits: 5,
     perMeetup: '₹400 per meetup',
-    ribbon: 'Most popular — chosen by 1,100+ members',
+    ribbon: 'Most popular, chosen by 1,100+ members',
   },
   {
     id: 'ten',
@@ -165,7 +165,7 @@ export default function PricingPage() {
         {/* Primary buy CTA */}
         <Reveal delay={0.38}>
           <Button variant="cta" size="xl" className="w-full" onClick={openPackCheckout}>
-            Buy {selectedPack.name} — ₹{selectedPack.price.toLocaleString('en-IN')}
+            Buy {selectedPack.name}, ₹{selectedPack.price.toLocaleString('en-IN')}
           </Button>
         </Reveal>
 

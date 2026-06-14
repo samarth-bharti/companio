@@ -78,7 +78,7 @@ export function EarningsCalculator({ className }: Props) {
       </span>
 
       <p className="font-sans text-xs mb-8 relative z-10" style={{ color: 'var(--color-ink-muted)' }}>
-        Estimate — varies by city &amp; demand. ₹{RATE}/meetup × {meetups}/week × 4.3 weeks.
+        Estimate, varies by city &amp; demand. ₹{RATE}/meetup × {meetups}/week × 4.3 weeks.
       </p>
 
       {/* Slider */}
@@ -119,7 +119,7 @@ export function EarningsCalculator({ className }: Props) {
             step={1}
             value={meetups}
             onChange={(e) => setMeetups(Number(e.target.value))}
-            aria-valuetext={`${meetups} meetups a week — ₹${monthly.toLocaleString('en-IN')}/month estimate`}
+            aria-valuetext={`${meetups} meetups a week, ₹${monthly.toLocaleString('en-IN')}/month estimate`}
             className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
           />
           {/* Visual thumb */}

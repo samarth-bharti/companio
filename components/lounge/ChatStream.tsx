@@ -186,7 +186,7 @@ export function ChatStream({ messages, isTyping, isGroup, onReact }: ChatStreamP
             color: '#fff',
             boxShadow: 'var(--glow-azure)',
           }}
-          aria-label={`${newCount} new message${newCount > 1 ? 's' : ''} — jump to latest`}
+          aria-label={`${newCount} new message${newCount > 1 ? 's' : ''}, jump to latest`}
         >
           ↓ +{newCount} new message{newCount > 1 ? 's' : ''}
         </motion.button>

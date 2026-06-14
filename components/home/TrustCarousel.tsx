@@ -72,7 +72,7 @@ export function TrustCarousel() {
           <Reveal delay={0.08}>
             <ClipReveal
               id="trust-carousel-heading"
-              text="28,000+ members across India — every one verified."
+              text="28,000+ members across India, every one verified."
               accent="every one verified."
               accentStyle={{
                 background: 'linear-gradient(135deg, #2E6BFF, #7A4FE0)',

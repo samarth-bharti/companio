@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useScroll, useSpring, motion, useReducedMotion } from 'framer-motion';
 
 /**
@@ -13,6 +14,13 @@ export function ScrollProgressPill() {
   const { scrollYProgress } = useScroll();
   const shouldReduce = useReducedMotion();
   const smoothed = useSpring(scrollYProgress, { stiffness: 180, damping: 28, restDelta: 0.001 });
+
+  // Render only after mount: server + first client render both produce null,
+  // so they match. This avoids the framer-motion SSR hydration mismatch where
+  // useReducedMotion()/useScroll() differ between server and client.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
 
   return (
     <div

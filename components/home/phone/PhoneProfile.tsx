@@ -3,7 +3,7 @@ import { BadgeCheck, ChevronLeft, Star } from 'lucide-react';
 const CHIPS = ['City Walk', 'Museum', 'Café'];
 
 const REVIEWS = [
-  { author: 'Shreya M.', text: '"Priya knows every quiet lane in Bandra — wonderful company."' },
+  { author: 'Shreya M.', text: '"Priya knows every quiet lane in Bandra, wonderful company."' },
   { author: 'Rahul D.', text: '"Punctual, warm, and genuinely curious. Will book again."' },
 ];
 

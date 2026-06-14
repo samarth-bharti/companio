@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
 
-export const metadata: Metadata = { title: 'Trust & KYC — Companio' };
+export const metadata: Metadata = { title: 'Trust & KYC, Companio' };
 
 export default function TrustPage() {
   return (
@@ -13,13 +13,13 @@ export default function TrustPage() {
         {
           heading: 'Aadhaar & KYC verification',
           body: [
-            "Every companion's identity is verified against Aadhaar before activation — name, age, and a live selfie match. No exceptions, no grandfathered accounts.",
+            "Every companion's identity is verified against Aadhaar before activation, name, age, and a live selfie match. No exceptions, no grandfathered accounts.",
           ],
         },
         {
           heading: 'Background checks',
           body: [
-            'Companions consent to a third-party background check before their profile goes live. Profiles are also reviewed by our team — photos, bio, and services.',
+            'Companions consent to a third-party background check before their profile goes live. Profiles are also reviewed by our team, photos, bio, and services.',
           ],
         },
         {
@@ -37,7 +37,7 @@ export default function TrustPage() {
         {
           heading: 'The platonic promise',
           body: [
-            'Companio is for company — never anything else. Zero tolerance for non-platonic conduct, enforced with immediate permanent bans for either side.',
+            'Companio is for company, never anything else. Zero tolerance for non-platonic conduct, enforced with immediate permanent bans for either side.',
           ],
         },
       ]}

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
 import { MagneticButton } from '@/components/motion/MagneticButton';
+import { RollLink } from '@/components/motion/RollLink';
 
 const TRUST_ITEMS = ['Aadhaar-verified', 'Background-checked', '₹ held in escrow'] as const;
 
@@ -21,11 +22,11 @@ const H2_STYLE: React.CSSProperties = {
 
 /**
  * State 0 — fully interactive: eyebrow, H1, sub-copy, CTAs, trust items.
- * Semantic anchor for the hero (id="hero-heading" lives here).
+ * Center-aligned hero. Semantic anchor (id="hero-heading" lives here).
  */
 export function HeroCopyState0() {
   return (
-    <div>
+    <div className="text-center">
       <p className="label-eyebrow mb-5" style={{ color: 'var(--color-azure)' }}>
         Trusted · Verified · Always Platonic
       </p>
@@ -43,18 +44,19 @@ export function HeroCopyState0() {
           Any time.
         </span>
       </h1>
-      <p className="text-lead mb-10 max-w-md" style={{ color: 'var(--color-ink-muted)' }}>
-        Verified companions for city walks, gym sessions, café chats, live events, and more — strictly platonic.
+      <p className="text-lead mb-10 max-w-xl mx-auto" style={{ color: 'var(--color-ink-muted)' }}>
+        Verified companions for city walks, gym sessions, café chats, live events, and more, strictly platonic.
       </p>
-      <div className="flex items-center gap-4 flex-wrap mb-8">
+      <div className="flex items-center justify-center gap-4 flex-wrap mb-8">
         <MagneticButton>
-          <Link
+          <RollLink
             href="/explore"
-            className="inline-flex items-center justify-center h-13 px-8 rounded-pill font-sans font-bold text-base text-white transition-all focus-visible:outline-white"
+            className="h-13 px-8 rounded-pill font-sans font-bold text-base text-white focus-visible:outline-white"
             style={{ background: 'var(--grad-cta)', boxShadow: 'var(--glow-azure)' }}
+            hoverBackground="var(--grad-aurora)"
           >
             Find a companion
-          </Link>
+          </RollLink>
         </MagneticButton>
         <Link
           href="/how-it-works"
@@ -64,7 +66,7 @@ export function HeroCopyState0() {
           How it works →
         </Link>
       </div>
-      <div className="flex flex-wrap gap-x-5 gap-y-2">
+      <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
         {TRUST_ITEMS.map((item) => (
           <span key={item} className="flex items-center gap-1.5 text-sm font-sans" style={{ color: 'var(--color-emerald)' }}>
             <CheckCircle2 size={14} strokeWidth={2.5} aria-hidden="true" />
@@ -79,11 +81,11 @@ export function HeroCopyState0() {
 /** State 1 — non-interactive, aria-hidden. Discovery beat: who's near you. */
 export function HeroCopyState1() {
   return (
-    <div aria-hidden="true" className="pointer-events-none">
+    <div aria-hidden="true" className="pointer-events-none text-center">
       <h2 style={H2_STYLE} className="mb-5">
         See who&apos;s actually<br />near you.
       </h2>
-      <p className="text-lead max-w-md" style={{ color: 'var(--color-ink-muted)' }}>
+      <p className="text-lead max-w-xl mx-auto" style={{ color: 'var(--color-ink-muted)' }}>
         Every profile Aadhaar-verified, rated by real members, in 38 cities.
       </p>
     </div>
@@ -93,11 +95,11 @@ export function HeroCopyState1() {
 /** State 2 — non-interactive, aria-hidden. Action beat: meet this week. */
 export function HeroCopyState2() {
   return (
-    <div aria-hidden="true" className="pointer-events-none">
+    <div aria-hidden="true" className="pointer-events-none text-center">
       <h2 style={H2_STYLE} className="mb-5">
         Then meet,<br />this week.
       </h2>
-      <p className="text-lead max-w-md" style={{ color: 'var(--color-ink-muted)' }}>
+      <p className="text-lead max-w-xl mx-auto" style={{ color: 'var(--color-ink-muted)' }}>
         Book in a tap. ₹ held in escrow until you meet.
       </p>
     </div>

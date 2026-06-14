@@ -90,7 +90,7 @@ export function ApplyWizard() {
     });
     addNotification({
       title: 'Application submitted',
-      body: 'Your companion application is under review. Usually 2–3 days.',
+      body: 'Your companion application is under review. Usually 2-3 days.',
     });
     setSubmitted(true);
   };

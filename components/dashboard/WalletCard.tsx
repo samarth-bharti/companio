@@ -80,7 +80,7 @@ export function WalletCard({ wallet, plan }: WalletCardProps) {
       </p>
 
       <p className="font-sans text-xs mb-5" style={{ color: 'var(--color-ink-muted)' }}>
-        Yours anytime — no expiry.
+        Yours anytime, no expiry.
       </p>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -108,7 +108,7 @@ export function WalletCard({ wallet, plan }: WalletCardProps) {
       {/* Screen-reader text equivalent */}
       <span className="sr-only">
         {credits} meetings remaining, worth ₹{worth}. Yours anytime, no expiry.
-        {plan === 'plus' ? ' Plus member — meetups at ₹399.' : ''}
+        {plan === 'plus' ? ' Plus member, meetups at ₹399.' : ''}
       </span>
     </div>
   );

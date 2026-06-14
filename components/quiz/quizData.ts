@@ -94,7 +94,7 @@ export const QUESTIONS: QuizQuestionDef[] = [
   {
     key: 'name',
     label: 'Name',
-    title: 'Last one — what should we call you?',
+    title: 'Last one, what should we call you?',
     bubble: "Almost there. What's your name?",
     type: 'name-input',
   },
@@ -127,13 +127,13 @@ export const INITIAL_ANSWERS: QuizAnswers = {
 export function getEmpathyEcho(key: string, answers: QuizAnswers): string {
   switch (key) {
     case 'city':
-      return `${answers.city} — a good city for this. Let's see who's around.`;
+      return `${answers.city}, a good city for this. Let's see who's around.`;
     case 'activities': {
       const p = answers.activities;
       if (p.includes('walks') && p.includes('cafe'))
-        return "Morning walks and chai — nothing like the city before it wakes up.";
+        return "Morning walks and chai, nothing like the city before it wakes up.";
       if (p.includes('walks'))
-        return "Morning walks it is — nothing like the city before it wakes up.";
+        return "Morning walks it is, nothing like the city before it wakes up.";
       if (p.includes('gym'))
         return 'A good gym partner makes the whole routine stick. Noted.';
       if (p.includes('cafe'))
@@ -146,36 +146,36 @@ export function getEmpathyEcho(key: string, answers: QuizAnswers): string {
     }
     case 'time': {
       const map: Record<string, string> = {
-        mornings: 'Mornings — the best part of the day with good company.',
-        'weekday-eves': 'Weekday evenings — a walk or a café catch-up fits perfectly.',
+        mornings: 'Mornings, the best part of the day with good company.',
+        'weekday-eves': 'Weekday evenings, a walk or a café catch-up fits perfectly.',
         weekends: 'Weekends give you room to actually go somewhere. Good.',
-        flexible: "Flexible works well — we'll find people free across the week.",
+        flexible: "Flexible works well, we'll find people free across the week.",
       };
       return map[answers.time] ?? "Good to know. We'll find people free when you are.";
     }
     case 'listen': {
       const map: Record<string, string> = {
         listener: "A good listener is rarer than you'd think. Noted.",
-        talker: 'Someone who drives the conversation — that has real value.',
-        both: "Depends on the day — that's the most honest answer there is.",
+        talker: 'Someone who drives the conversation, that has real value.',
+        both: "Depends on the day, that's the most honest answer there is.",
       };
       return map[answers.listen] ?? 'Noted.';
     }
     case 'languages': {
       const p = answers.languages;
       if (p.includes('marathi') && p.includes('hindi'))
-        return "Marathi and Hindi — we've got plenty of folks who'll feel like home.";
+        return "Marathi and Hindi, we've got plenty of folks who'll feel like home.";
       if (p.includes('tamil'))
-        return "Tamil speakers in Mumbai — there are more than you'd expect.";
+        return "Tamil speakers in Mumbai, there are more than you'd expect.";
       if (p.length === 1 && p.includes('english'))
         return 'English works everywhere. Easy.';
       if (p.length > 3)
         return 'That many languages opens a lot of doors. Perfect.';
-      return "Good — we'll keep language in mind as we build your list.";
+      return "Good, we'll keep language in mind as we build your list.";
     }
     case 'comfort':
       return answers.comfort.sameGender
-        ? 'Noted — same-gender companions only. Always your choice.'
+        ? 'Noted, same-gender companions only. Always your choice.'
         : 'Noted. Everyone on Companio is Aadhaar-verified and meets in public first.';
     case 'name':
       return `Good to meet you, ${answers.name}. Let's find your people.`;

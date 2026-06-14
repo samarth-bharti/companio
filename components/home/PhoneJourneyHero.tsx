@@ -3,15 +3,36 @@
 import { useRef } from 'react';
 import { motion, useTransform, useReducedMotion } from 'framer-motion';
 import { useJsScroll } from '@/lib/useJsScroll';
-import { PhoneBrowse } from './phone/PhoneBrowse';
-import { PhoneProfile } from './phone/PhoneProfile';
-import { PhoneConfirmed } from './phone/PhoneConfirmed';
 import { HeroCopyState0, HeroCopyState1, HeroCopyState2 } from './phone/HeroCopy';
-import { PhoneChipsWrapper } from './phone/PhoneChips';
+import { CursorStickers } from './CursorStickers';
 import { useIsMobile } from '@/lib/useIsMobile';
 
-const FRAME_SHADOW =
-  '0 0 0 1px rgba(46,107,255,0.25), 0 40px 80px -20px rgba(20,18,42,0.45), inset 0 1px 0 rgba(255,255,255,0.08)';
+// Light readability veil over the video so the dark hero copy stays legible while
+// the cinematic footage shows through (keeps the site's light/airy aesthetic).
+const SCRIM =
+  'radial-gradient(ellipse 80% 55% at 50% 48%, rgba(251,252,255,0.74) 0%, rgba(251,252,255,0.4) 70%, rgba(251,252,255,0.32) 100%), linear-gradient(180deg, rgba(251,252,255,0.55) 0%, rgba(251,252,255,0.42) 45%, rgba(251,252,255,0.7) 100%)';
+
+// Soft white halo behind the dark copy so it stays legible over busy footage.
+const COPY_HALO = '0 1px 18px rgba(251,252,255,0.6)';
+
+function VideoBackground() {
+  return (
+    <>
+      <video
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ zIndex: 0 }}
+        src="/hero.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+      />
+      <div aria-hidden="true" className="absolute inset-0" style={{ zIndex: 10, background: SCRIM }} />
+    </>
+  );
+}
 
 function AmbientBlobs() {
   return (
@@ -23,9 +44,11 @@ function AmbientBlobs() {
 }
 
 /**
- * Orchestrator for the 250 vh scroll-driven phone hero (§3.1).
- * Three states swap inside one constant phone frame; left text cross-fades in sync.
- * Reduced motion: collapses to a static min-h-screen single-state layout (no scroll binding).
+ * Centered scroll-driven hero with a full-bleed cinematic video background.
+ * Three copy states cross-fade in a single centered column while sliding from
+ * alternating sides (state 1 from the right, state 2 from the left); cursor
+ * stickers trail on top. The video sits behind a light scrim for legibility.
+ * Reduced motion: collapses to a static centered state-0 layout with no video.
  */
 export function PhoneJourneyHero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -37,124 +60,85 @@ export function PhoneJourneyHero() {
     offset: ['start start', 'end end'],
   });
 
-  // Shared opacity bands — screen and its text block share the same curve.
-  // Sequential, NON-overlapping: each state fades fully out before the next
-  // fades in (small gap between bands). Overlapping crossfades superimposed
-  // two headlines in the same spot mid-transition — unreadable in stills.
-  const opA = useTransform(scrollYProgress, [0, 0.26, 0.34], [1, 1, 0]);             // state 0
-  const opB = useTransform(scrollYProgress, [0.38, 0.46, 0.60, 0.68], [0, 1, 1, 0]); // state 1
-  const opC = useTransform(scrollYProgress, [0.72, 0.80, 1], [0, 1, 1]);             // state 2
+  // Sequential, non-overlapping opacity bands (each fades out before the next in).
+  const opA = useTransform(scrollYProgress, [0, 0.26, 0.34], [1, 1, 0]);
+  const opB = useTransform(scrollYProgress, [0.40, 0.48, 0.60, 0.68], [0, 1, 1, 0]);
+  const opC = useTransform(scrollYProgress, [0.74, 0.82, 1], [0, 1, 1]);
 
-  // Incoming y for states 1 + 2 (spring-feel from eased transform range)
-  const yProf = useTransform(scrollYProgress, [0.38, 0.46], [18, 0]);
-  const yConf = useTransform(scrollYProgress, [0.72, 0.80], [18, 0]);
-
-  // Text y offsets: out-going exits −24, incoming enters from +24
-  const y0 = useTransform(scrollYProgress, [0, 0.26, 0.34], [0, 0, -24]);
-  const y1 = useTransform(scrollYProgress, [0.38, 0.46, 0.60, 0.68], [24, 0, 0, -24]);
-  const y2 = useTransform(scrollYProgress, [0.72, 0.80, 1], [24, 0, 0]);
-
-  // Device micro-tilt: subtle life across the full scroll range
-  const rotate = useTransform(scrollYProgress, [0, 1], [-1.5, 1.5]);
+  // Minimal horizontal slide, alternating sides: state 0 exits left, state 1
+  // enters from the right (exits left), state 2 enters from the left.
+  const xA = useTransform(scrollYProgress, [0, 0.26, 0.34], [0, 0, -44]);
+  const xB = useTransform(scrollYProgress, [0.40, 0.48, 0.60, 0.68], [44, 0, 0, -44]);
+  const xC = useTransform(scrollYProgress, [0.74, 0.82, 1], [-44, 0, 0]);
 
   // Disable pointer events on state-0 CTAs once they have faded out.
   const ptr0 = useTransform(opA, (v) => (v < 0.3 ? 'none' : 'auto'));
 
-  // ── Static branch: reduced motion OR mobile (scene clips/janks <md) ──────
-  if (shouldReduce || isMobile) {
+  // ── Static branch: reduced motion (no video) ─────────────────────────────
+  if (shouldReduce) {
     return (
       <section
         id="hero"
         aria-labelledby="hero-heading"
-        className="relative min-h-screen flex items-center overflow-hidden"
+        className="relative min-h-screen flex items-center justify-center overflow-hidden"
         style={{ background: 'var(--grad-hero-bg)' }}
       >
         <AmbientBlobs />
-        <div className="max-w-7xl mx-auto px-6 py-28 md:py-32 w-full grid md:grid-cols-2 gap-16 lg:gap-24 items-center">
+        <div className="relative z-30 max-w-4xl mx-auto px-6 py-28 md:py-32 w-full">
           <HeroCopyState0 />
-          <div className="flex items-center justify-center">
-            <div
-              className="rounded-[2.5rem] overflow-hidden shrink-0"
-              style={{ width: 272, height: 540, border: '7px solid #141A2E', boxShadow: FRAME_SHADOW, background: '#F7F8FC' }}
-            >
-              <PhoneBrowse />
-            </div>
-          </div>
         </div>
       </section>
     );
   }
 
-  // ── Full scroll-driven scene ─────────────────────────────────────────────
+  // ── Mobile branch: video background, single static state (no scroll scene) ─
+  if (isMobile) {
+    return (
+      <section
+        id="hero"
+        aria-labelledby="hero-heading"
+        className="relative min-h-screen flex items-center justify-center overflow-hidden"
+        style={{ background: 'var(--grad-hero-bg)' }}
+      >
+        <VideoBackground />
+        <div className="relative z-30 max-w-4xl mx-auto px-6 py-28 w-full" style={{ textShadow: COPY_HALO }}>
+          <HeroCopyState0 />
+        </div>
+      </section>
+    );
+  }
+
+  // ── Full scroll-driven scene with video background ───────────────────────
   return (
     <section
       ref={sectionRef}
       id="hero"
       aria-labelledby="hero-heading"
       className="relative"
-      style={{ height: '250vh', background: 'var(--grad-hero-bg)' }}
+      style={{ height: '240vh', background: 'var(--grad-hero-bg)' }}
     >
-      <div className="sticky top-0 h-screen flex items-center overflow-hidden">
-        <AmbientBlobs />
-        <div className="max-w-7xl mx-auto px-6 w-full grid md:grid-cols-2 gap-16 lg:gap-24 items-center py-16">
+      <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
+        <VideoBackground />
+        <CursorStickers />
 
-          {/* Left: state 0 sizes the column in normal flow (it is the tallest);
-              states 1–2 overlay it, vertically centered. Prevents the
-              clipping/overlap that a fixed min-height absolute stack caused. */}
-          <div className="relative">
-            <motion.div style={{ opacity: opA, y: y0, pointerEvents: ptr0, willChange: 'transform, opacity' }}>
-              <HeroCopyState0 />
-            </motion.div>
-            <motion.div
-              className="absolute inset-0 flex flex-col justify-center"
-              style={{ opacity: opB, y: y1, willChange: 'transform, opacity' }}
-            >
-              <HeroCopyState1 />
-            </motion.div>
-            <motion.div
-              className="absolute inset-0 flex flex-col justify-center"
-              style={{ opacity: opC, y: y2, willChange: 'transform, opacity' }}
-            >
-              <HeroCopyState2 />
-            </motion.div>
-          </div>
-
-          {/* Right: chips wrapper → micro-tilt wrapper → phone frame → 3 screens */}
-          <PhoneChipsWrapper scrollYProgress={scrollYProgress}>
-            <motion.div className="relative" style={{ rotate }}>
-              {/* Constant phone frame — never remounts */}
-              <div
-                className="relative rounded-[2.5rem] overflow-hidden shrink-0"
-                style={{ width: 272, height: 540, border: '7px solid #141A2E', boxShadow: FRAME_SHADOW, background: '#F7F8FC' }}
-              >
-                <motion.div className="absolute inset-0" style={{ opacity: opA, willChange: 'opacity' }}>
-                  <PhoneBrowse />
-                </motion.div>
-                <motion.div className="absolute inset-0" style={{ opacity: opB, y: yProf, willChange: 'transform, opacity' }}>
-                  <PhoneProfile />
-                </motion.div>
-                <motion.div className="absolute inset-0" style={{ opacity: opC, y: yConf, willChange: 'transform, opacity' }}>
-                  <PhoneConfirmed />
-                </motion.div>
-              </div>
-
-              {/* Aurora progress tick: 2px, scaleY mirrors scrollYProgress */}
-              <motion.div
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  right: -3,
-                  top: 0,
-                  height: '100%',
-                  width: 2,
-                  background: 'var(--grad-aurora)',
-                  scaleY: scrollYProgress,
-                  transformOrigin: 'top',
-                }}
-              />
-            </motion.div>
-          </PhoneChipsWrapper>
-
+        {/* Single centered column. State 0 sizes it in normal flow; states 1–2
+            overlay it, centered. z-30 keeps copy above scrim/stickers. */}
+        <div className="relative z-30 max-w-4xl mx-auto px-6 w-full" style={{ textShadow: COPY_HALO }}>
+          <motion.div style={{ opacity: opA, x: xA, pointerEvents: ptr0, willChange: 'transform, opacity' }}>
+            <HeroCopyState0 />
+          </motion.div>
+          <motion.div
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+            style={{ opacity: opB, x: xB, willChange: 'transform, opacity' }}
+          >
+            <HeroCopyState1 />
+          </motion.div>
+          <motion.div
+            className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+            style={{ opacity: opC, x: xC, willChange: 'transform, opacity' }}
+          >
+            <HeroCopyState2 />
+          </motion.div>
         </div>
       </div>
     </section>

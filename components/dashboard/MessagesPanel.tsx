@@ -9,20 +9,20 @@ import { ChatPanel } from './ChatPanel';
 import { calm, stagger } from '@/lib/motion';
 
 const OPENERS: Record<string, string> = {
-  ananya:  "Hi! Looking forward to our meetup — shall we say Bandstand at 10?",
+  ananya:  "Hi! Looking forward to our meetup, shall we say Bandstand at 10?",
   rohan:   "Hey! Versova beach at 6 AM works for me. See you there!",
-  priya:   "Hi! The Sassoon Dock walk at 7 AM — Saturday works?",
+  priya:   "Hi! The Sassoon Dock walk at 7 AM, Saturday works?",
   aarav:   "Hi! Looking forward to our conversation. Powai Lake evening sounds perfect.",
-  zara:    "Hey! Ready for Juhu beach — 6 AM Sunday works for me!",
-  kiran:   "Hi! Shivaji Park in the morning — 8 AM?",
+  zara:    "Hey! Ready for Juhu beach, 6 AM Sunday works for me!",
+  kiran:   "Hi! Shivaji Park in the morning, 8 AM?",
   ishaan:  "Hey! Lower Parel gym at 7 AM sounds great.",
-  meena:   "Hi! Filter coffee at Café Madras — Sunday afternoon is lovely.",
-  sahil:   "Hi! Versova fishing village at dawn — the light is extraordinary then.",
+  meena:   "Hi! Filter coffee at Café Madras, Sunday afternoon is lovely.",
+  sahil:   "Hi! Versova fishing village at dawn, the light is extraordinary then.",
   deepika: "Hi! Worli Sea Face at sunset is a great plan. See you Saturday!",
-  arjun:   "Hey! RCF Colony walk Saturday morning — 7 AM works for me.",
+  arjun:   "Hey! RCF Colony walk Saturday morning, 7 AM works for me.",
   fatima:  "Hi! Malad creek trail at 6 AM. Looking forward to our run!",
-  vivek:   "Hey! Flora Fountain books then Kala Ghoda Café — Sunday works.",
-  nisha:   "Hi! Vile Parle lanes on Sunday morning — the sweet shops are best early.",
+  vivek:   "Hey! Flora Fountain books then Kala Ghoda Café, Sunday works.",
+  nisha:   "Hi! Vile Parle lanes on Sunday morning, the sweet shops are best early.",
 };
 
 interface MessagesPanelProps {

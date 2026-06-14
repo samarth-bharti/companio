@@ -61,7 +61,7 @@ export function BelongingBand() {
                 That concert you almost skipped. The gym habit that never stuck
                 solo. The city you haven&apos;t explored because you didn&apos;t
                 have anyone to go with. Companio puts a warm, trusted person
-                beside you — for all of it.
+                beside you, for all of it.
               </p>
               <p className="text-lead text-ink-muted mb-10 max-w-md leading-relaxed">
                 No dating. No pressure. Just the simple, life-changing

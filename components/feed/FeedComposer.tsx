@@ -168,7 +168,7 @@ export function FeedComposer({ onPost }: FeedComposerProps) {
               </button>
 
               <p className="text-xs text-center" style={{ color: 'var(--color-ink-muted)' }}>
-                Strictly platonic — no contact info, no romance language.
+                Strictly platonic, no contact info, no romance language.
               </p>
             </motion.div>
           </>

@@ -50,7 +50,7 @@ export function WizardStepVerify({ data, onChange }: Props) {
         className="inline-block font-sans text-xs px-3 py-1 rounded-pill mb-8"
         style={{ background: 'rgba(46,107,255,0.08)', color: 'var(--color-azure-deep)' }}
       >
-        Demo mode — nothing is uploaded or stored
+        Demo mode, nothing is uploaded or stored
       </p>
 
       {/* Upload tiles */}
@@ -98,7 +98,7 @@ export function WizardStepVerify({ data, onChange }: Props) {
           required
         >
           I understand and agree that all meetups on Companio are strictly platonic. Zero
-          tolerance for anything else — this is non-negotiable and grounds for immediate removal.
+          tolerance for anything else, this is non-negotiable and grounds for immediate removal.
         </CheckRow>
       </div>
     </div>
@@ -156,7 +156,7 @@ function UploadTile({ id, inputRef, label, hint, accept, file, status, onChange 
         </span>
         {file && isOk ? (
           <span className="font-sans text-xs text-center" style={{ color: '#157A4A' }}>
-            Looks good — {file.name}
+            Looks good, {file.name}
           </span>
         ) : (
           <span className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>

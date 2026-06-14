@@ -157,7 +157,7 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
             style={{ color: 'var(--color-ink)' }}
           >
             {prefilledName
-              ? `Welcome back, ${prefilledName} — finishing your setup`
+              ? `Welcome back, ${prefilledName}, finishing your setup`
               : 'About you'}
           </h1>
           <p className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>

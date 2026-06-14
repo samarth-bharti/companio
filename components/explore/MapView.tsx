@@ -157,7 +157,7 @@ export function MapView({ companions, unlocked, onBook, onUnlockClick }: MapView
             color: 'var(--color-azure)',
           }}
         >
-          {companions[0]?.city ?? 'Mumbai'} — {companions.length} companions shown
+          {companions[0]?.city ?? 'Mumbai'}, {companions.length} companions shown
         </div>
 
         {/* Companion pins */}

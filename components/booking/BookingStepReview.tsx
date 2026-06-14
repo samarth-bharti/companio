@@ -144,7 +144,7 @@ export function BookingStepReview({ companion, state, onConfirm, onBack }: Props
               ₹499 for this meetup
             </p>
             <p className="font-sans text-sm mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
-              ₹499 · UPI (demo) — ₹ held in escrow until you meet.
+              ₹499 · UPI (demo), ₹ held in escrow until you meet.
             </p>
           </>
         )}

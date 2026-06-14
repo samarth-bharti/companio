@@ -182,3 +182,14 @@
   from { transform: skewX(-15deg) translateX(-200%); }
   to   { transform: skewX(-15deg) translateX(700%);  }
 }
+
+/* Hero cursor stickers: each sticker blur-fades in at the cursor (no scale pop),
+   floats up while drifting (--dx) and rotating (--rot), then blur-fades out.
+   Long fade-in (0->32%) and fade-out (60%->100%) phases.
+   Element is anchored at the cursor via left/top; translate(-50%,-50%) centers it. */
+@keyframes companio-sticker {
+  0%   { opacity: 0; filter: blur(16px); transform: translate(-50%, -50%) rotate(0deg); }
+  32%  { opacity: 1; filter: blur(0px);  transform: translate(-50%, -50%) rotate(calc(var(--rot) * 0.3)); }
+  60%  { opacity: 1; filter: blur(0px);  transform: translate(calc(-50% + var(--dx) * 0.6), calc(-50% - 70px)) rotate(calc(var(--rot) * 0.7)); }
+  100% { opacity: 0; filter: blur(16px); transform: translate(calc(-50% + var(--dx)), calc(-50% - 120px)) rotate(var(--rot)); }
+}

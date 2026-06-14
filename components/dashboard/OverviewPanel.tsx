@@ -92,7 +92,7 @@ function NoMeetupState() {
         Ready when you are
       </p>
       <p className="font-sans text-sm mb-4" style={{ color: 'var(--color-ink-muted)' }}>
-        Your 2 included meetings are waiting — no expiry, no rush.
+        Your 2 included meetings are waiting, no expiry, no rush.
       </p>
       <a
         href="/explore"

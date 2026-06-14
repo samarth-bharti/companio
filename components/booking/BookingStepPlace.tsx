@@ -49,7 +49,7 @@ export function BookingStepPlace({ area, selected, onSelect }: Props) {
         Where shall you meet?
       </legend>
       <p className="font-sans text-sm mb-6" style={{ color: 'var(--color-ink-muted)' }}>
-        Public places only — for everyone&apos;s comfort.
+        Public places only, for everyone&apos;s comfort.
       </p>
 
       <span

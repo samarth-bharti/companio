@@ -101,7 +101,7 @@ export function WizardStepPreview({ data, onSubmit }: Props) {
           Submit application
         </Button>
         <p className="font-sans text-xs mt-3" style={{ color: 'var(--color-ink-muted)' }}>
-          Our team reviews every application. Usually 2–3 days.
+          Our team reviews every application. Usually 2-3 days.
         </p>
       </div>
     </div>

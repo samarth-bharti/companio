@@ -101,7 +101,7 @@ export function NavUser() {
       <div className="relative" ref={bellRef}>
         <button
           type="button"
-          aria-label={unread ? `Notifications — ${unread} unread` : 'Notifications'}
+          aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
           aria-expanded={openBell}
           onClick={() => {
             setOpenBell((v) => !v);
@@ -147,7 +147,7 @@ export function NavUser() {
             </div>
             {notifs.length === 0 ? (
               <p className="px-3 py-6 text-center font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
-                Nothing yet — book your first meetup and updates land here.
+                Nothing yet, book your first meetup and updates land here.
               </p>
             ) : (
               <ul className="max-h-80 overflow-y-auto">
@@ -181,7 +181,7 @@ export function NavUser() {
       <div className="relative" ref={menuRef}>
         <button
           type="button"
-          aria-label={`Account menu — ${user.firstName}`}
+          aria-label={`Account menu, ${user.firstName}`}
           aria-expanded={openMenu}
           onClick={() => {
             setOpenMenu((v) => !v);

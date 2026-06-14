@@ -118,7 +118,7 @@ export function SafetySection() {
             </Reveal>
             <Reveal delay={0.16}>
               <p className="text-lead mb-10" style={{ color: "rgba(244,242,255,0.6)" }}>
-                We built every layer of Companio to ensure you can meet confidently — whether
+                We built every layer of Companio to ensure you can meet confidently, whether
                 it's your first session or your fiftieth. Verified identities, secure
                 payments, and real-time safety tools are always on.
               </p>
@@ -133,7 +133,7 @@ export function SafetySection() {
                 }}
               >
                 <ShieldCheck size={16} strokeWidth={2} aria-hidden="true" />
-                Strictly platonic — legally guaranteed
+                Strictly platonic, legally guaranteed
               </div>
             </Reveal>
           </RevealGroup>

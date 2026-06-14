@@ -13,9 +13,9 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const companion = getCompanion(id);
-  if (!companion) return { title: 'Not found — Companio' };
+  if (!companion) return { title: 'Not found, Companio' };
   return {
-    title: `${companion.name} — Companio`,
+    title: `${companion.name}, Companio`,
     description: companion.bio,
     openGraph: { images: [companion.photo] },
   };

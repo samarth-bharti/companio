@@ -4,9 +4,9 @@ import { Footer } from '@/components/layout/Footer';
 import { FeedClient } from '@/components/feed/FeedClient';
 
 export const metadata: Metadata = {
-  title: 'Feed — Companio',
+  title: 'Feed, Companio',
   description:
-    'See what the Companio community is up to — activity proposals, group events, and verified meetup moments. Strictly platonic.',
+    'See what the Companio community is up to, activity proposals, group events, and verified meetup moments. Strictly platonic.',
 };
 
 export default function FeedPage() {

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
 
-export const metadata: Metadata = { title: 'Refund policy — Companio' };
+export const metadata: Metadata = { title: 'Refund policy, Companio' };
 
 export default function RefundsPage() {
   return (
@@ -25,8 +25,8 @@ export default function RefundsPage() {
         {
           heading: 'Cancelled meetups',
           body: [
-            'If a companion cancels, your credit or payment returns automatically — usually within minutes, at most 48 hours to your original payment method.',
-            'If you cancel more than 24 hours before a meetup, the credit returns to your wallet instantly. Inside 24 hours, the meetup counts as used — companions reserve that time for you.',
+            'If a companion cancels, your credit or payment returns automatically, usually within minutes, at most 48 hours to your original payment method.',
+            'If you cancel more than 24 hours before a meetup, the credit returns to your wallet instantly. Inside 24 hours, the meetup counts as used, companions reserve that time for you.',
           ],
         },
         {

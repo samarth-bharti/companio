@@ -168,7 +168,7 @@ export function BentoSection() {
           </Reveal>
           <Reveal delay={0.16}>
             <p className="text-lead max-w-xl" style={{ color: 'var(--color-ink-muted)' }}>
-              Six categories, one verified companion. Pick the activity — we handle the rest.
+              Six categories, one verified companion. Pick the activity, we handle the rest.
             </p>
           </Reveal>
         </RevealGroup>

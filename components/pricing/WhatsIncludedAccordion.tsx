@@ -29,7 +29,7 @@ const ITEMS = [
   {
     Icon: Undo2,
     title: '7-day refund window',
-    body: "Didn't find anyone you'd like to meet? Full refund within 7 days — no questions.",
+    body: "Didn't find anyone you'd like to meet? Full refund within 7 days, no questions.",
   },
 ] as const;
 

@@ -156,7 +156,7 @@ export function StatsSection() {
               </span>
               840 meetups this week
             </span>{" "}
-            — and counting.
+, and counting.
           </p>
         </Reveal>
 

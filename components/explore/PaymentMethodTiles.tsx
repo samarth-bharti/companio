@@ -106,7 +106,7 @@ export function PaymentMethodTiles({
                   />
                 ))}
                 <p className="text-xs text-[var(--color-ink-muted)]">
-                  Demo — card flow mocked
+                  Demo, card flow mocked
                 </p>
               </div>
             </motion.div>

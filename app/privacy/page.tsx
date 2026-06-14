@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
 
-export const metadata: Metadata = { title: 'Privacy policy — Companio' };
+export const metadata: Metadata = { title: 'Privacy policy, Companio' };
 
 export default function PrivacyPage() {
   return (
@@ -13,13 +13,13 @@ export default function PrivacyPage() {
         {
           heading: 'What we collect',
           body: [
-            'Account basics (name, email, phone), verification data (Aadhaar match result — not the document itself — and a selfie match), and booking history. Companions additionally provide background-check consent.',
+            'Account basics (name, email, phone), verification data (Aadhaar match result, not the document itself, and a selfie match), and booking history. Companions additionally provide background-check consent.',
           ],
         },
         {
           heading: 'What we never do',
           body: [
-            'We never sell or rent your personal data. We never show your phone number or email to another user — coordination happens in-app, and only a first name is shared when a meetup is confirmed.',
+            'We never sell or rent your personal data. We never show your phone number or email to another user, coordination happens in-app, and only a first name is shared when a meetup is confirmed.',
           ],
         },
         {

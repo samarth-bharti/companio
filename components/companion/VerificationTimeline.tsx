@@ -136,7 +136,7 @@ export function VerificationTimeline({ activeStep }: Props) {
       })}
 
       <p className="pl-[72px] mt-2 font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-        Usually 2–3 days. You&apos;ll get a notification when each step clears.
+        Usually 2-3 days. You&apos;ll get a notification when each step clears.
       </p>
     </div>
   );

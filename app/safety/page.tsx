@@ -4,7 +4,7 @@ import { SafetyJourney } from "@/components/safety/SafetyJourney";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Safety — Companio",
+  title: "Safety, Companio",
   description: "Learn how Companio keeps every member safe: Aadhaar KYC, escrow payments, SOS tools, and strict platonic enforcement.",
 };
 

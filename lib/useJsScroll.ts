@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useScroll } from 'framer-motion';
 
 type UseScrollOptions = NonNullable<Parameters<typeof useScroll>[0]>;
@@ -18,7 +19,17 @@ type UseScrollOptions = NonNullable<Parameters<typeof useScroll>[0]>;
  * classic per-frame JS pipeline, which tracks correctly (including with Lenis).
  */
 export function useJsScroll(options?: UseScrollOptions) {
-  const values = useScroll(options);
+  // Withhold the `target` ref until after mount. framer-motion's useScroll
+  // measures the target during the initial (pre-hydration) render, when the
+  // ref'd element isn't attached yet — that triggers the recoverable
+  // "Target ref is defined but not hydrated" warning. Once mounted, the
+  // element has hydrated, so attaching the target is safe.
+  // (Targetless useScroll tracks the viewport, which is harmless for the brief
+  // pre-mount window since journey sections start at scroll progress 0.)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const values = useScroll(mounted ? options : undefined);
   // `accelerate` is internal — not in the public MotionValue type.
   (values.scrollXProgress as unknown as { accelerate?: unknown }).accelerate = undefined;
   (values.scrollYProgress as unknown as { accelerate?: unknown }).accelerate = undefined;

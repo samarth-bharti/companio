@@ -10,7 +10,7 @@ import { CompanionDashPayout } from '@/components/companion/CompanionDashPayout'
 import { CompanionDashStats } from '@/components/companion/CompanionDashStats';
 
 export const metadata: Metadata = {
-  title: 'Companion Dashboard — Companio',
+  title: 'Companion Dashboard, Companio',
   description: 'Manage your bookings, availability, and earnings as a Companio companion.',
 };
 
@@ -26,7 +26,7 @@ export default function CompanionDashboardPage() {
           role="note"
           aria-label="Demo preview"
         >
-          Demo preview — this is what companions see. No real data is stored.
+          Demo preview, this is what companions see. No real data is stored.
         </div>
 
         <div className="max-w-5xl mx-auto px-6 py-10">

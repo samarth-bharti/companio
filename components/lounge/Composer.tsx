@@ -103,7 +103,7 @@ export function Composer({ onSend, onVoice, showIcebreakers, placeholder = 'Writ
         >
           <Shield size={12} aria-hidden="true" style={{ color: 'var(--color-gold)', flexShrink: 0, marginTop: 2 }} />
           <span className="text-xs font-sans leading-snug" style={{ color: 'var(--color-ink-muted)' }}>
-            Keep it on Companio — contact details are hidden for your safety.
+            Keep it on Companio, contact details are hidden for your safety.
           </span>
         </div>
       )}

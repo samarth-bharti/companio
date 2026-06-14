@@ -4,7 +4,7 @@ import { Footer } from '@/components/layout/Footer';
 import { HowItWorksJourney } from '@/components/howitworks/HowItWorksJourney';
 
 export const metadata: Metadata = {
-  title: 'How It Works — Companio',
+  title: 'How It Works, Companio',
   description:
     'Learn how Companio works: browse verified companions, book a session, meet safely, and leave an honest review.',
 };

@@ -47,7 +47,7 @@ export function PhotoPost({ post, liked, onDoubleTapLike }: Props) {
         style={{ aspectRatio: '4/3', cursor: 'pointer' }}
         onClick={handleInteract}
         role="img"
-        aria-label={`Meetup photo — double-tap to like. ${post.caption}`}
+        aria-label={`Meetup photo, double-tap to like. ${post.caption}`}
       >
         <Image
           src={post.images[0]}

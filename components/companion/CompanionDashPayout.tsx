@@ -72,7 +72,7 @@ export function CompanionDashPayout() {
         style={{ background: 'rgba(31,174,107,0.06)', border: '1px solid rgba(31,174,107,0.15)' }}>
         <Calendar size={15} style={{ color: '#157A4A', flexShrink: 0 }} aria-hidden="true" />
         <p className="font-sans text-xs" style={{ color: '#157A4A' }}>
-          Payouts every Monday — direct to your bank after each completed meetup.
+          Payouts every Monday, direct to your bank after each completed meetup.
         </p>
       </div>
 

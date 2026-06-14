@@ -81,7 +81,7 @@ export function PackCard({ pack, selected, onSelect, recommended = false }: Pack
         checked={selected}
         onChange={onSelect}
         className="sr-only"
-        aria-label={`${pack.name} — ₹${pack.price.toLocaleString('en-IN')}${pack.perMeetup ? `, ${pack.perMeetup}` : ''}`}
+        aria-label={`${pack.name}, ₹${pack.price.toLocaleString('en-IN')}${pack.perMeetup ? `, ${pack.perMeetup}` : ''}`}
       />
 
       {/* Ghost numeral — editorial tier rhythm */}

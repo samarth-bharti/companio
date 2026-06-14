@@ -168,7 +168,7 @@ export function LoginForm({ next }: { next: string }) {
             Sign in to Companio
           </h1>
           <p className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
-            Your bookings, companions, and meetups — all here.
+            Your bookings, companions, and meetups, all here.
           </p>
         </div>
       </Reveal>
@@ -305,7 +305,7 @@ export function LoginForm({ next }: { next: string }) {
 
       {/* 2FA hint row */}
       <p className="mt-4 text-center font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-        Companions sign in with 2FA — demo skips this step.
+        Companions sign in with 2FA, demo skips this step.
       </p>
 
       <p className="mt-3 text-center font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>

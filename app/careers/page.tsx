@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
 
-export const metadata: Metadata = { title: 'Careers — Companio' };
+export const metadata: Metadata = { title: 'Careers, Companio' };
 
 export default function CareersPage() {
   return (
@@ -20,7 +20,7 @@ export default function CareersPage() {
           heading: 'Open roles',
           body: [
             'We are not actively hiring for specific roles right now, but we always read thoughtful introductions from trust & safety, engineering, and city-operations people.',
-            'Write to careers@companio.example with what you would want to build here. (Demo site — this address is illustrative.)',
+            'Write to careers@companio.example with what you would want to build here. (Demo site, this address is illustrative.)',
           ],
         },
       ]}

@@ -5,7 +5,7 @@ import { Footer } from '@/components/layout/Footer';
 import { LoginForm } from '@/components/auth/LoginForm';
 
 export const metadata: Metadata = {
-  title: 'Sign In — Companio',
+  title: 'Sign In, Companio',
   description:
     'Sign in to your Companio account to browse verified companions and manage your bookings.',
 };

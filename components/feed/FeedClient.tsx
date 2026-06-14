@@ -73,7 +73,7 @@ export function FeedClient() {
         <FilterChips value={filter} onChange={setFilter} />
 
         <p className="text-xs text-center" style={{ color: 'var(--color-ink-muted)' }}>
-          Strictly platonic community — meet for activities, not romance
+          Strictly platonic community, meet for activities, not romance
         </p>
 
         {/* Card list with enter/exit animation */}
@@ -104,7 +104,7 @@ export function FeedClient() {
             className="py-16 text-center text-sm"
             style={{ color: 'var(--color-ink-muted)' }}
           >
-            No posts in this category yet — be the first!
+            No posts in this category yet, be the first!
           </div>
         )}
       </div>
