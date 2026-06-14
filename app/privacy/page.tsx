@@ -13,7 +13,7 @@ export default function PrivacyPage() {
         {
           heading: 'What we collect',
           body: [
-            'Account basics (name, email, phone), verification data (Aadhaar match result, not the document itself, and a selfie match), and booking history. Companions additionally provide background-check consent.',
+            'Account basics (name, email, phone), verification data (ID match result, not the document itself, and a selfie match), and booking history. Companions additionally provide background-check consent.',
           ],
         },
         {

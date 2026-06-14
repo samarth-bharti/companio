@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import { motion, useTransform, useReducedMotion } from 'framer-motion';
 import { useJsScroll } from '@/lib/useJsScroll';
 import { HeroCopyState0, HeroCopyState1, HeroCopyState2 } from './phone/HeroCopy';
-import { CursorStickers } from './CursorStickers';
+import { SparkleCluster } from './SparkleCluster';
 import { useIsMobile } from '@/lib/useIsMobile';
 
 // Light readability veil over the video so the dark hero copy stays legible while
@@ -30,6 +30,7 @@ function VideoBackground() {
         aria-hidden="true"
       />
       <div aria-hidden="true" className="absolute inset-0" style={{ zIndex: 10, background: SCRIM }} />
+      <SparkleCluster />
     </>
   );
 }
@@ -119,7 +120,6 @@ export function PhoneJourneyHero() {
     >
       <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
         <VideoBackground />
-        <CursorStickers />
 
         {/* Single centered column. State 0 sizes it in normal flow; states 1–2
             overlay it, centered. z-30 keeps copy above scrim/stickers. */}

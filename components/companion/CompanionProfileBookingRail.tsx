@@ -93,7 +93,7 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
             : '₹499 per meetup'}
         </p>
         <p className="font-sans text-sm mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
-          {hasCredits ? 'then ₹499/meetup · no subscription' : 'Aadhaar-verified · ₹ in escrow'}
+          {hasCredits ? 'then ₹499/meetup · no subscription' : 'ID-verified · ₹ in escrow'}
         </p>
       </div>
 

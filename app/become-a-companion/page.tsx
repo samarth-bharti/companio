@@ -30,7 +30,7 @@ const BENEFITS = [
   {
     icon: BadgeCheck,
     title: "Verified & respected",
-    body: "Aadhaar verification signals trust to members. Your profile badge and reviews build a reputation that travels.",
+    body: "ID verification signals trust to members. Your profile badge and reviews build a reputation that travels.",
     color: "#1FAE6B",
     bg: "#E6F5EE",
   },

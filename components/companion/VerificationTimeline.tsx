@@ -15,7 +15,7 @@ interface Node {
 }
 
 const NODES: Node[] = [
-  { icon: CreditCard, label: 'Aadhaar', sublabel: 'Government ID linked', angle: -3 },
+  { icon: CreditCard, label: 'ID', sublabel: 'Government ID linked', angle: -3 },
   { icon: Camera, label: 'Selfie', sublabel: 'Live photo check', angle: 2 },
   { icon: ShieldCheck, label: 'Background', sublabel: 'Safety screening', angle: -2 },
   { icon: CheckCircle2, label: 'Approved', sublabel: 'Profile goes live', angle: 3 },
@@ -24,7 +24,7 @@ const NODES: Node[] = [
 interface Props {
   /**
    * 0-indexed active step. Omit for the informational view (all nodes equal).
-   * 0 = Aadhaar in-progress; 3 = Approved.
+   * 0 = ID in-progress; 3 = Approved.
    */
   activeStep?: number;
 }

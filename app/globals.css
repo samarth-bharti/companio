@@ -56,7 +56,9 @@
 :root {
   /* Gradients */
   --grad-aurora: linear-gradient(120deg, #2E6BFF 0%, #7A4FE0 55%, #FFB23E 100%);
-  --grad-cta: linear-gradient(135deg, #2E6BFF 0%, #1B4FD6 100%);
+  /* Minimal CTA — solid-feel ink, deliberately distinct from the colourful logo. */
+  --grad-cta: linear-gradient(135deg, #1B2236 0%, #11162A 100%);
+  --grad-cta-hover: linear-gradient(135deg, #2A3350 0%, #1B2236 100%);
   --grad-hero-bg: linear-gradient(140deg, #FBFCFF 0%, #EBF1FF 45%, #F0EEFF 80%, #FFF8EC 100%);
   --grad-dark-panel: linear-gradient(140deg, #14122A 0%, #1E1840 60%, #0F1120 100%);
   --grad-violet-azure: linear-gradient(135deg, #7A4FE0 0%, #2E6BFF 100%);
@@ -64,7 +66,7 @@
   --grad-foil: linear-gradient(105deg, #1B4FD6 0%, #2E6BFF 45%, #9BBEFF 50%, #2E6BFF 55%, #1B4FD6 100%);
 
   /* Glows */
-  --glow-azure: 0 0 0 1px rgba(46,107,255,0.2), 0 20px 60px -18px rgba(46,107,255,0.5);
+  --glow-azure: 0 0 0 1px rgba(20,26,46,0.06), 0 14px 38px -16px rgba(20,26,46,0.45);
   --glow-violet: 0 0 0 1px rgba(122,79,224,0.2), 0 20px 60px -18px rgba(122,79,224,0.45);
   --glow-gold: 0 0 0 1px rgba(255,178,62,0.25), 0 12px 36px -12px rgba(255,178,62,0.45);
   --glow-seal: 0 24px 70px -28px rgba(122,79,224,0.50);
@@ -187,6 +189,12 @@
    floats up while drifting (--dx) and rotating (--rot), then blur-fades out.
    Long fade-in (0->32%) and fade-out (60%->100%) phases.
    Element is anchored at the cursor via left/top; translate(-50%,-50%) centers it. */
+/* Hero sparkle cluster: gentle twinkle to camouflage the video watermark. */
+@keyframes companio-twinkle {
+  0%, 100% { opacity: 0.55; transform: scale(0.82) rotate(0deg); }
+  50%      { opacity: 1;    transform: scale(1.12) rotate(8deg); }
+}
+
 @keyframes companio-sticker {
   0%   { opacity: 0; filter: blur(16px); transform: translate(-50%, -50%) rotate(0deg); }
   32%  { opacity: 1; filter: blur(0px);  transform: translate(-50%, -50%) rotate(calc(var(--rot) * 0.3)); }

@@ -69,7 +69,7 @@ export function WizardStepVerify({ data, onChange }: Props) {
           id="wiz-id"
           inputRef={idRef}
           label="Government ID"
-          hint="Aadhaar, PAN, or passport"
+          hint="ID, PAN, or passport"
           accept="image/*,.pdf"
           file={data.idFile}
           status={idStatus}

@@ -96,7 +96,7 @@ export function BookingConfirmed({ companion, booking }: Props) {
                   {companion.name}
                 </p>
                 <p className="font-sans text-xs" style={{ color: 'var(--color-azure-deep)' }}>
-                  Aadhaar-verified · {companion.area}
+                  ID-verified · {companion.area}
                 </p>
               </div>
 

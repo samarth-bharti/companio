@@ -14,7 +14,7 @@ export default function AboutPage() {
           heading: 'The idea',
           body: [
             'Loneliness is not a niche problem. People move cities for work, arrive knowing nobody, and slowly stop doing the things they love because doing them alone feels worse than not doing them at all.',
-            'Companio connects you with Aadhaar-verified companions for strictly platonic activities, so you never have to skip the gig, the walk, or the museum just because you would have gone alone.',
+            'Companio connects you with ID-verified companions for strictly platonic activities, so you never have to skip the gig, the walk, or the museum just because you would have gone alone.',
           ],
         },
         {

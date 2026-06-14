@@ -11,6 +11,7 @@ import {
   type AppNotification,
 } from '@/lib/appState';
 import { TopUpMenu } from '@/components/layout/TopUpMenu';
+import { RollLink } from '@/components/motion/RollLink';
 
 function timeAgo(ts: number): string {
   const mins = Math.max(1, Math.round((Date.now() - ts) / 60000));
@@ -71,22 +72,14 @@ export function NavUser() {
 
   if (!user) {
     return (
-      <>
-        <Link
-          href="/login"
-          className="inline-flex items-center justify-center h-9 px-4 rounded-pill font-sans font-semibold text-sm transition-colors hover:bg-azure-tint focus-visible:outline-azure"
-          style={{ color: 'var(--color-ink-muted)' }}
-        >
-          Sign in
-        </Link>
-        <Link
-          href="/explore"
-          className="inline-flex items-center justify-center h-9 px-5 rounded-pill font-sans font-bold text-sm text-white transition-all focus-visible:outline-white"
-          style={{ background: 'var(--grad-cta)', boxShadow: '0 2px 12px rgba(46,107,255,0.35)' }}
-        >
-          Find a companion
-        </Link>
-      </>
+      <RollLink
+        href="/login"
+        className="h-9 px-5 rounded-xl font-sans font-bold text-sm text-white focus-visible:outline-white"
+        style={{ background: 'var(--grad-cta)', boxShadow: '0 2px 12px rgba(20,26,46,0.25)' }}
+        hoverBackground="var(--grad-cta-hover)"
+      >
+        Sign in
+      </RollLink>
     );
   }
 

@@ -1,12 +1,36 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { Marquee } from "@/components/motion/Marquee";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 import { LottiePlayer } from "@/components/motion/LottiePlayer";
 import { MomentsGrid } from "@/components/home/MomentsGrid";
 import { ClipReveal } from "@/components/journey/ClipReveal";
+
+/** Vertical stagger so the scrolling row reads as a gentle wave (some cards raised). */
+const OFFSETS = [-26, 26, -26, 26];
+
+function PhotoCard({ src, alt, label, offset }: { src: string; alt: string; label: string; offset: number }) {
+  return (
+    <div
+      className="relative shrink-0 rounded-2xl overflow-hidden"
+      style={{ width: 230, height: 290, transform: `translateY(${offset}px)` }}
+    >
+      <Image src={src} alt={alt} fill sizes="230px" className="object-cover" loading="lazy" />
+      <div
+        className="absolute inset-0"
+        style={{ background: "linear-gradient(to top, rgba(20,18,42,0.65) 0%, transparent 55%)" }}
+        aria-hidden="true"
+      />
+      <span
+        className="absolute bottom-3 left-3 font-sans font-semibold text-sm px-3 py-1 rounded-pill"
+        style={{ background: "rgba(20,18,42,0.72)", color: "#F4F2FF" }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
 
 /* Unsplash placeholder photos — platonic activity moments only */
 const PHOTOS = [
@@ -102,35 +126,6 @@ const PHOTOS = [
   },
 ] as const;
 
-function PhotoCard({ src, alt, label }: { src: string; alt: string; label: string }) {
-  return (
-    <div
-      className="relative shrink-0 rounded-2xl overflow-hidden"
-      style={{ width: 220, height: 280 }}
-    >
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        sizes="220px"
-        className="object-cover"
-        loading="lazy"
-      />
-      <div
-        className="absolute inset-0"
-        style={{ background: "linear-gradient(to top, rgba(20,18,42,0.65) 0%, transparent 55%)" }}
-        aria-hidden="true"
-      />
-      <span
-        className="absolute bottom-3 left-3 font-sans font-semibold text-sm px-3 py-1 rounded-pill"
-        style={{ background: "rgba(20,18,42,0.72)", color: "#F4F2FF" }}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
-
 export function PeopleSection() {
   return (
     <section
@@ -181,18 +176,11 @@ export function PeopleSection() {
       {/* Moments bento grid — 5 Lottie blocks, varied sizes */}
       <MomentsGrid />
 
-      <motion.div
-        initial={{ opacity: 0, y: 32 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.15 }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-      >
-        <Marquee speed={48} className="py-4">
-          {PHOTOS.map((photo) => (
-            <PhotoCard key={photo.src} {...photo} />
-          ))}
-        </Marquee>
-      </motion.div>
+      <Marquee speed={56} className="py-12">
+        {PHOTOS.map((photo, i) => (
+          <PhotoCard key={photo.src} {...photo} offset={OFFSETS[i % OFFSETS.length]} />
+        ))}
+      </Marquee>
 
     </section>
   );

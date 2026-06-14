@@ -19,7 +19,7 @@ export default function BlogPage() {
         {
           heading: 'How we verify every companion',
           body: [
-            'A behind-the-scenes look at Aadhaar matching, selfie checks, and background screening, and why every step matters before a profile goes live.',
+            'A behind-the-scenes look at ID matching, selfie checks, and background screening, and why every step matters before a profile goes live.',
           ],
         },
         {

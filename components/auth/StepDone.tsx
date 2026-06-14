@@ -17,7 +17,7 @@ interface Props {
 const PERKS = [
   'Your 2 included meetups are waiting, yours anytime, no expiry.',
   'Browse all verified companions in your city.',
-  'Every booking is Aadhaar-verified and safety-checked.',
+  'Every booking is ID-verified and safety-checked.',
 ] as const;
 
 export function StepDone({ form, next }: Props) {

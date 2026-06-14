@@ -63,7 +63,7 @@ const REVIEWS: Review[] = [
     name: "Suresh Iyer",
     city: "Chennai",
     rating: 5,
-    quote: "The background-check and Aadhaar verification gave my family peace of mind. For me, it was just an excellent afternoon.",
+    quote: "The background-check and ID verification gave my family peace of mind. For me, it was just an excellent afternoon.",
     avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=64&h=64&q=80",
   },
   {

@@ -319,7 +319,7 @@ export function LoginForm({ next }: { next: string }) {
       <div className="flex items-center justify-center gap-1.5 mt-5 font-sans text-xs"
            style={{ color: '#157A4A' }}>
         <ShieldCheck size={13} aria-hidden="true" />
-        Aadhaar-verified · Strictly platonic
+        ID-verified · Strictly platonic
       </div>
 
       {/* Sign-in success celebration — redirects on onDone or safety timeout. */}

@@ -17,7 +17,7 @@ export interface Credential
 }
 
 const DEFAULT_CREDENTIALS: Credential[] = [
-  { icon: ShieldCheck, label: "Aadhaar-matched", tone: "trust", angle: -2 },
+  { icon: ShieldCheck, label: "ID-matched", tone: "trust", angle: -2 },
   { icon: Camera, label: "Selfie-matched", tone: "trust", angle: 1 },
   { icon: ClipboardCheck, label: "Background-checked", tone: "trust", angle: -3 },
   { icon: Wallet, label: "₹-protected payout", tone: "trust", angle: 2 },

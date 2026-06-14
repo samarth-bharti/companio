@@ -113,7 +113,7 @@ export function StepRole({ role, onSelect }: StepRoleProps) {
       </motion.div>
 
       <p className="mt-6 text-center font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-        Strictly platonic · Aadhaar-verified for safety
+        Strictly platonic · ID-verified for safety
       </p>
     </div>
   );

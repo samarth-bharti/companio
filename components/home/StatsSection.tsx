@@ -23,7 +23,7 @@ const REVIEWS = [
   {
     name: "Meena T.",
     city: "Delhi",
-    text: "My companion Priya took me through the old city lanes I'd never have found alone. The Aadhaar verification gave my family peace of mind too.",
+    text: "My companion Priya took me through the old city lanes I'd never have found alone. The ID verification gave my family peace of mind too.",
     stars: 5,
   },
 ] as const;

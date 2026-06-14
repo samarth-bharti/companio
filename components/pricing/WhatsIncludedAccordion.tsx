@@ -13,7 +13,7 @@ const ITEMS = [
   },
   {
     Icon: BadgeCheck,
-    title: 'Aadhaar-verified companions',
+    title: 'ID-verified companions',
     body: 'Every companion is government ID-verified and background-checked before they can list.',
   },
   {

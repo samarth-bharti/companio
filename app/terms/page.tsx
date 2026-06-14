@@ -13,14 +13,14 @@ export default function TermsPage() {
         {
           heading: '1. What Companio is',
           body: [
-            'Companio connects members with Aadhaar-verified companions for shared activities, city walks, gym sessions, café conversations, live events, elder company, and everyday help.',
+            'Companio connects members with ID-verified companions for shared activities, city walks, gym sessions, café conversations, live events, elder company, and everyday help.',
             'Companio is not a dating, romance, or intimacy service of any kind. Any solicitation of romantic or sexual services results in an immediate permanent ban and, where applicable, a report to authorities.',
           ],
         },
         {
           heading: '2. Eligibility',
           body: [
-            'You must be 18 or older to use Companio. Companions additionally complete identity verification (Aadhaar match, selfie match) and a background check before their profile goes live.',
+            'You must be 18 or older to use Companio. Companions additionally complete identity verification (ID match, selfie match) and a background check before their profile goes live.',
           ],
         },
         {

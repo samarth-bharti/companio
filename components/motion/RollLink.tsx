@@ -47,15 +47,17 @@ export function RollLink({ href, children, className, style, hoverBackground }: 
             drive the separate `translate` property, which transition-transform
             does NOT animate in v4. */}
         <span
-          className="block [transform:translateY(0%)] group-hover:[transform:translateY(-100%)]"
+          className="block [transform:translateY(0%)] group-hover:[transform:translateY(-115%)]"
           style={{ transition: `transform ${DUR} ${EASE}` }}
         >
           {children}
         </span>
-        {/* Duplicate: starts one line below, rolls up into place on hover */}
+        {/* Duplicate: starts one line below, rolls up into place on hover.
+            Over-translate (115%) so no glyph (e.g. an 'i' dot) ever peeks past
+            the clip edge at the settled states. */}
         <span
           aria-hidden="true"
-          className="absolute inset-0 block leading-[1.15] [transform:translateY(100%)] group-hover:[transform:translateY(0%)]"
+          className="absolute inset-0 block leading-[1.15] [transform:translateY(115%)] group-hover:[transform:translateY(0%)]"
           style={{ transition: `transform ${DUR} ${EASE}` }}
         >
           {children}

@@ -40,7 +40,7 @@ function FloatingChip({
 /**
  * Wraps the phone column: adds ambient glow, pointer-parallax, and 3 scroll-state chips.
  * Chip opacity bands:
- *   "Aadhaar verified" — visible states 0–1 (0→0.04→0.62→0.72 → 0,1,1,0)
+ *   "ID verified" — visible states 0–1 (0→0.04→0.62→0.72 → 0,1,1,0)
  *   "★ 4.9 rated"      — peaks in state 1  (0.30→0.40→0.62→0.72 → 0,1,1,0)
  *   "Booked ✓"         — fades in state 2  (0.66→0.76→1 → 0,1,1)
  */
@@ -120,11 +120,11 @@ export function PhoneChipsWrapper({
         {children}
       </FloatingChip>
 
-      {/* Aadhaar verified — states 0–1 */}
+      {/* ID verified — states 0–1 */}
       <FloatingChip depth={0.06} springX={springX} springY={springY} className="absolute -top-4 -right-4" style={{ opacity: aadhaarOp }}>
         <div className="flex items-center gap-2 px-3 py-2 rounded-2xl font-sans text-xs font-bold text-white shadow-lg" style={{ background: 'var(--grad-cta)', boxShadow: 'var(--glow-azure)' }}>
           <BadgeCheck size={13} aria-hidden="true" />
-          Aadhaar verified
+          ID verified
         </div>
       </FloatingChip>
 

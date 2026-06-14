@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Fraunces, Plus_Jakarta_Sans, Lora } from "next/font/google";
 import { LenisProvider } from "@/components/motion/LenisProvider";
 import { MotionPreferenceProvider } from "@/lib/motionPreference";
-import { MotionToggle } from "@/components/motion/MotionToggle";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -42,7 +41,6 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-bg text-ink font-sans">
         <MotionPreferenceProvider>
           <LenisProvider>{children}</LenisProvider>
-          <MotionToggle />
         </MotionPreferenceProvider>
       </body>
     </html>

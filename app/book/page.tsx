@@ -4,7 +4,7 @@ import { BookingWizard } from '@/components/booking/BookingWizard';
 
 export const metadata: Metadata = {
   title: 'Book a meetup, Companio',
-  description: 'Choose your activity, date, time and place. Aadhaar-verified companions. ₹ held in escrow.',
+  description: 'Choose your activity, date, time and place. ID-verified companions. ₹ held in escrow.',
 };
 
 function BookingLoading() {

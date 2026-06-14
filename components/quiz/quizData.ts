@@ -176,7 +176,7 @@ export function getEmpathyEcho(key: string, answers: QuizAnswers): string {
     case 'comfort':
       return answers.comfort.sameGender
         ? 'Noted, same-gender companions only. Always your choice.'
-        : 'Noted. Everyone on Companio is Aadhaar-verified and meets in public first.';
+        : 'Noted. Everyone on Companio is ID-verified and meets in public first.';
     case 'name':
       return `Good to meet you, ${answers.name}. Let's find your people.`;
     default:

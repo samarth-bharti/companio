@@ -13,7 +13,7 @@ export default function PressPage() {
         {
           heading: 'In one line',
           body: [
-            'Companio is a safe, Aadhaar-verified marketplace for strictly platonic companionship, city walks, gym sessions, café conversations, live events, and elder company across India.',
+            'Companio is a safe, ID-verified marketplace for strictly platonic companionship, city walks, gym sessions, café conversations, live events, and elder company across India.',
           ],
         },
         {

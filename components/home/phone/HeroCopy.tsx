@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
 import { MagneticButton } from '@/components/motion/MagneticButton';
 import { RollLink } from '@/components/motion/RollLink';
+import { SpotlightText } from '@/components/home/SpotlightText';
 
-const TRUST_ITEMS = ['Aadhaar-verified', 'Background-checked', '₹ held in escrow'] as const;
+const TRUST_ITEMS = ['ID-verified', 'Background-checked', '₹ held in escrow'] as const;
 
 const HEADLINE_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-display)',
@@ -27,22 +28,12 @@ const H2_STYLE: React.CSSProperties = {
 export function HeroCopyState0() {
   return (
     <div className="text-center">
-      <p className="label-eyebrow mb-5" style={{ color: 'var(--color-azure)' }}>
+      <p className="label-eyebrow mb-5" style={{ color: 'var(--color-violet)' }}>
         Trusted · Verified · Always Platonic
       </p>
       <h1 id="hero-heading" style={HEADLINE_STYLE} className="mb-7">
-        <span className="block" style={{ color: 'var(--color-ink)' }}>Real company.</span>
-        <span
-          className="block"
-          style={{
-            background: 'var(--grad-aurora)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}
-        >
-          Any time.
-        </span>
+        <span className="block" style={{ color: 'var(--color-ink)' }}>Never go</span>
+        <SpotlightText className="block">alone.</SpotlightText>
       </h1>
       <p className="text-lead mb-10 max-w-xl mx-auto" style={{ color: 'var(--color-ink-muted)' }}>
         Verified companions for city walks, gym sessions, café chats, live events, and more, strictly platonic.
@@ -51,16 +42,16 @@ export function HeroCopyState0() {
         <MagneticButton>
           <RollLink
             href="/explore"
-            className="h-13 px-8 rounded-pill font-sans font-bold text-base text-white focus-visible:outline-white"
-            style={{ background: 'var(--grad-cta)', boxShadow: 'var(--glow-azure)' }}
-            hoverBackground="var(--grad-aurora)"
+            className="h-13 px-8 rounded-xl font-sans font-bold text-base text-white focus-visible:outline-white"
+            style={{ background: 'var(--grad-cta)', boxShadow: 'var(--glow-azure)', textShadow: 'none' }}
+            hoverBackground="var(--grad-cta-hover)"
           >
             Find a companion
           </RollLink>
         </MagneticButton>
         <Link
           href="/how-it-works"
-          className="inline-flex items-center h-13 px-5 rounded-pill font-sans font-semibold text-base transition-colors hover:underline underline-offset-4"
+          className="inline-flex items-center h-13 px-5 rounded-xl font-sans font-semibold text-base transition-colors hover:underline underline-offset-4"
           style={{ color: 'var(--color-ink-muted)' }}
         >
           How it works →
@@ -86,7 +77,7 @@ export function HeroCopyState1() {
         See who&apos;s actually<br />near you.
       </h2>
       <p className="text-lead max-w-xl mx-auto" style={{ color: 'var(--color-ink-muted)' }}>
-        Every profile Aadhaar-verified, rated by real members, in 38 cities.
+        Every profile ID-verified, rated by real members, in 38 cities.
       </p>
     </div>
   );

@@ -15,7 +15,7 @@ import { MagneticButton } from "@/components/motion/MagneticButton";
 import { spring, durations } from "@/lib/motion";
 
 const TRUST_ITEMS = [
-  "Aadhaar-verified",
+  "ID-verified",
   "Background-checked",
   "₹ held in escrow",
 ] as const;

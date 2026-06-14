@@ -34,7 +34,7 @@ export function TrustProof() {
             Trust you can see stamped.
           </h2>
           <p className="text-lead text-ink-muted mt-4 max-w-xl mx-auto">
-            Every companion clears Aadhaar KYC, a background check, and a
+            Every companion clears KYC, a background check, and a
             safety interview before they ever appear here.
           </p>
         </Reveal>

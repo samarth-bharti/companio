@@ -42,7 +42,7 @@ const COLUMNS = [
 
 const TRUST_BADGES = [
   { label: "Razorpay secured",    color: "rgba(244,242,255,0.6)", border: "rgba(244,242,255,0.15)" },
-  { label: "Aadhaar KYC verified", color: "rgba(244,242,255,0.6)", border: "rgba(244,242,255,0.15)" },
+  { label: "KYC verified", color: "rgba(244,242,255,0.6)", border: "rgba(244,242,255,0.15)" },
   { label: "Strictly platonic",   color: "var(--color-emerald)",  border: "rgba(31,174,107,0.3)" },
 ] as const;
 

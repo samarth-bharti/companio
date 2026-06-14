@@ -9,7 +9,7 @@ const STEPS = [
     n: "01",
     icon: Search,
     title: "Browse verified companions",
-    body: "Filter by activity, city, and availability. Every profile is Aadhaar-verified and background-checked before going live.",
+    body: "Filter by activity, city, and availability. Every profile is ID-verified and background-checked before going live.",
     color: "#2E6BFF",
     bg: "#EBF1FF",
   },

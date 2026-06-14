@@ -96,7 +96,7 @@ export function CompanionProfilePortrait({ companion }: Props) {
           >
             {companion.name}
           </h1>
-          {/* Aadhaar badge — stamp in on mount */}
+          {/* ID badge — stamp in on mount */}
           <motion.div
             className="flex items-center gap-1.5"
             initial={reduced ? false : { scale: 0.6, opacity: 0, rotate: -8 }}
@@ -108,7 +108,7 @@ export function CompanionProfilePortrait({ companion }: Props) {
               className="font-sans text-xs font-semibold"
               style={{ color: 'var(--color-azure-deep)' }}
             >
-              Aadhaar-verified
+              ID-verified
             </span>
           </motion.div>
         </div>

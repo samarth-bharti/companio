@@ -142,7 +142,7 @@ export function AppMockupVisual({ scrollY }: { scrollY: MotionValue<number> }) {
           transition={{ delay: 0.8, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         >
           <BadgeCheck size={13} aria-hidden="true" />
-          Aadhaar verified
+          ID verified
         </motion.div>
       </FloatingChip>
 

@@ -47,10 +47,10 @@ const buttonVariants = cva(
         ].join(" "),
       },
       size: {
-        sm: "h-9 min-w-[44px] px-4 text-sm rounded-pill",
-        md: "h-11 min-w-[44px] px-6 text-base rounded-pill",
-        lg: "h-13 min-w-[44px] px-8 text-base rounded-pill",
-        xl: "h-14 min-w-[44px] px-10 text-lg rounded-pill",
+        sm: "h-9 min-w-[44px] px-4 text-sm rounded-xl",
+        md: "h-11 min-w-[44px] px-6 text-base rounded-xl",
+        lg: "h-13 min-w-[44px] px-8 text-base rounded-xl",
+        xl: "h-14 min-w-[44px] px-10 text-lg rounded-xl",
       },
     },
     defaultVariants: {

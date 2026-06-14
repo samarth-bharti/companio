@@ -10,7 +10,7 @@ const STATS = [
     value: 28000,
     suffix: '+',
     label: 'Verified members',
-    sub: 'Aadhaar & KYC verified',
+    sub: 'KYC verified',
     color: 'var(--color-azure)',
     bg: '#EBF1FF',
     border: 'rgba(46,107,255,0.2)',
