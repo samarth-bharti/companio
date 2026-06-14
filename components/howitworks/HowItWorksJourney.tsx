@@ -72,26 +72,28 @@ export function HowItWorksJourney() {
 
       {/* Steps spine */}
       <section className="py-20 md:py-28" style={{ background: 'var(--color-bg)' }}>
-        <div ref={stepsRef} className="relative max-w-4xl mx-auto px-6">
+        <div className="relative max-w-4xl mx-auto px-6">
 
-          {/* Scroll-linked progress rail — md+ only, hidden on mobile + reduced-motion via CSS */}
-          <div
-            aria-hidden="true"
-            className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px"
-            style={{ background: 'rgba(0,0,0,0.08)' }}
-          >
-            <motion.div
-              style={{
-                scaleY: fill,
-                transformOrigin: 'top',
-                height: '100%',
-                background: 'linear-gradient(to bottom,#2E6BFF,#7A4FE0)',
-              }}
-            />
-          </div>
+          {/* Cards + rail wrapper — the rail spans only the steps, never the CTA below. */}
+          <div ref={stepsRef} className="relative">
+            {/* Scroll-linked progress rail — md+ only, hidden on mobile + reduced-motion via CSS */}
+            <div
+              aria-hidden="true"
+              className="hidden md:block absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px"
+              style={{ background: 'rgba(0,0,0,0.08)' }}
+            >
+              <motion.div
+                style={{
+                  scaleY: fill,
+                  transformOrigin: 'top',
+                  height: '100%',
+                  background: 'linear-gradient(to bottom,#2E6BFF,#7A4FE0)',
+                }}
+              />
+            </div>
 
-          {/* Cards — stacked on mobile, alternating left/right on md+ */}
-          <div className="flex flex-col gap-10 md:gap-16">
+            {/* Cards — stacked on mobile, alternating left/right on md+ */}
+            <div className="flex flex-col gap-10 md:gap-16">
             {STEPS.map((s, i) => {
               const Icon = s.icon;
               return (
@@ -137,6 +139,7 @@ export function HowItWorksJourney() {
                 </div>
               );
             })}
+            </div>
           </div>
 
           {/* CTA */}
@@ -144,7 +147,7 @@ export function HowItWorksJourney() {
             <MagneticButton>
               <Link
                 href="/explore"
-                className="inline-flex items-center justify-center h-13 px-8 rounded-pill font-sans font-bold text-base text-white transition-all hover:opacity-90 focus-visible:outline-white"
+                className="inline-flex items-center justify-center h-13 px-8 rounded-xl font-sans font-bold text-base text-white transition-all hover:opacity-90 focus-visible:outline-white"
                 style={{ background: 'var(--grad-cta)', boxShadow: 'var(--glow-azure)' }}
               >
                 Find a companion
