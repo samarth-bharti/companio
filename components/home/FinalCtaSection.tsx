@@ -18,7 +18,11 @@ export function FinalCtaSection() {
   return (
     <section
       className="relative py-28 md:py-36 overflow-hidden"
-      style={{ background: "var(--grad-aurora)" }}
+      // Solid dark fallback UNDER the gradient: if the large gradient layer ever
+      // fails to paint (compositing hiccup with the canvas + blurred orbs above),
+      // the section stays dark instead of flashing white, keeping the white text
+      // and translucent button readable.
+      style={{ backgroundColor: "#2B2160", backgroundImage: "var(--grad-aurora)" }}
       aria-labelledby="cta-heading"
     >
       {/* Overlay for readability */}

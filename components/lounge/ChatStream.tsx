@@ -95,21 +95,28 @@ export function ChatStream({ messages, isTyping, isGroup, onReact }: ChatStreamP
     }
   }, [messages.length, isAtBottom]);
 
+  // Scroll the chat CONTAINER to the bottom (never the page). Using the
+  // container's own scrollTop avoids scrollIntoView dragging the whole window
+  // down — which made the Lounge page open scrolled to the bottom.
+  const scrollToBottom = useCallback(
+    (smooth: boolean) => {
+      const el = scrollRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    },
+    [],
+  );
+
   // Auto-scroll to bottom only when user is already there.
   useEffect(() => {
     if (!isAtBottom) return;
-    if (reduced) {
-      bottomRef.current?.scrollIntoView();
-    } else {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages.length, isTyping, isAtBottom, reduced]);
+    scrollToBottom(!reduced);
+  }, [messages.length, isTyping, isAtBottom, reduced, scrollToBottom]);
 
   const jumpToLatest = () => {
     setNewCount(0);
     setIsAtBottom(true);
-    if (reduced) bottomRef.current?.scrollIntoView();
-    else bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollToBottom(!reduced);
   };
 
   return (
