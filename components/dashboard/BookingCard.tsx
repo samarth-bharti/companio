@@ -15,10 +15,12 @@ function fmtDate(iso: string) {
 }
 
 function StatusPill({ status }: { status: Booking['status'] }) {
-  const map = {
+  const map: Record<Booking['status'], { label: string; bg: string; color: string }> = {
+    pending_payment: { label: 'Payment pending', bg: 'rgba(214,158,46,0.12)', color: '#946200' },
     upcoming:  { label: 'Upcoming',  bg: 'rgba(46,107,255,0.1)',  color: 'var(--color-azure-deep)' },
     completed: { label: 'Completed', bg: 'rgba(31,174,107,0.1)',  color: '#157A4A' },
     cancelled: { label: 'Cancelled', bg: 'rgba(90,99,120,0.1)',   color: 'var(--color-ink-muted)' },
+    refunded:  { label: 'Refunded',  bg: 'rgba(214,158,46,0.12)', color: '#946200' },
   };
   const { label, bg, color } = map[status];
   return (

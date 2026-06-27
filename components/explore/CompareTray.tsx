@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X, Columns2 } from 'lucide-react';
@@ -27,6 +27,33 @@ function CompareModal({
   onClose: () => void;
 }) {
   const reduced = useReducedMotion();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const prevFocusRef = useRef<Element | null>(null);
+
+  const handleKey = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') { onClose(); return; }
+    if (e.key !== 'Tab' || !panelRef.current) return;
+    const els = Array.from(panelRef.current.querySelectorAll<HTMLElement>(
+      'button:not([disabled]),a,[tabindex]:not([tabindex="-1"])',
+    ));
+    if (!els.length) return;
+    const first = els[0], last = els[els.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }, [onClose]);
+
+  useEffect(() => {
+    prevFocusRef.current = document.activeElement;
+    document.documentElement.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleKey);
+    setTimeout(() => panelRef.current?.querySelector<HTMLElement>('button')?.focus(), 60);
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.removeEventListener('keydown', handleKey);
+      (prevFocusRef.current as HTMLElement | null)?.focus();
+    };
+  }, [handleKey]);
+
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -38,6 +65,10 @@ function CompareModal({
       style={{ background: 'rgba(20,26,46,0.55)', backdropFilter: 'blur(4px)' }}
     >
       <motion.div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="compare-title"
         className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl"
         initial={reduced ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -56,7 +87,7 @@ function CompareModal({
             borderColor: 'rgba(46,107,255,0.10)',
           }}
         >
-          <p className="font-semibold text-sm" style={{ color: 'var(--color-ink)', fontFamily: 'var(--font-display)' }}>
+          <p id="compare-title" className="font-semibold text-sm" style={{ color: 'var(--color-ink)', fontFamily: 'var(--font-display)' }}>
             Comparing {companions.length} companions
           </p>
           <button
@@ -71,7 +102,7 @@ function CompareModal({
         </div>
 
         {/* Columns */}
-        <div className={`grid gap-4 p-6 ${companions.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        <div className={`grid gap-4 p-6 ${companions.length === 2 ? 'grid-cols-2' : 'grid-cols-2 sm:grid-cols-3'}`}>
           {companions.map((c) => (
             <div key={c.id} className="flex flex-col gap-3">
               {/* Photo */}

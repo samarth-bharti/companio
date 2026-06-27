@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { Seal } from "@/components/ui/Seal";
+import { COMPANY_DISPLAY } from "@/lib/company";
 
 const COLUMNS = [
   {
@@ -15,6 +16,7 @@ const COLUMNS = [
     heading: "Company",
     links: [
       { label: "About us", href: "/about" },
+      { label: "Contact us", href: "/contact" },
       { label: "Blog",     href: "/blog" },
       { label: "Careers",  href: "/careers" },
       { label: "Press",    href: "/press" },
@@ -107,7 +109,7 @@ export function Footer() {
                       <Link
                         href={link.href}
                         className="text-xs font-sans transition-colors hover:underline underline-offset-4 focus-visible:outline-white rounded-sm"
-                        style={{ color: "rgba(244,242,255,0.45)" }}
+                        style={{ color: "rgba(244,242,255,0.70)" }}
                       >
                         {link.label}
                       </Link>
@@ -136,7 +138,28 @@ export function Footer() {
             ))}
           </div>
           <p className="text-xs font-sans text-center md:text-right" style={{ color: "rgba(244,242,255,0.3)" }}>
-            © {new Date().getFullYear()} Companio Technologies Pvt. Ltd. All rights reserved.
+            © {new Date().getFullYear()} {COMPANY_DISPLAY.legalName}. All rights reserved.
+          </p>
+        </div>
+
+        {/* DPDPA / IT Act required disclosures — registered address + Grievance Officer */}
+        <div
+          className="mt-6 pt-6 border-t text-[11px] leading-relaxed font-sans text-center md:text-left"
+          style={{ borderColor: "rgba(46,107,255,0.1)", color: "rgba(244,242,255,0.3)" }}
+        >
+          <p>
+            {COMPANY_DISPLAY.legalName} · {COMPANY_DISPLAY.registeredAddress}
+            {COMPANY_DISPLAY.cin ? ` · CIN ${COMPANY_DISPLAY.cin}` : ""}
+          </p>
+          <p>
+            Grievance Officer: {COMPANY_DISPLAY.grievanceOfficer.name} ·{" "}
+            <a
+              href={`mailto:${COMPANY_DISPLAY.grievanceOfficer.email}`}
+              className="hover:underline underline-offset-4 focus-visible:outline-white"
+            >
+              {COMPANY_DISPLAY.grievanceOfficer.email}
+            </a>
+            {COMPANY_DISPLAY.grievanceOfficer.phone ? ` · ${COMPANY_DISPLAY.grievanceOfficer.phone}` : ""}
           </p>
         </div>
       </div>

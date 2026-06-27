@@ -6,12 +6,16 @@ import { Wallet, Plus } from 'lucide-react';
 import { getWallet } from '@/lib/journeyState';
 import { addCredits, addNotification } from '@/lib/appState';
 import { CheckoutSheet, type CheckoutItem } from '@/components/pricing/CheckoutSheet';
+import { type RazorpayIntent } from '@/lib/razorpayClient';
 
 const PACKS = [
   { id: 'single', name: 'Single meetup', price: 499, credits: 1, detail: null },
   { id: 'five', name: '5-pack', price: 1999, credits: 5, detail: '₹400 / meetup · popular' },
   { id: 'ten', name: '10-pack', price: 2999, credits: 10, detail: 'Best value · ₹300 / meetup' },
 ] as const;
+
+// Display id -> server CREDIT_PACKS key (for live Razorpay create-order).
+const PACK_ID_MAP: Record<string, string> = { single: 'pack1', five: 'pack5', ten: 'pack10' };
 
 const PANEL_STYLE: React.CSSProperties = {
   background: 'var(--color-surface)',
@@ -28,6 +32,7 @@ export function TopUpMenu() {
   const [credits, setCredits] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const [item, setItem] = useState<CheckoutItem | null>(null);
+  const [order, setOrder] = useState<RazorpayIntent | undefined>(undefined);
   const pending = useRef<(typeof PACKS)[number] | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -49,6 +54,7 @@ export function TopUpMenu() {
 
   function buy(pack: (typeof PACKS)[number]) {
     pending.current = pack;
+    setOrder({ kind: 'credits', packId: PACK_ID_MAP[pack.id] });
     setItem({
       label: pack.name,
       priceDisplay: `₹${pack.price.toLocaleString('en-IN')}`,
@@ -120,7 +126,13 @@ export function TopUpMenu() {
         </div>
       )}
 
-      <CheckoutSheet open={item !== null} item={item ?? { label: '', priceDisplay: '' }} onClose={() => setItem(null)} onPaid={onPaid} />
+      <CheckoutSheet
+        open={item !== null}
+        item={item ?? { label: '', priceDisplay: '' }}
+        order={order}
+        onClose={() => setItem(null)}
+        onPaid={onPaid}
+      />
     </div>
   );
 }

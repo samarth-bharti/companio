@@ -32,7 +32,7 @@ export default function RefundsPage() {
         {
           heading: 'Companio Plus',
           body: [
-            'Cancel anytime in two taps from your dashboard. Your benefits run to the end of the paid month; we never charge again after you cancel.',
+            'Companio Plus is a one-time purchase, not a subscription — there is no recurring charge and nothing to cancel. If Plus was charged in error, contact support within 7 days for a full refund.',
           ],
         },
       ]}

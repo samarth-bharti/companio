@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { DigitRoll } from '@/components/journey/DigitRoll';
 import { CountUp } from '@/components/motion/CountUp';
-import { ParticleField } from '@/components/journey/ParticleField';
 import { CitySelector } from './CitySelector';
 
 interface ExploreHeaderProps {
@@ -31,12 +30,10 @@ export function ExploreHeader({
 }: ExploreHeaderProps) {
   return (
     <section
-      className="py-16 md:py-24 relative overflow-hidden"
+      className="py-8 md:py-12 relative overflow-hidden"
       style={{ background: 'var(--grad-hero-bg)' }}
       aria-labelledby="explore-heading"
     >
-      {/* Subtle azure particle ambient — reduced-motion handled inside ParticleField */}
-      <ParticleField count={8} color="#2E6BFF" />
       <div className="max-w-3xl mx-auto px-6">
 
         {/* Eyebrow + city selector */}
@@ -100,34 +97,11 @@ export function ExploreHeader({
           </h1>
         )}
 
-        {/* Social-proof frosted chip — members count from selected city */}
+        {/* Social proof — one tight line: real members + free-now count. */}
         <div
-          className="mb-3 flex w-fit items-center gap-2 rounded-pill px-4 py-2"
+          className="mb-4 flex w-fit items-center gap-2 rounded-pill px-4 py-2"
           style={{
-            background: 'rgba(255,255,255,0.70)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
-            border: '1.5px solid rgba(46,107,255,0.15)',
-            boxShadow: 'var(--shadow-1)',
-          }}
-        >
-          <span
-            className="h-2 w-2 shrink-0 rounded-full animate-pulse"
-            style={{ background: 'var(--color-emerald)' }}
-            aria-hidden="true"
-          />
-          <span className="text-sm font-medium" style={{ color: 'var(--color-ink-muted)' }}>
-            {members}+ members · 41 meetups this week
-          </span>
-        </div>
-
-        {/* Free-now live stat */}
-        <div
-          className="mb-5 flex w-fit items-center gap-2 rounded-pill px-4 py-2"
-          style={{
-            background: 'rgba(255,255,255,0.70)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
+            background: 'rgba(255,255,255,0.92)',
             border: '1.5px solid rgba(31,174,107,0.20)',
             boxShadow: 'var(--shadow-1)',
           }}
@@ -138,10 +112,11 @@ export function ExploreHeader({
             aria-hidden="true"
           />
           <span className="text-sm font-medium" style={{ color: 'var(--color-ink-muted)' }}>
+            {members}+ members ·{' '}
             <span style={{ color: 'var(--color-emerald)', fontWeight: 600 }}>
               <CountUp value={freeNowCount} />
             </span>{' '}
-            companions free to meet today
+            free to meet today
           </span>
         </div>
 

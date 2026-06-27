@@ -298,7 +298,7 @@ export function StepVerify({ form, patch, onBack, onNext }: Props) {
               <span className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
                 I agree to the{' '}
                 <a
-                  href="/safety"
+                  href="/terms"
                   className="font-semibold underline underline-offset-2"
                   style={{ color: 'var(--color-azure-deep)' }}
                   target="_blank"

@@ -22,9 +22,25 @@ generator client {
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
 enum BookingStatus {
-  upcoming
-  completed
+  pending_payment // cash booking created, awaiting Razorpay settlement — NOT confirmed
+  upcoming        // confirmed: paid by credit, or cash payment settled
+  completed       // meetup date has passed (set by cron, never at payment time)
   cancelled
+  refunded        // admin reversed the charge (credits returned / Razorpay refund)
+}
+
+// Result of the free, vendor-less document sanity checks (see
+// lib/server/documentValidation.ts). 'manual' = admin approved by eye.
+enum DocVerifyStatus {
+  pending
+  verified
+  failed
+  manual
+}
+
+enum DiscountType {
+  percentage // value = 0–100 (% off)
+  fixed      // value = paise off
 }
 
 enum ApplicationStatus {
@@ -46,6 +62,49 @@ enum Gender {
   prefer_not_to_say
 }
 
+enum PurchaseKind {
+  booking
+  credits
+  unlock
+  plus
+}
+
+enum PurchaseStatus {
+  created
+  paid
+}
+
+enum UserRole {
+  user
+  companion
+  admin
+}
+
+// Server-generated spin outcomes. 'none' = the (most common) no-win result.
+enum SpinPrize {
+  none
+  discount10  // 10% off next booking
+  discount20  // 20% off next booking
+  plus_month  // one free month of Companio Plus
+}
+
+enum ReportTargetType {
+  companion
+  user
+}
+
+enum ReportStatus {
+  open
+  reviewing
+  actioned
+  dismissed
+}
+
+enum PayoutStatus {
+  pending
+  paid
+}
+
 // ── User ──────────────────────────────────────────────────────────────────────
 // Mirrors DemoUser (firstName) + QuizResult (name, city, matchedId) and the
 // fields expected from Auth.js OAuth / phone-OTP sign-in.
@@ -60,25 +119,44 @@ model User {
   lastName    String?
   gender      Gender?
   city        String?  // matches City.id from lib/data/cities
+  role        UserRole @default(user) // gates admin panel + companion dashboard
+  // The Companion profile this login owns (set when an application is approved).
+  // null for ordinary members; @unique so one profile maps to one account.
+  companionId String?  @unique
   // Onboarding flags (mirrors localStorage keys)
   welcomed    Boolean  @default(false)
   unlocked    Boolean  @default(false)  // paid full-unlock
   // Quiz result — stored inline to avoid a join on every page load
   quizMatchId String?  // companion id matched by the onboarding quiz
+  // Spin wheel — weekly cooldown gate (null = never spun)
+  lastSpinAt  DateTime?
+  // Moderation (admin-controlled). suspended = soft block (can't book/login flows
+  // gate on it); bannedAt set = hard ban. messageBlocked silences messaging only.
+  suspended      Boolean  @default(false)
+  bannedAt       DateTime?
+  banReason      String?
+  messageBlocked Boolean  @default(false)
   // Timestamps
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   // Relations
-  wallet        Wallet?
-  bookings      Booking[]
-  favorites     Favorite[]
-  sentMessages  Message[]        @relation("SentBy")
-  notifications Notification[]
-  subscription  Subscription?
-  application   CompanionApplication?
+  wallet         Wallet?
+  bookings       Booking[]
+  favorites      Favorite[]
+  sentMessages   Message[]        @relation("SentBy")
+  notifications  Notification[]
+  subscription   Subscription?
+  application    CompanionApplication?
+  purchases      Purchase[]
+  spins          SpinResult[]
+  reportsMade    Report[]         @relation("ReportsMade")
+  reportsAgainst Report[]         @relation("ReportsAgainst")
+  companion      Companion?       @relation(fields: [companionId], references: [id])
+  adminActions   AdminAuditLog[]  @relation("AdminActor")
 
   @@index([city])
+  @@index([role])
   @@map("users")
 }
 
@@ -128,7 +206,9 @@ model Companion {
   languages      String[]
   rating         Float    @default(0)
   reviewCount    Int      @default(0)  // `reviews` in the TS type
-  ratePerMeeting Int
+  ratePerMeeting Int      // legacy flat rate (paise) — kept for back-compat
+  hourlyRate     Int      @default(50000) // paise/hour — variable ₹300–₹1000 (₹500 default)
+  premium        Boolean  @default(false)  // premium companions priced up to ₹2000/hr
   bio            String
   suggestions    String[] // 3 city-specific outing ideas
   photo          String   // Unsplash URL
@@ -136,6 +216,11 @@ model Companion {
   sameGenderNote Boolean  @default(false)
   topMatch       Boolean  @default(false)
   verified       Boolean  @default(false)
+  // Moderation (admin-controlled). suspended hides the profile from explore +
+  // blocks new bookings; bannedAt set = permanently removed from the marketplace.
+  suspended      Boolean  @default(false)
+  bannedAt       DateTime?
+  banReason      String?
   // Presence + smart-match fields
   availableNow   Boolean  @default(false)
   availability   String   @default("Available tomorrow")
@@ -151,6 +236,8 @@ model Companion {
   bookings       Booking[]
   favorites      Favorite[]
   messages       Message[]
+  payouts        CompanionPayout[]
+  account        User?            // the login that owns this profile (if any)
 
   @@index([city, availableNow])
   @@index([city, matchScore])
@@ -171,16 +258,27 @@ model Booking {
   place       String
   status      BookingStatus @default(upcoming)
   usedCredit  Boolean       @default(false)
-  pricePaid   Int           @default(0) // paise (₹499 = 49900)
+  hours       Int           @default(1) // session length — total = hourlyRate × hours
+  pricePaid   Int           @default(0) // paise the user actually paid (after discount/surge)
+  // Money split — set server-side at settle time (see lib/server/pricing.ts)
+  commissionPaise Int       @default(0) // platform cut (30% std / 10% Plus)
+  payoutPaise     Int       @default(0) // companion earns this (pricePaid − commission)
+  surgeMultiplier Float     @default(1) // peak/festival multiplier applied
+  spinDiscountPct Int       @default(0) // redeemed spin-wheel discount, 0–100
+  discountCode    String?   // admin/coupon code applied at checkout, if any
   review      Json?         // { stars: number, text: string } | null
   // Payment traceability — never lose the tx hash
   razorpayOrderId   String?
   razorpayPaymentId String?
+  // Refund trail — set when an admin reverses the booking (status → refunded)
+  refundedAt   DateTime?
+  refundReason String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  user        User          @relation(fields: [userId], references: [id])
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   companion   Companion     @relation(fields: [companionId], references: [id])
+  payout      CompanionPayout?
 
   @@index([userId, status])
   @@index([companionId, dateISO])
@@ -197,9 +295,37 @@ model Subscription {
   startsAt          DateTime  @default(now())
   endsAt            DateTime?
   razorpaySubId     String?   // Razorpay subscription id for recurring billing
-  user              User      @relation(fields: [userId], references: [id])
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
+}
+
+// ── Purchase ──────────────────────────────────────────────────────────────────
+// Server-authoritative payment intent. The client names WHAT it buys (kind +
+// packId); the SERVER fixes the amount + credits from lib/server/pricing.ts.
+// The paid benefit (credits / unlock / plus / booking-complete) is granted ONLY
+// inside settlePurchase() after HMAC verification — never by a client setter.
+
+model Purchase {
+  id                String         @id @default(cuid())
+  userId            String
+  kind              PurchaseKind
+  amount            Int            // paise — server-decided, never client-supplied
+  credits           Int            @default(0) // granted on settle (kind = credits)
+  bookingId         String?        // set when kind = booking
+  spinResultId      String?        // spin win redeemed on this booking, if any
+  status            PurchaseStatus @default(created)
+  razorpayOrderId   String         @unique
+  razorpayPaymentId String?
+  // GST invoice — populated on settle once GST registration is live (post-launch).
+  invoiceNo         String?        @unique // e.g. CMPN-2026-000123
+  gstPaise          Int            @default(0) // 18% GST component of `amount`
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("purchases")
 }
 
 // ── Message ───────────────────────────────────────────────────────────────────
@@ -216,7 +342,7 @@ model Message {
   ts          BigInt      // epoch ms — matches the number in ChatMessage
   createdAt   DateTime    @default(now())
 
-  user        User        @relation("SentBy", fields: [userId], references: [id])
+  user        User        @relation("SentBy", fields: [userId], references: [id], onDelete: Cascade)
   companion   Companion   @relation(fields: [companionId], references: [id])
 
   @@index([threadId, createdAt])
@@ -234,7 +360,7 @@ model Notification {
   ts        BigInt   // epoch ms
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read])
   @@map("notifications")
@@ -246,7 +372,7 @@ model Favorite {
   userId      String
   companionId String
   createdAt   DateTime  @default(now())
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   companion   Companion @relation(fields: [companionId], references: [id])
 
   @@id([userId, companionId])
@@ -267,11 +393,138 @@ model CompanionApplication {
   idUploaded        Boolean           @default(false)
   backgroundConsent Boolean           @default(false)
   status            ApplicationStatus @default(draft)
+  // Free document-sanity results (lib/server/documentValidation.ts). We store the
+  // MASKED number + a hash only — never the full Aadhaar (DPDPA liability).
+  idDocType         String?           // 'aadhaar' | 'pan'
+  idDocMasked       String?           // e.g. "XXXX XXXX 2346"
+  idHash            String?           // sha256 of the uploaded ID file (dup block)
+  photoHash         String?           // sha256 of the uploaded selfie (dup block)
+  idVerifyStatus    DocVerifyStatus   @default(pending)
+  photoVerifyStatus DocVerifyStatus   @default(pending)
+  ocrMatched        Boolean?          // did OCR find the typed number on the image
+  verifiedAt        DateTime?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
-  user              User              @relation(fields: [userId], references: [id])
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([idHash])
   @@map("companion_applications")
+}
+
+// ── Spin Wheel ────────────────────────────────────────────────────────────────
+// Weekly spin. The OUTCOME IS DECIDED SERVER-SIDE in /api/spin and stored here —
+// the client only animates to a result it cannot influence (prevents devtools
+// "I won" forgery). A non-`none`, unused, unexpired row is redeemable once at
+// checkout, which stamps `usedBookingId` so it can't be reused.
+model SpinResult {
+  id            String    @id @default(cuid())
+  userId        String
+  prize         SpinPrize
+  discountPct   Int       @default(0) // 0 / 10 / 20 — mirrors prize for fast checkout math
+  expiresAt     DateTime  // 7 days after the spin
+  usedBookingId String?   // set when redeemed; null = still available
+  createdAt     DateTime  @default(now())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("spin_results")
+}
+
+// ── Report / Block ────────────────────────────────────────────────────────────
+// IT Act intermediary duty: a working report → review → action trail.
+// reporterId is the signed-in user; target is a companion id (string) or a user id.
+model Report {
+  id          String           @id @default(cuid())
+  reporterId  String
+  targetType  ReportTargetType
+  companionId String?          // set when targetType = companion
+  targetUserId String?         // set when targetType = user
+  reason      String           // short category
+  detail      String?          // free-text description
+  status      ReportStatus     @default(open)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  reporter    User             @relation("ReportsMade", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetUser  User?            @relation("ReportsAgainst", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([companionId])
+  @@map("reports")
+}
+
+// ── Companion Payout ──────────────────────────────────────────────────────────
+// One payout row per completed, paid booking. Created at settle time with the
+// post-commission amount so the admin/companion dashboards can show "owed" vs
+// "paid" without recomputing from money flows.
+model CompanionPayout {
+  id          String       @id @default(cuid())
+  companionId String
+  bookingId   String       @unique
+  amountPaise Int          // == Booking.payoutPaise at settle time
+  status      PayoutStatus @default(pending)
+  paidAt      DateTime?
+  reference   String?      // bank/UPI txn ref once paid
+  createdAt   DateTime     @default(now())
+  companion   Companion    @relation(fields: [companionId], references: [id])
+  booking     Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([companionId, status])
+  @@map("companion_payouts")
+}
+
+// ── Surge Period ──────────────────────────────────────────────────────────────
+// Admin-defined peak windows (festivals, weekends). Booking price is multiplied
+// by `multiplier` when the booking date falls inside an active window. Resolved
+// server-side in lib/server/pricing.ts — never trusted from the client.
+model SurgePeriod {
+  id          String   @id @default(cuid())
+  label       String   // e.g. "Diwali weekend"
+  startsAt    DateTime
+  endsAt      DateTime
+  multiplier  Float    @default(1.0) // e.g. 1.5 = +50%
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([active, startsAt, endsAt])
+  @@map("surge_periods")
+}
+
+// ── Discount Code / Coupon ─────────────────────────────────────────────────────
+// Admin-created promo codes. Applied at checkout server-side (never trusted from
+// the client). Honours maxUses + expiry; usedCount increments on redemption.
+model DiscountCode {
+  id          String       @id @default(cuid())
+  code        String       @unique // case-insensitive match — store upper-cased
+  type        DiscountType @default(percentage)
+  value       Int          // percentage 0–100, or paise when type = fixed
+  maxUses     Int?         // null = unlimited
+  usedCount   Int          @default(0)
+  expiresAt   DateTime?    // null = never expires
+  active      Boolean      @default(true)
+  note        String?      // admin-facing memo (e.g. "Launch week")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([active, expiresAt])
+  @@map("discount_codes")
+}
+
+// ── Admin Audit Log ────────────────────────────────────────────────────────────
+// Every privileged admin mutation is recorded here — who did what, to whom, when.
+// Non-negotiable for an MNC-grade control panel: accountability + dispute trail.
+model AdminAuditLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String   // e.g. 'suspendUser', 'grantCredits', 'refundBooking'
+  targetType String   // 'user' | 'companion' | 'booking' | 'discount' | 'application'
+  targetId   String
+  detail     String?  // JSON/string snapshot of the change (reason, amounts…)
+  createdAt  DateTime @default(now())
+  admin      User     @relation("AdminActor", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+  @@index([targetType, targetId])
+  @@map("admin_audit_logs")
 }
 
 // ── Social layer stubs (future) ───────────────────────────────────────────────

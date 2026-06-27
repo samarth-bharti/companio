@@ -2,6 +2,8 @@
 // `typeof window === 'undefined'` and returns the declared default.
 // No React, no provider — import freely in client components or server code.
 
+import { canUseStorage, readJSON, writeJSON } from './storage';
+
 export interface Wallet {
   credits: number;
   used: number;
@@ -15,41 +17,21 @@ export interface QuizResult {
 
 export interface DemoUser {
   firstName: string;
+  /** Carried from registration so the companion application can pre-fill it
+   *  (the two flows are one continuous onboarding, not separate forms). */
+  city?: string;
 }
 
 // ── Keys ─────────────────────────────────────────────────────────────────────
 
-const KEY_UNLOCKED  = 'companio_unlocked';
-const KEY_WALLET    = 'companio_wallet';
+const KEY_UNLOCKED      = 'companio_unlocked';
+export const KEY_WALLET = 'companio_wallet'; // single source of truth — also used by lib/appState
 const KEY_QUIZ      = 'companio_quiz';
 const KEY_USER      = 'companio_user';
 const KEY_WELCOMED  = 'companio_welcomed';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function canUseStorage(): boolean {
-  return typeof window !== 'undefined';
-}
-
-function readJSON<T>(key: string, fallback: T): T {
-  if (!canUseStorage()) return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJSON<T>(key: string, value: T): void {
-  if (!canUseStorage()) return;
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // quota exceeded or private-mode; silently ignore
-  }
-}
+// Storage helpers (canUseStorage / readJSON / writeJSON) are shared from
+// ./storage — see lib/appState for the other consumer.
 
 // ── Unlocked ──────────────────────────────────────────────────────────────────
 

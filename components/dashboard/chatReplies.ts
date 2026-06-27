@@ -27,3 +27,14 @@ export const DEFAULT_REPLIES = [
 export function getReplies(id: string): string[] {
   return REPLIES[id] ?? DEFAULT_REPLIES;
 }
+
+// Random pick + delay live at module scope (outside the component) so the chat
+// component body stays free of random-in-render lint complaints.
+export function randomReply(id: string): string {
+  const pool = getReplies(id);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+export function replyDelayMs(): number {
+  return 1200 + Math.random() * 800;
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Shield } from 'lucide-react';
 import { ChatStream } from './ChatStream';
 import { Composer } from './Composer';
@@ -32,20 +32,34 @@ function toggleReaction(msgs: DirectMessage[], msgId: string, emoji: string): Di
   });
 }
 
+// Random reply pick + delay live at module scope (not in the component body) so
+// they're plainly outside render — random-in-render is what the lint rule guards.
+function pickReply(pool: string[]): string {
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+function replyDelayMs(): number {
+  return 1200 + Math.random() * 800;
+}
+
 export function DirectThread({ thread, onBack }: DirectThreadProps) {
   const companion = COMPANIONS.find(c => c.id === thread.companionId)!;
   const [msgs, setMsgs] = useState<DirectMessage[]>(thread.messages);
   const [isTyping, setIsTyping] = useState(false);
+  const replyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cancel any pending bot reply when the thread unmounts (e.g. switching DMs).
+  useEffect(() => () => { if (replyTimer.current) clearTimeout(replyTimer.current); }, []);
 
   const userHasSent = msgs.some(m => m.from === 'me');
 
   const onSend = (text: string) => {
     setMsgs(prev => [...prev, { id: `dm-${nextDmId++}`, from: 'me', text, time: 'Just now' }]);
     setIsTyping(true);
-    const pool = getReplies(companion.id);
-    const reply = pool[Math.floor(Math.random() * pool.length)];
-    const delay = 1200 + Math.random() * 800;
-    setTimeout(() => {
+    // Replace any in-flight reply so rapid sends don't stack multiple bot replies.
+    if (replyTimer.current) clearTimeout(replyTimer.current);
+    const reply = pickReply(getReplies(companion.id));
+    const delay = replyDelayMs();
+    replyTimer.current = setTimeout(() => {
       setIsTyping(false);
       setMsgs(prev => [...prev, {
         id: `dm-${nextDmId++}`,

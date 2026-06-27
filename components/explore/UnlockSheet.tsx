@@ -8,21 +8,27 @@ import { spring } from "@/lib/motion";
 import { Button } from "@/components/ui/Button";
 import { PaymentMethodTiles } from "./PaymentMethodTiles";
 import { UnlockBenefits } from "./UnlockBenefits";
+import { payWithRazorpay } from "@/lib/razorpayClient";
 
 type PayState = "idle" | "processing" | "success";
 const HEADLINE_ID = "unlock-sheet-headline";
 
 export function UnlockSheet({
-  open, seedName, city, count, onClose, onSuccess,
+  open, seedName, city, count, isGuest = false, onRequireAccount, onClose, onSuccess,
 }: {
   open: boolean; seedName: string; city: string;
-  count: number; onClose: () => void; onSuccess: () => void;
+  count: number; isGuest?: boolean; onRequireAccount?: () => void;
+  onClose: () => void; onSuccess: () => void;
 }) {
   const reduced = useReducedMotion();
   const [sel, setSel] = useState<string | null>(null);
   const [pay, setPay] = useState<PayState>("idle");
   const panelRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<Element | null>(null);
+  // Synchronous double-submit guard + tracked timers. setPay is async, so a fast
+  // double-click would otherwise schedule onSuccess twice (double unlock/credit).
+  const payingRef = useRef(false);
+  const payTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const handleKey = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") { onClose(); return; }
@@ -46,15 +52,45 @@ export function UnlockSheet({
       document.documentElement.style.overflow = "";
       document.removeEventListener("keydown", handleKey);
       (prevFocusRef.current as HTMLElement | null)?.focus();
+      // Closing cancels any in-flight payment timers and re-arms the guard.
+      payTimers.current.forEach(clearTimeout);
+      payTimers.current = [];
+      payingRef.current = false;
       setTimeout(() => { setPay("idle"); setSel(null); }, 300);
     }
     return () => { document.removeEventListener("keydown", handleKey); };
   }, [open, handleKey]);
 
-  function doPay() {
-    if (pay !== "idle") return;
+  // Unmount-only safety: never let a scheduled onSuccess fire after teardown.
+  useEffect(() => () => { payTimers.current.forEach(clearTimeout); }, []);
+
+  // Demo animation: the original local simulation, used whenever live Razorpay
+  // isn't wired (no key / no session). Kept verbatim so demo mode is unchanged.
+  function runDemoPay() {
     setPay("processing");
-    setTimeout(() => { setPay("success"); setTimeout(onSuccess, 450); }, reduced ? 0 : 900);
+    const t1 = setTimeout(() => {
+      setPay("success");
+      payTimers.current.push(setTimeout(onSuccess, 450));
+    }, reduced ? 0 : 900);
+    payTimers.current.push(t1);
+  }
+
+  async function doPay() {
+    if (payingRef.current) return;
+    if (!sel) return; // a payment method must be chosen first
+    payingRef.current = true;
+
+    // Try the real gateway first; 'unconfigured' means demo mode — fall back.
+    const result = await payWithRazorpay({ kind: "unlock" });
+    if (result === "unconfigured") { runDemoPay(); return; }
+    if (result === "success") {
+      setPay("success");
+      payTimers.current.push(setTimeout(onSuccess, 450));
+      return;
+    }
+    // 'dismissed' or 'failed' — re-arm so the user can retry.
+    payingRef.current = false;
+    setPay("idle");
   }
 
   // matchMedia in effect, not render — server and first client pass must agree.
@@ -105,9 +141,16 @@ export function UnlockSheet({
                 </button>
               </div>
               <UnlockBenefits seedName={seedName} city={city} count={count} headlineId={HEADLINE_ID} />
-              <PaymentMethodTiles selected={sel} onSelect={setSel} />
+              {/* Guests create an account first — don't show payment UI yet, it
+                  reads as "pay now" and conflicts with the account step. */}
+              {!isGuest && <PaymentMethodTiles selected={sel} onSelect={setSel} />}
               <div aria-live="polite" aria-atomic="true">
-                <Button variant="cta" size="xl" className="w-full" onClick={doPay} disabled={pay !== "idle"}>
+                {isGuest ? (
+                  <Button variant="cta" size="xl" className="w-full" onClick={() => onRequireAccount?.()}>
+                    Create a free account to unlock →
+                  </Button>
+                ) : (
+                <Button variant="cta" size="xl" className="w-full" onClick={doPay} disabled={pay !== "idle" || !sel}>
                   {pay === "idle" && "Pay ₹199, unlock everything."}
                   {pay === "processing" && (
                     <span className="flex items-center gap-2">
@@ -124,6 +167,17 @@ export function UnlockSheet({
                     </span>
                   )}
                 </Button>
+                )}
+                {!isGuest && !sel && pay === "idle" && (
+                  <p className="mt-2 text-xs text-center text-[var(--color-ink-muted)]">
+                    Select a payment method to continue
+                  </p>
+                )}
+                {isGuest && (
+                  <p className="mt-2 text-xs text-center text-[var(--color-ink-muted)]">
+                    Step 1: free account · Step 2: pay ₹199 (one-time, no subscription)
+                  </p>
+                )}
               </div>
               <div className="flex flex-col items-center gap-1.5">
                 <p className="text-xs text-[var(--color-ink-muted)] text-center">

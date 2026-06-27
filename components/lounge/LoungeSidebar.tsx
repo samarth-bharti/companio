@@ -27,11 +27,12 @@ interface LoungeSidebarProps {
   setActiveLoungeId: (id: string | null) => void;
   activeDirectId: string | null;
   setActiveDirectId: (id: string | null) => void;
+  readDirectIds: Set<string>;
 }
 
 export function LoungeSidebar({
   lounges, directThreads, activeTab, setActiveTab,
-  activeLoungeId, setActiveLoungeId, activeDirectId, setActiveDirectId,
+  activeLoungeId, setActiveLoungeId, activeDirectId, setActiveDirectId, readDirectIds,
 }: LoungeSidebarProps) {
   const [query, setQuery] = useState('');
   const reduced = useReducedMotion();
@@ -159,6 +160,7 @@ export function LoungeSidebar({
                 const c = COMPANIONS.find(c => c.id === t.companionId)!;
                 const lastMsg = t.messages[t.messages.length - 1];
                 const isActive = activeDirectId === t.companionId;
+                const unread = readDirectIds.has(t.companionId) ? 0 : t.unread;
                 return (
                   <Reveal key={t.companionId} delay={i * 0.04}>
                     <button
@@ -168,7 +170,7 @@ export function LoungeSidebar({
                       aria-current={isActive ? 'page' : undefined}
                     >
                       <div className="relative shrink-0">
-                        <Image src={c.photo} alt={c.firstName} width={40} height={40} className="rounded-full object-cover" />
+                        <Image src={c.photo} alt={c.firstName} width={40} height={40} style={{ width: 40, height: 40 }} className="rounded-full object-cover" />
                         {c.availableNow && (
                           <span className="absolute bottom-0 right-0 block rounded-full" style={{ width: 10, height: 10, background: 'var(--color-emerald)', border: '2px solid white' }} />
                         )}
@@ -176,9 +178,9 @@ export function LoungeSidebar({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-sans font-semibold text-sm" style={{ color: 'var(--color-ink)' }}>{c.firstName}</span>
-                          {t.unread > 0 && (
+                          {unread > 0 && (
                             <span className="text-xs font-semibold rounded-full px-1.5 shrink-0" style={{ background: 'var(--color-azure)', color: '#fff', minWidth: 18, textAlign: 'center' }}>
-                              {t.unread}
+                              {unread}
                             </span>
                           )}
                         </div>

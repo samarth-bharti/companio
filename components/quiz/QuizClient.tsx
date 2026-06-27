@@ -31,6 +31,13 @@ export function QuizClient() {
   const [answers, setAnswers] = useState<QuizAnswers>(INITIAL_ANSWERS);
   const [echoLine, setEchoLine] = useState('');
 
+  // Declared before the effect below that calls it; stable identity (useCallback []).
+  const triggerEcho = useCallback((key: string, currentAnswers: QuizAnswers) => {
+    const line = getEmpathyEcho(key, currentAnswers);
+    setEchoLine(line);
+    setPhase('echo');
+  }, []);
+
   // Keyboard: Enter on question screen tries to advance for single/name
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -44,13 +51,7 @@ export function QuizClient() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [phase, step, answers]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const triggerEcho = useCallback((key: string, currentAnswers: QuizAnswers) => {
-    const line = getEmpathyEcho(key, currentAnswers);
-    setEchoLine(line);
-    setPhase('echo');
-  }, []);
+  }, [phase, step, answers, triggerEcho]);
 
   const advance = useCallback(() => {
     if (step < QUESTIONS.length - 1) {
@@ -167,8 +168,8 @@ export function QuizClient() {
         </Link>
       </div>
 
-      {/* Question area */}
-      <div className="flex-1">
+      {/* Question area — aria-live so phase/step transitions are announced to SR */}
+      <div className="flex-1" aria-live="polite" aria-atomic="false">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={step}

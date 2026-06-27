@@ -19,6 +19,44 @@ function formatDate(iso: string): string {
   return date.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
+// Parse a loose time label ("7:00 AM", "07:00", "5 PM") into 24h hours/minutes.
+function parseTime(label: string): { h: number; min: number } {
+  const m = label.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+  if (!m) return { h: 9, min: 0 };
+  let h = Number(m[1]);
+  const min = m[2] ? Number(m[2]) : 0;
+  const mer = m[3]?.toLowerCase();
+  if (mer === 'pm' && h < 12) h += 12;
+  if (mer === 'am' && h === 12) h = 0;
+  return { h, min };
+}
+
+// Build a calendar file the user can add to any app. Floating local time
+// (no timezone marker) — the meetup is wherever the member already is.
+function buildIcs(activity: string, firstName: string, iso: string, time: string, place: string): string {
+  const [y, mo, d] = iso.split('-').map(Number);
+  const { h, min } = parseTime(time);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const start = `${y}${pad(mo)}${pad(d)}T${pad(h)}${pad(min)}00`;
+  const endH = (h + 1) % 24;
+  const end = `${y}${pad(mo)}${pad(d)}T${pad(endH)}${pad(min)}00`;
+  const esc = (s: string) => s.replace(/[\\;,]/g, (c) => '\\' + c).replace(/\n/g, '\\n');
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Companio//Meetup//EN',
+    'BEGIN:VEVENT',
+    `UID:companio-${iso}-${h}${min}@companio`,
+    `DTSTART:${start}`,
+    `DTEND:${end}`,
+    `SUMMARY:${esc(`${activity} with ${firstName}`)}`,
+    `LOCATION:${esc(place)}`,
+    `DESCRIPTION:${esc('Your Companio meetup. Strictly platonic, ID-verified, meet in public first.')}`,
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+}
+
 interface Props {
   companion: Companion;
   booking: Booking;
@@ -27,6 +65,19 @@ interface Props {
 export function BookingConfirmed({ companion, booking }: Props) {
   const reduced = useReducedMotion();
   const dateLabel = formatDate(booking.dateISO);
+
+  function addToCalendar() {
+    const ics = buildIcs(booking.activity, companion.firstName, booking.dateISO, booking.time, booking.place);
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `companio-${companion.firstName.toLowerCase()}-${booking.dateISO}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 
   // Announce confirmation to screen readers
   const liveRef = useRef<HTMLDivElement>(null);
@@ -191,8 +242,8 @@ export function BookingConfirmed({ companion, booking }: Props) {
             size="md"
             className="flex-1"
             style={{ minHeight: 44 }}
-            aria-label="Add this meetup to your calendar (demo)"
-            onClick={() => {/* mock */}}
+            aria-label="Add this meetup to your calendar"
+            onClick={addToCalendar}
           >
             Add to calendar
           </Button>

@@ -30,8 +30,13 @@ export function useJsScroll(options?: UseScrollOptions) {
   useEffect(() => setMounted(true), []);
 
   const values = useScroll(mounted ? options : undefined);
-  // `accelerate` is internal — not in the public MotionValue type.
+  // `accelerate` is internal — not in the public MotionValue type. This mutation
+  // is intentional and MUST happen during render, before child motion components
+  // consume the values, to suppress framer's WAAPI promotion (see header). The
+  // immutability rule can't model this deliberate framer workaround.
+  /* eslint-disable react-hooks/immutability */
   (values.scrollXProgress as unknown as { accelerate?: unknown }).accelerate = undefined;
   (values.scrollYProgress as unknown as { accelerate?: unknown }).accelerate = undefined;
+  /* eslint-enable react-hooks/immutability */
   return values;
 }

@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { CheckCircle2 } from 'lucide-react';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
 import { setUser } from '@/lib/journeyState';
+import { track } from '@/lib/analytics';
 import { spring, stagger } from '@/lib/motion';
 import type { RegFormData } from './RegisterWizard';
 
@@ -25,17 +26,23 @@ export function StepDone({ form, next }: Props) {
   const reduced = useReducedMotion();
   const name    = form.firstName || 'Friend';
 
-  // Persist demo user — runs only once on mount, client-side only
+  // Persist demo user — runs only once on mount, client-side only.
+  // City is carried so the companion application pre-fills it (one flow).
   useEffect(() => {
-    setUser({ firstName: name });
-  }, [name]);
+    setUser({ firstName: name, city: form.city || undefined });
+    track('signup', { role: form.role });
+  }, [name, form.city, form.role]);
 
   function proceed() {
-    router.push(
-      form.role === 'companion'
-        ? '/become-a-companion'
-        : `${next || '/explore'}?welcome=1`,
-    );
+    if (form.role === 'companion') {
+      // Companions continue straight into completing their profile + ID — it's
+      // one onboarding, so go directly to the application (now pre-filled).
+      router.push('/become-a-companion/apply');
+      return;
+    }
+    const dest = next || '/explore';
+    const sep = dest.includes('?') ? '&' : '?';
+    router.push(`${dest}${sep}welcome=1`);
   }
 
   return (

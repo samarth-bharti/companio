@@ -4,23 +4,15 @@ import { memo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
-import { BadgeCheck, Heart, Plus, Check } from 'lucide-react';
+import { BadgeCheck, Heart, Plus, Check, MapPin, Languages } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { durations } from '@/lib/motion';
 import type { Companion } from '@/lib/data/companions';
 
 /*
- * Pulse-ring keyframe — injected once per page load, not once per card.
- * The keyframe is now in globals.css so this component adds zero <style> tags.
- * (companio-pulse-ring is defined in app/globals.css via the shared keyframes block)
+ * Pulse-ring keyframe lives in app/globals.css (companio-pulse-ring) — this
+ * component injects zero <style> tags.
  */
-
-// Deterministic "viewed today" mock counts — no Math.random at render.
-const VIEWS_TODAY: Record<string, number> = {
-  ananya: 47, priya: 38, deepika: 33, zara: 29, meena: 26,
-  rohan: 21, kiran: 19, aarav: 18, ishaan: 16, fatima: 15,
-  vivek: 14, sahil: 12, arjun: 11, nisha: 8,
-};
 
 /** "New this week" — reviews < 45 */
 function isNew(c: Companion) { return c.reviews < 45; }
@@ -41,20 +33,11 @@ interface CompanionCardProps {
   quizDone?: boolean;
 }
 
-function Chip({
-  children, className, style,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
-}) {
+function Chip({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className={cn(
-        'inline-flex items-center gap-1 px-2.5 py-1 rounded-pill text-xs font-medium bg-white/60 backdrop-blur-sm text-ink',
-        className,
-      )}
-      style={{ border: '1.5px solid rgba(46,107,255,0.2)', ...style }}
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-pill text-xs font-medium bg-white/85 text-ink"
+      style={{ border: '1.5px solid rgba(46,107,255,0.18)' }}
     >
       {children}
     </span>
@@ -62,8 +45,7 @@ function Chip({
 }
 
 // memo: prevents re-render when parent (CompanionGrid/ExploreClient) state changes
-// but this card's own props haven't changed. Handlers from ExploreClient are already
-// wrapped in useCallback so reference stability is maintained.
+// but this card's own props haven't. ExploreClient handlers are useCallback-wrapped.
 export const CompanionCard = memo(function CompanionCard({
   companion, develop, onBook,
   isFavorite, onToggleFavorite,
@@ -71,7 +53,10 @@ export const CompanionCard = memo(function CompanionCard({
   quizDone,
 }: CompanionCardProps) {
   const shouldReduce = useReducedMotion();
-  const { id, name, city, area, rating, reviews, activities, photo, topMatch } = companion;
+  const {
+    id, name, city, area, age, rating, reviews,
+    activities, languages, bio, photo, topMatch,
+  } = companion;
 
   const ease = [0.16, 1, 0.3, 1] as const;
   const hasDevelop = !!(develop && !shouldReduce);
@@ -79,16 +64,18 @@ export const CompanionCard = memo(function CompanionCard({
 
   // Cards in the unlocked grid always have onToggleFavorite; locked preview cards don't.
   const isUnlockedGrid = !!onToggleFavorite;
+  const extraActivities = Math.max(0, activities.length - 2);
 
   return (
     <motion.article
-      className="relative w-full rounded-[var(--radius-lg)] overflow-hidden bg-surface"
+      className="group relative w-full rounded-[var(--radius-lg)] overflow-hidden bg-surface"
       style={{ boxShadow: 'var(--shadow-1)' }}
       initial={hasRing ? { boxShadow: '0 0 0 1px rgba(255,178,62,0.25), 0 12px 36px -12px rgba(255,178,62,0.45)' } : false}
       animate={hasRing ? { boxShadow: '0 1px 3px rgba(20,26,46,0.07)' } : {}}
       transition={hasRing ? { duration: 0.9, ease, delay: develop!.delay } : {}}
+      whileHover={shouldReduce ? {} : { y: -4 }}
     >
-      {/* Portrait — 4:3 compact */}
+      {/* Portrait — 4:3, with a bottom scrim so the overlaid name stays legible. */}
       <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3' }}>
         <motion.div
           className="absolute inset-0"
@@ -101,32 +88,36 @@ export const CompanionCard = memo(function CompanionCard({
             alt={`${name}, companion in ${area}, ${city}`}
             fill
             sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, (max-width:1280px) 33vw, 25vw"
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.05]"
           />
         </motion.div>
 
-        {/* Top-left overlay: topMatch ribbon OR New/Popular badge */}
+        {/* Legibility scrim for the name overlay. */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none"
+          style={{ background: 'linear-gradient(to top, rgba(11,15,30,0.85), rgba(11,15,30,0.25) 55%, transparent)' }}
+          aria-hidden="true"
+        />
+
+        {/* Top-left: topMatch ribbon OR New/Popular badge */}
         {topMatch ? (
-          <div
-            className="absolute top-2 left-2 px-2.5 py-1 rounded-pill text-xs font-semibold text-ink"
-            style={{ background: 'var(--color-gold)' }}
-          >
-            Top match
+          <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-pill text-xs font-bold text-ink shadow-sm" style={{ background: 'var(--color-gold)' }}>
+            ★ Top match
           </div>
         ) : isUnlockedGrid && (isNew(companion) || isPopular(companion)) ? (
           <div
-            className="absolute top-2 left-2 px-2.5 py-1 rounded-pill text-xs font-semibold"
+            className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-pill text-xs font-semibold shadow-sm"
             style={
               isNew(companion)
-                ? { background: 'rgba(122,79,224,0.88)', color: '#fff', backdropFilter: 'blur(4px)' }
-                : { background: 'rgba(255,178,62,0.92)', color: '#141A2E', backdropFilter: 'blur(4px)' }
+                ? { background: 'rgba(122,79,224,0.92)', color: '#fff', backdropFilter: 'blur(4px)' }
+                : { background: 'rgba(255,178,62,0.94)', color: '#141A2E', backdropFilter: 'blur(4px)' }
             }
           >
             {isNew(companion) ? 'New this week' : 'Popular'}
           </div>
         ) : null}
 
-        {/* Favourite toggle */}
+        {/* Favourite toggle — unlocked grid only */}
         {onToggleFavorite && (
           <button
             type="button"
@@ -134,134 +125,97 @@ export const CompanionCard = memo(function CompanionCard({
             aria-label={isFavorite ? `Remove ${name} from favourites` : `Save ${name} to favourites`}
             onClick={(e) => { e.stopPropagation(); onToggleFavorite(id); }}
             className={cn(
-              'absolute top-2 right-2 w-11 h-11 flex items-center justify-center rounded-full transition-colors',
+              'absolute top-2.5 right-2.5 w-10 h-10 flex items-center justify-center rounded-full transition-colors',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1',
-              isFavorite ? 'bg-white/90' : 'bg-black/25 hover:bg-white/80',
+              isFavorite ? 'bg-white/90' : 'bg-black/30 hover:bg-white/80',
             )}
             style={{ outlineColor: 'var(--color-azure)' }}
           >
-            <Heart
-              size={18}
-              aria-hidden="true"
-              className={isFavorite ? 'fill-current' : ''}
-              style={{ color: isFavorite ? '#E53E3E' : 'white' }}
-            />
+            <Heart size={18} aria-hidden="true" className={isFavorite ? 'fill-current' : ''} style={{ color: isFavorite ? '#E53E3E' : 'white' }} />
           </button>
         )}
 
-
-        {/* Availability pill — unlocked grid only */}
-        {isUnlockedGrid && (
-          <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-            {companion.availableNow && (
-              /* Live presence pulse: layered rings for "Free now" companions */
-              <span className="relative inline-flex shrink-0" aria-hidden="true">
-                {!shouldReduce && (
-                  <>
-                    <span
-                      className="absolute inset-0 rounded-full"
-                      style={{
-                        background: 'var(--color-emerald)',
-                        opacity: 0.35,
-                        animation: 'companio-pulse-ring 1.8s ease-out infinite',
-                      }}
-                    />
-                    <span
-                      className="absolute inset-0 rounded-full"
-                      style={{
-                        background: 'var(--color-emerald)',
-                        opacity: 0.2,
-                        animation: 'companio-pulse-ring 1.8s ease-out 0.6s infinite',
-                      }}
-                    />
-                  </>
-                )}
-                <span
-                  className="relative block h-2.5 w-2.5 rounded-full"
-                  style={{ background: 'var(--color-emerald)' }}
-                />
-              </span>
-            )}
-            {!companion.availableNow && (
-              <span
-                className="h-2 w-2 rounded-full shrink-0"
-                style={{ background: 'rgba(90,99,120,0.4)' }}
-                aria-hidden="true"
-              />
-            )}
-            <span
-              className="px-2 py-0.5 rounded-pill text-xs font-medium"
-              style={{
-                background: 'rgba(255,255,255,0.85)',
-                backdropFilter: 'blur(8px)',
-                border: companion.availableNow
-                  ? '1px solid rgba(31,174,107,0.35)'
-                  : '1px solid rgba(46,107,255,0.18)',
-                color: companion.availableNow ? 'var(--color-emerald)' : 'var(--color-ink-muted)',
-              }}
-            >
-              {companion.availability}
-            </span>
+        {/* Match score — overlaid bottom-right (quiz-matched, unlocked grid) */}
+        {quizDone && isUnlockedGrid && (
+          <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-pill text-xs font-bold shadow-sm" style={{ background: 'rgba(122,79,224,0.94)', color: '#fff', backdropFilter: 'blur(4px)' }}>
+            {companion.matchScore}% match
           </div>
         )}
 
-        {/* companio-pulse-ring keyframe lives in globals.css — no per-card <style> injection */}
+        {/* Name block — the whole block links to the profile (no ugly blue link). */}
+        <Link
+          href={`/companion/${id}`}
+          className="absolute bottom-2.5 left-3 right-3 focus-visible:outline-none"
+          aria-label={`View ${name}'s profile`}
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="text-[1.15rem] font-bold text-white leading-tight tracking-tight drop-shadow group-hover:underline decoration-white/40 underline-offset-2" style={{ fontFamily: 'var(--font-display)' }}>
+              {name}{age ? <span className="font-medium opacity-80">, {age}</span> : null}
+            </span>
+            <BadgeCheck size={17} className="shrink-0 drop-shadow text-white" aria-hidden="true" />
+            <span className="sr-only">Verified</span>
+          </div>
+          <div className="flex items-center gap-1 text-[0.8rem] font-medium text-white/85 mt-0.5">
+            <MapPin size={12} aria-hidden="true" />
+            <span>{area} · {city}</span>
+          </div>
+        </Link>
       </div>
 
-      {/* Card info */}
-      <div className="p-3 flex flex-col gap-2">
-        <div className="flex items-center gap-1.5">
-          <span className="text-base font-semibold text-ink leading-tight" style={{ fontFamily: 'var(--font-display)' }}>
-            {name}
+      {/* Info */}
+      <div className="p-3.5 flex flex-col gap-2.5">
+        {/* Meta line: rating · distance · availability */}
+        <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+          <span className="inline-flex items-center gap-0.5 text-sm font-bold text-ink" aria-label={`Rated ${rating} out of 5, ${reviews} reviews`}>
+            <span style={{ color: 'var(--color-gold)' }}>★</span> {rating}
+            <span className="text-xs font-normal" style={{ color: 'var(--color-ink-muted)' }}>({reviews})</span>
           </span>
-          <BadgeCheck size={16} className="text-azure shrink-0" aria-hidden="true" />
-          <span className="sr-only">Verified</span>
-          {/* Distance */}
           {isUnlockedGrid && (
-            <span className="ml-auto text-xs shrink-0" style={{ color: 'var(--color-ink-muted)' }}>
-              {companion.distanceKm} km
-            </span>
+            <>
+              <span aria-hidden="true">·</span>
+              <span>{companion.distanceKm} km</span>
+              <span aria-hidden="true">·</span>
+              <span
+                className="inline-flex items-center gap-1 font-semibold"
+                style={{ color: companion.availableNow ? 'var(--color-emerald)' : 'var(--color-ink-muted)' }}
+              >
+                {companion.availableNow && (
+                  <span className="relative inline-flex h-2 w-2" aria-hidden="true">
+                    {!shouldReduce && (
+                      <span className="absolute inset-0 rounded-full" style={{ background: 'var(--color-emerald)', opacity: 0.35, animation: 'companio-pulse-ring 1.8s ease-out infinite' }} />
+                    )}
+                    <span className="relative block h-2 w-2 rounded-full" style={{ background: 'var(--color-emerald)' }} />
+                  </span>
+                )}
+                {companion.availability}
+              </span>
+            </>
           )}
         </div>
 
+        {/* Bio tagline — a line of personality (the "details" that make a card interesting). */}
+        <p className="text-[0.8rem] leading-relaxed line-clamp-2" style={{ color: 'var(--color-ink-muted)' }}>
+          {bio}
+        </p>
+
+        {/* Languages */}
+        {languages?.length > 0 && (
+          <div className="flex items-center gap-1.5 text-[0.7rem] font-medium" style={{ color: 'var(--color-ink-muted)' }}>
+            <Languages size={12} className="shrink-0" aria-hidden="true" />
+            <span className="truncate">{languages.join(' · ')}</span>
+          </div>
+        )}
+
+        {/* Activity chips — up to 2 + overflow count */}
         <div className="flex flex-wrap gap-1.5">
-          <Chip>{area} · {city}</Chip>
-          <Chip>★ {rating} ({reviews})</Chip>
-          {/* Match score badge — shown when quizDone */}
-          {quizDone && isUnlockedGrid && (
-            <Chip
-              className="font-semibold"
-              style={{
-                background: 'rgba(122,79,224,0.12)',
-                border: '1.5px solid rgba(122,79,224,0.25)',
-                color: 'var(--color-violet)',
-              } as React.CSSProperties}
-            >
-              {companion.matchScore}% match
-            </Chip>
-          )}
-          {isUnlockedGrid && VIEWS_TODAY[companion.id] !== undefined && (
-            <Chip style={{ color: 'var(--color-ink-muted)' }}>
-              👁 {VIEWS_TODAY[companion.id]} today
-            </Chip>
-          )}
           {activities.slice(0, 2).map((act) => (
             <Chip key={act}>{act}</Chip>
           ))}
+          {extraActivities > 0 && <Chip>+{extraActivities}</Chip>}
         </div>
 
-        <div className="flex items-center justify-between pt-1 gap-2">
-          <Link
-            href={`/companion/${id}`}
-            className={cn(
-              'text-xs text-azure-deep underline underline-offset-2 hover:text-azure',
-              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure rounded-sm',
-            )}
-          >
-            View profile
-          </Link>
-
-          {/* Compare toggle — unlocked grid only */}
+        {/* Actions — compare (secondary) + a prominent Book button. */}
+        <div className="flex items-center gap-2 pt-1">
           {onToggleCompare && (
             <button
               type="button"
@@ -269,26 +223,16 @@ export const CompanionCard = memo(function CompanionCard({
               aria-label={isCompared ? `Remove ${name} from comparison` : `Add ${name} to comparison`}
               onClick={(e) => { e.stopPropagation(); onToggleCompare(id); }}
               className={cn(
-                'flex items-center gap-1 px-2.5 py-1.5 rounded-pill text-xs font-medium transition-colors',
+                'shrink-0 flex items-center gap-1 px-3 h-[46px] rounded-xl text-xs font-semibold transition-colors',
                 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1',
               )}
               style={
                 isCompared
-                  ? {
-                      background: 'var(--color-azure)',
-                      border: '1.5px solid var(--color-azure)',
-                      color: 'white',
-                      outlineColor: 'var(--color-azure)',
-                    }
-                  : {
-                      background: 'rgba(255,255,255,0.70)',
-                      border: '1.5px solid rgba(46,107,255,0.20)',
-                      color: 'var(--color-ink-muted)',
-                      outlineColor: 'var(--color-azure)',
-                    }
+                  ? { background: 'var(--color-azure)', border: '1.5px solid var(--color-azure)', color: 'white', outlineColor: 'var(--color-azure)' }
+                  : { background: 'rgba(46,107,255,0.06)', border: '1.5px solid rgba(46,107,255,0.22)', color: 'var(--color-azure-deep)', outlineColor: 'var(--color-azure)' }
               }
             >
-              {isCompared ? <Check size={11} aria-hidden /> : <Plus size={11} aria-hidden />}
+              {isCompared ? <Check size={13} aria-hidden /> : <Plus size={13} aria-hidden />}
               {isCompared ? 'Added' : 'Compare'}
             </button>
           )}
@@ -297,13 +241,14 @@ export const CompanionCard = memo(function CompanionCard({
             type="button"
             onClick={() => onBook?.(companion)}
             className={cn(
-              'min-h-[44px] px-4 py-2 rounded-pill text-sm font-semibold text-white',
-              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white',
+              'flex-1 inline-flex items-center justify-center gap-1.5 min-h-[46px] px-4 rounded-xl text-[0.95rem] font-bold text-white',
+              'transition-transform duration-150 hover:-translate-y-0.5 active:scale-[0.98]',
+              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure',
             )}
-            style={{ background: 'var(--grad-cta)', boxShadow: 'var(--glow-azure)' }}
-            aria-label={`Book a walk with ${name}`}
+            style={{ background: 'var(--grad-cta)', boxShadow: 'var(--glow-azure)', letterSpacing: '-0.01em' }}
+            aria-label={isUnlockedGrid ? `Book a meetup with ${name}` : `Unlock to see ${name}'s full profile`}
           >
-            Book a walk
+            {isUnlockedGrid ? 'Book a walk' : 'Unlock to book'}
           </button>
         </div>
       </div>

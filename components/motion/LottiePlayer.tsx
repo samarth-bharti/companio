@@ -49,8 +49,12 @@ export function LottiePlayer({
   // Single source of truth (honours the global motion toggle).
   const reducedMotion = useEffectiveReducedMotion();
   // Stable ref so the IntersectionObserver callback never captures a stale value.
+  // Updated in an effect (not during render) — the observer reads it at scroll
+  // time, so a post-commit update is soon enough.
   const reducedMotionRef = useRef(reducedMotion);
-  reducedMotionRef.current = reducedMotion;
+  useEffect(() => {
+    reducedMotionRef.current = reducedMotion;
+  }, [reducedMotion]);
 
   // Live-apply toggle changes to an already-mounted animation.
   useEffect(() => {
@@ -76,7 +80,7 @@ export function LottiePlayer({
           fetch(src)
             .then((r) => r.json())
             .then(setAnimationData)
-            .catch(console.error);
+            .catch(() => {/* decorative animation — fail silently, no console noise */});
           loadObs.disconnect();
         }
       },

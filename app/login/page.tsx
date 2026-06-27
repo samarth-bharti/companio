@@ -3,6 +3,7 @@ import { Nav } from '@/components/layout/Nav';
 import { BackBar } from '@/components/layout/BackBar';
 import { Footer } from '@/components/layout/Footer';
 import { LoginForm } from '@/components/auth/LoginForm';
+import { safeRedirect } from '@/lib/safeRedirect';
 
 export const metadata: Metadata = {
   title: 'Sign In, Companio',
@@ -15,7 +16,8 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ next?: string }>;
 }) {
-  const { next = '/explore' } = await searchParams;
+  const { next: rawNext } = await searchParams;
+  const next = safeRedirect(rawNext); // guard against open-redirect
 
   return (
     <>

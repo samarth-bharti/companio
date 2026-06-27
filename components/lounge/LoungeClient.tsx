@@ -16,6 +16,8 @@ export function LoungeClient() {
   const [activeTab, setActiveTab] = useState<SidebarTab>('lounges');
   const [activeLoungeId, setActiveLoungeId] = useState<string | null>(LOUNGES[0]?.id ?? null);
   const [activeDirectId, setActiveDirectId] = useState<string | null>(null);
+  // DMs whose unread badge has been cleared by opening the thread.
+  const [readDirectIds, setReadDirectIds] = useState<Set<string>>(() => new Set());
   const reduced = useReducedMotion();
 
   const hasActive = activeLoungeId !== null || activeDirectId !== null;
@@ -35,6 +37,8 @@ export function LoungeClient() {
   const handleSelectDirect = (id: string | null) => {
     setActiveDirectId(id);
     setActiveLoungeId(null);
+    // Opening a DM marks it read — clears its unread badge in the sidebar.
+    if (id) setReadDirectIds(prev => (prev.has(id) ? prev : new Set(prev).add(id)));
   };
 
   return (
@@ -60,6 +64,7 @@ export function LoungeClient() {
           setActiveLoungeId={handleSelectLounge}
           activeDirectId={activeDirectId}
           setActiveDirectId={handleSelectDirect}
+          readDirectIds={readDirectIds}
         />
       </div>
 

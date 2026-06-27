@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Lenis from 'lenis';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
@@ -16,6 +16,9 @@ const DISABLED_ROUTES = [
   '/register',
   '/companion-dashboard',
   '/become-a-companion/apply',
+  // Discover is a dense browse/grid page — native scroll is snappier here than
+  // Lenis's JS-driven smoothing (which adds per-frame cost on weaker devices).
+  '/explore',
 ];
 
 interface LenisProviderProps {
@@ -30,6 +33,7 @@ export function LenisProvider({ children, disabled = false }: LenisProviderProps
   const routeDisabled = DISABLED_ROUTES.some((r) => pathname?.startsWith(r));
   const shouldDisable = disabled || routeDisabled;
   const reducedMotion = useEffectiveReducedMotion();
+  const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
     if (shouldDisable || reducedMotion) return;
@@ -47,6 +51,7 @@ export function LenisProvider({ children, disabled = false }: LenisProviderProps
       wheelMultiplier: 0.85,
       touchMultiplier: 1.6,
     });
+    lenisRef.current = lenis;
 
     let rafId: number;
     function tick(time: number) {
@@ -58,8 +63,21 @@ export function LenisProvider({ children, disabled = false }: LenisProviderProps
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
+      lenisRef.current = null;
     };
   }, [shouldDisable, reducedMotion]);
+
+  // Reset scroll to the top on every route change. Lenis virtualizes scroll, so
+  // the browser's native per-navigation reset doesn't move it — without this a
+  // page opened from the bottom of the previous one stays scrolled to the bottom.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) return; // let #anchors resolve
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(0, { immediate: true });
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname]);
 
   return <>{children}</>;
 }

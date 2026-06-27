@@ -11,7 +11,7 @@ import type { Companion } from '@/lib/data/companions';
 function Chip({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-pill text-xs font-medium bg-white/60 backdrop-blur-sm text-ink"
+      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-pill text-xs font-medium bg-white/85 text-ink"
       style={{ border: '1.5px solid rgba(46,107,255,0.2)' }}
     >
       {children}
@@ -27,6 +27,11 @@ export function BlurLockCard({
   onUnlockClick: (c: Companion) => void;
 }) {
   const shouldReduce = useReducedMotion();
+
+  // Privacy: fetch a tiny, server-blurred version (Unsplash transform) so the
+  // full-resolution photo never reaches the browser — a CSS-only blur of the
+  // real image can be removed in DevTools. A light CSS blur just smooths it.
+  const lockedSrc = `${companion.photo}${companion.photo.includes('?') ? '&' : '?'}w=64&blur=1000&q=30`;
 
   return (
     <TiltCard maxDeg={4}>
@@ -46,13 +51,13 @@ export function BlurLockCard({
         {/* Portrait — blurred photo layer */}
         <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3' }}>
           <Image
-            src={companion.photo}
+            src={lockedSrc}
             alt=""
             aria-hidden="true"
             fill
             sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, (max-width:1280px) 33vw, 25vw"
             className="object-cover"
-            style={{ filter: 'blur(18px) saturate(1.05)', transform: 'scale(1.06)' }}
+            style={{ filter: 'blur(8px) saturate(1.05)', transform: 'scale(1.06)' }}
           />
 
           {/* 2.4s diagonal shimmer sweep — CSS animation instead of framer-motion
@@ -101,7 +106,7 @@ export function BlurLockCard({
           <div className="flex flex-wrap gap-1.5">
             <Chip>{companion.area} · {companion.city}</Chip>
             <Chip>★ {companion.rating} ({companion.reviews})</Chip>
-            {companion.activities.slice(0, 2).map((act) => (
+            {companion.activities.slice(0, 1).map((act) => (
               <Chip key={act}>{act}</Chip>
             ))}
           </div>

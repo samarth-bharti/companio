@@ -8,6 +8,7 @@ import { WaveBridge } from '@/components/journey/WaveBridge';
 export interface InfoSection {
   heading: string;
   body: string[];
+  id?: string; // optional anchor target, e.g. "spin" → /terms#spin
 }
 
 interface InfoPageProps {
@@ -15,10 +16,13 @@ interface InfoPageProps {
   title: string;
   intro: string;
   sections: InfoSection[];
+  /** Replaces the default footnote. Pass a real "last updated" line on binding
+   *  legal pages so they don't carry the "illustrative" demo disclaimer. */
+  footnote?: string;
 }
 
 /** Shared layout for legal / policy / trust pages — calm, readable, real text. */
-export function InfoPage({ eyebrow, title, intro, sections }: InfoPageProps) {
+export function InfoPage({ eyebrow, title, intro, sections, footnote }: InfoPageProps) {
   // First character becomes a large faint ghost behind the title block.
   const ghost = title.charAt(0);
 
@@ -85,7 +89,7 @@ export function InfoPage({ eyebrow, title, intro, sections }: InfoPageProps) {
           <div className="flex flex-col gap-10">
             {sections.map((s, i) => (
               <Reveal key={s.heading} delay={i * 0.06}>
-                <section>
+                <section id={s.id} className="scroll-mt-24">
                   <h2
                     className="font-display text-h3 tracking-tight mb-3"
                     style={{ color: 'var(--color-ink)' }}
@@ -106,8 +110,8 @@ export function InfoPage({ eyebrow, title, intro, sections }: InfoPageProps) {
             ))}
           </div>
           <p className="font-sans text-xs mt-16 mb-8" style={{ color: 'rgba(20,26,46,0.4)' }}>
-            Last updated June 2026 · Companio Technologies Pvt. Ltd. · This is a product
-            demonstration; policies shown are illustrative.
+            {footnote ??
+              'Last updated June 2026 · Companio Technologies Pvt. Ltd. · This is a product demonstration; policies shown are illustrative.'}
           </p>
         </div>
       </main>

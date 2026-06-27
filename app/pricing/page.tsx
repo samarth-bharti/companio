@@ -8,6 +8,7 @@ import { PackCard, type Pack } from '@/components/pricing/PackCard';
 import { WhatsIncludedAccordion } from '@/components/pricing/WhatsIncludedAccordion';
 import { PlusCard } from '@/components/pricing/PlusCard';
 import { CheckoutSheet, type CheckoutItem } from '@/components/pricing/CheckoutSheet';
+import { type RazorpayIntent } from '@/lib/razorpayClient';
 import { Button } from '@/components/ui/Button';
 import { Nav } from '@/components/layout/Nav';
 import { BackBar } from '@/components/layout/BackBar';
@@ -33,7 +34,7 @@ const PACKS: Pack[] = [
     price: 1999,
     credits: 5,
     perMeetup: '₹400 per meetup',
-    ribbon: 'Most popular, chosen by 1,100+ members',
+    ribbon: 'Most popular',
   },
   {
     id: 'ten',
@@ -85,7 +86,7 @@ export default function PricingPage() {
       setPlan('plus');
       addNotification({
         title: 'Companio Plus activated',
-        body: "You're now a Plus member. Cancel anytime in two taps.",
+        body: "You're now a Plus member — it's yours for good, no recurring charge.",
       });
       setIsPlusAlready(true);
     }
@@ -102,7 +103,16 @@ export default function PricingPage() {
         detail: pack.perMeetup ?? undefined,
       };
     }
-    return { label: 'Companio Plus', priceDisplay: '₹299/month', detail: 'Cancel anytime' };
+    return { label: 'Companio Plus', priceDisplay: '₹299', detail: 'One-time, no recurring charge' };
+  }
+
+  // Map the display pack id to the server's CREDIT_PACKS key for live Razorpay.
+  function getOrderIntent(): RazorpayIntent {
+    if (sheetMode.type === 'pack') {
+      const map: Record<string, string> = { single: 'pack1', five: 'pack5', ten: 'pack10' };
+      return { kind: 'credits', packId: map[(sheetMode as { type: 'pack'; packId: string }).packId] };
+    }
+    return { kind: 'plus' };
   }
 
   return (
@@ -178,7 +188,7 @@ export default function PricingPage() {
         <Reveal delay={0.54}>
           <div className="flex flex-col gap-4 pt-2">
             <p className="text-sm text-center text-[var(--color-ink-muted)]">
-              Most members who meet 2+ times a month save with Plus.
+              A one-time membership with lower fees on every meetup — no subscription.
             </p>
             <PlusCard isPlus={isPlusAlready} onUpgrade={openPlusCheckout} />
           </div>
@@ -189,6 +199,7 @@ export default function PricingPage() {
       <CheckoutSheet
         open={sheetOpen}
         item={getSheetItem()}
+        order={getOrderIntent()}
         onClose={() => setSheetOpen(false)}
         onPaid={handlePaid}
       />

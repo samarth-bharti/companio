@@ -3,29 +3,23 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Shield, Send } from 'lucide-react';
-import { getThread, appendMessage } from '@/lib/appState';
+import { Shield, Send, Smile } from 'lucide-react';
+import { getThread, appendMessage, reactToMessage } from '@/lib/appState';
 import type { ChatMessage } from '@/lib/appState';
 import type { Companion } from '@/lib/data/companions';
 import { calm, spring } from '@/lib/motion';
-import { CONTACT_RE, getReplies } from './chatReplies';
+import { CONTACT_RE, randomReply, replyDelayMs } from './chatReplies';
+import { EmojiStickerPicker } from './EmojiStickerPicker';
+import { MessageBubble } from './MessageBubble';
 
-// Three bouncing dots shown while the companion is "typing" — CSS animation matches
-// lounge/ChatStream pattern; companio-typing-dot keyframe is in globals.css.
+// Three bouncing dots shown while the companion is "typing".
 function TypingIndicator() {
   const reduced = useReducedMotion();
   return (
     <div className="flex justify-start" aria-label="Typing…">
       <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid rgba(46,107,255,0.1)' }}>
         {[0, 1, 2].map((i) => (
-          <span
-            key={i}
-            className="block rounded-full"
-            style={{
-              width: 6, height: 6, background: 'var(--color-ink-muted)',
-              animation: reduced ? 'none' : `companio-typing-dot 0.7s ease-in-out ${i * 0.18}s infinite`,
-            }}
-          />
+          <span key={i} className="block rounded-full" style={{ width: 6, height: 6, background: 'var(--color-ink-muted)', animation: reduced ? 'none' : `companio-typing-dot 0.7s ease-in-out ${i * 0.18}s infinite` }} />
         ))}
       </span>
     </div>
@@ -42,15 +36,28 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
   const [input, setInput]       = useState('');
   const [blocked, setBlocked]   = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const logRef  = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const logRef   = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const reduced  = useReducedMotion();
 
   useEffect(() => { setThread(getThread(companion.id)); }, [companion.id]);
 
-  // Scroll to bottom whenever thread or typing indicator changes
+  // Scroll to bottom whenever thread or typing indicator changes.
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [thread, isTyping]);
+
+  // Simulated companion reply after any of my messages (text or sticker).
+  const triggerReply = () => {
+    setIsTyping(true);
+    const reply = randomReply(companion.id);
+    setTimeout(() => {
+      setIsTyping(false);
+      appendMessage(companion.id, { from: 'them', text: reply });
+      setThread(getThread(companion.id));
+    }, replyDelayMs());
+  };
 
   const send = () => {
     if (!input.trim()) return;
@@ -59,14 +66,23 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
     appendMessage(companion.id, { from: 'me', text: input.trim() });
     setInput('');
     setThread(getThread(companion.id));
-    setIsTyping(true);
-    const delay = 1200 + Math.random() * 800;
-    const reply = getReplies(companion.id)[Math.floor(Math.random() * getReplies(companion.id).length)];
-    setTimeout(() => {
-      setIsTyping(false);
-      appendMessage(companion.id, { from: 'them', text: reply });
-      setThread(getThread(companion.id));
-    }, delay);
+    triggerReply();
+  };
+
+  const sendSticker = (text: string) => {
+    setPickerOpen(false);
+    appendMessage(companion.id, { from: 'me', text, kind: 'sticker' });
+    setThread(getThread(companion.id));
+    triggerReply();
+  };
+
+  const addEmoji = (emoji: string) => {
+    setInput((prev) => prev + emoji);
+    inputRef.current?.focus();
+  };
+
+  const handleReact = (id: string, emoji: string) => {
+    setThread(reactToMessage(companion.id, id, emoji));
   };
 
   return (
@@ -80,30 +96,16 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
         <span className="font-sans font-semibold text-sm" style={{ color: 'var(--color-ink)' }}>{companion.firstName}</span>
       </div>
 
-      {/* Chat log — aria-live announces new messages to screen readers */}
+      {/* Chat log */}
       <div ref={logRef} aria-live="polite" aria-label="Chat messages" className="flex-1 overflow-y-auto flex flex-col gap-2 pb-2 pr-1" style={{ maxHeight: 320 }}>
         <AnimatePresence initial={false}>
           {thread.map((msg) => (
-            <motion.div
-              key={msg.id}
-              initial={reduced ? { opacity: 0 } : { opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={calm.fast}
-              className={`flex ${msg.from === 'me' ? 'justify-end' : 'justify-start'}`}
-            >
-              <span
-                className="font-sans text-sm px-3 py-2 rounded-xl max-w-[72%] leading-relaxed"
-                style={msg.from === 'me'
-                  ? { background: 'var(--color-azure)', color: '#fff' }
-                  : { background: 'var(--color-surface)', color: 'var(--color-ink)', border: '1px solid rgba(46,107,255,0.1)' }}
-              >
-                {msg.text}
-              </span>
+            <motion.div key={msg.id} initial={reduced ? { opacity: 0 } : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={calm.fast}>
+              <MessageBubble msg={msg} onReact={(e) => handleReact(msg.id, e)} />
             </motion.div>
           ))}
         </AnimatePresence>
 
-        {/* Typing indicator while waiting for simulated reply */}
         <AnimatePresence>
           {isTyping && (
             <motion.div key="typing" initial={reduced ? { opacity: 0 } : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={calm.fast}>
@@ -128,8 +130,13 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
       )}
 
       {/* Input row */}
-      <div className="flex gap-2 items-center mt-1">
+      <div className="relative flex gap-2 items-center mt-1">
+        <button type="button" onClick={() => setPickerOpen((o) => !o)} aria-label="Open emoji and sticker picker" className="shrink-0 inline-flex items-center justify-center min-w-[44px] min-h-[44px] rounded-full" style={{ color: pickerOpen ? 'var(--color-azure)' : 'var(--color-ink-muted)' }}>
+          <Smile size={20} aria-hidden="true" />
+        </button>
+
         <input
+          ref={inputRef}
           value={input}
           onChange={(e) => { setInput(e.target.value); if (blocked && !CONTACT_RE.test(e.target.value)) setBlocked(false); }}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
@@ -138,9 +145,12 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
           className="flex-1 rounded-pill px-4 py-2 text-sm font-sans min-h-[44px]"
           style={{ border: '1.5px solid rgba(46,107,255,0.15)', color: 'var(--color-ink)', background: 'var(--color-bg)', outline: 'none' }}
         />
+
         <motion.button onClick={send} aria-label="Send message" whileTap={reduced ? {} : { scale: 0.9 }} transition={spring.snappy} className="rounded-full inline-flex items-center justify-center min-w-[44px] min-h-[44px]" style={{ background: 'var(--grad-cta)' }}>
           <Send size={16} className="text-white" aria-hidden="true" />
         </motion.button>
+
+        <EmojiStickerPicker open={pickerOpen} onClose={() => setPickerOpen(false)} onEmoji={addEmoji} onSticker={sendSticker} />
       </div>
     </div>
   );

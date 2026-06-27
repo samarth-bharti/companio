@@ -3,7 +3,7 @@
 import { Marquee } from '@/components/motion/Marquee';
 
 const ITEMS = [
-  '🔥 Café Chat',
+  '☕ Café Chat',
   '🏃 Morning Run',
   '🚶 Bandra walks',
   '📚 Book cafés',

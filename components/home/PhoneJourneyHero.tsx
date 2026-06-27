@@ -1,16 +1,22 @@
 'use client';
 
 import { useRef } from 'react';
-import { motion, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, useTransform, useReducedMotion, cubicBezier } from 'framer-motion';
+import { ChevronDown } from 'lucide-react';
 import { useJsScroll } from '@/lib/useJsScroll';
 import { HeroCopyState0, HeroCopyState1, HeroCopyState2 } from './phone/HeroCopy';
 import { SparkleCluster } from './SparkleCluster';
 import { useIsMobile } from '@/lib/useIsMobile';
 
+// Smooth in-out used for every scroll-linked dissolve so transitions ease into
+// and out of each beat instead of tracking the scrollbar linearly.
+const EASE = cubicBezier(0.42, 0, 0.2, 1);
+
 // Light readability veil over the video so the dark hero copy stays legible while
 // the cinematic footage shows through (keeps the site's light/airy aesthetic).
+// Scrim opacity matched to comp 2 (lighter veil → the video shows through more).
 const SCRIM =
-  'radial-gradient(ellipse 80% 55% at 50% 48%, rgba(251,252,255,0.74) 0%, rgba(251,252,255,0.4) 70%, rgba(251,252,255,0.32) 100%), linear-gradient(180deg, rgba(251,252,255,0.55) 0%, rgba(251,252,255,0.42) 45%, rgba(251,252,255,0.7) 100%)';
+  'radial-gradient(ellipse 80% 55% at 50% 48%, rgba(251,252,255,0.45) 0%, rgba(251,252,255,0.25) 70%, rgba(251,252,255,0.18) 100%), linear-gradient(180deg, rgba(251,252,255,0.38) 0%, rgba(251,252,255,0.25) 45%, rgba(251,252,255,0.20) 100%)';
 
 // Soft white halo behind the dark copy so it stays legible over busy footage.
 const COPY_HALO = '0 1px 18px rgba(251,252,255,0.6)';
@@ -61,19 +67,33 @@ export function PhoneJourneyHero() {
     offset: ['start start', 'end end'],
   });
 
-  // Sequential, non-overlapping opacity bands (each fades out before the next in).
-  const opA = useTransform(scrollYProgress, [0, 0.26, 0.34], [1, 1, 0]);
-  const opB = useTransform(scrollYProgress, [0.40, 0.48, 0.60, 0.68], [0, 1, 1, 0]);
-  const opC = useTransform(scrollYProgress, [0.74, 0.82, 1], [0, 1, 1]);
+  // Contiguous crossfades — each beat fades OUT exactly as the next fades IN, so
+  // the hero is never blank between states (a true dissolve, not a gap-then-pop).
+  // First beat changes EARLY (short hold→0.10, snappy dissolve 0.10–0.22) so the
+  // story starts with little scroll; the second beat keeps its later, calmer
+  // timing (B holds→0.60, B↔C dissolve 0.60–0.72, C holds→end).
+  const opA = useTransform(scrollYProgress, [0, 0.10, 0.22], [1, 1, 0], { ease: EASE });
+  const opB = useTransform(scrollYProgress, [0.10, 0.22, 0.60, 0.72], [0, 1, 1, 0], { ease: EASE });
+  const opC = useTransform(scrollYProgress, [0.60, 0.72, 1], [0, 1, 1], { ease: EASE });
 
-  // Minimal horizontal slide, alternating sides: state 0 exits left, state 1
-  // enters from the right (exits left), state 2 enters from the left.
-  const xA = useTransform(scrollYProgress, [0, 0.26, 0.34], [0, 0, -44]);
-  const xB = useTransform(scrollYProgress, [0.40, 0.48, 0.60, 0.68], [44, 0, 0, -44]);
-  const xC = useTransform(scrollYProgress, [0.74, 0.82, 1], [-44, 0, 0]);
+  // Calm vertical drift: the entering beat rises from just below and settles;
+  // the exiting beat lifts. Softer than a horizontal slide when two beats
+  // briefly overlap mid-dissolve.
+  const yA = useTransform(scrollYProgress, [0, 0.10, 0.22], [0, 0, -22], { ease: EASE });
+  const yB = useTransform(scrollYProgress, [0.10, 0.22, 0.60, 0.72], [22, 0, 0, -30], { ease: EASE });
+  const yC = useTransform(scrollYProgress, [0.60, 0.72, 1], [30, 0, 0], { ease: EASE });
+
+  // Micro-scale only on the lighter later beats. The state-0 block (H1 + CTAs +
+  // trust row) is heavy; scaling it caused the first-merge jank, so it animates
+  // opacity + translate only.
+  const scaleB = useTransform(scrollYProgress, [0.10, 0.22, 0.60, 0.72], [0.985, 1, 1, 0.98], { ease: EASE });
+  const scaleC = useTransform(scrollYProgress, [0.60, 0.72, 1], [0.985, 1, 1], { ease: EASE });
 
   // Disable pointer events on state-0 CTAs once they have faded out.
-  const ptr0 = useTransform(opA, (v) => (v < 0.3 ? 'none' : 'auto'));
+  const ptr0 = useTransform(opA, (v) => (v < 0.4 ? 'none' : 'auto'));
+
+  // Scroll cue fades out as soon as the journey starts.
+  const opCue = useTransform(scrollYProgress, [0, 0.07], [1, 0]);
 
   // ── Static branch: reduced motion (no video) ─────────────────────────────
   if (shouldReduce) {
@@ -116,7 +136,7 @@ export function PhoneJourneyHero() {
       id="hero"
       aria-labelledby="hero-heading"
       className="relative"
-      style={{ height: '240vh', background: 'var(--grad-hero-bg)' }}
+      style={{ height: '200vh', background: 'var(--grad-hero-bg)' }}
     >
       <div className="sticky top-0 h-screen flex items-center justify-center overflow-hidden">
         <VideoBackground />
@@ -124,22 +144,34 @@ export function PhoneJourneyHero() {
         {/* Single centered column. State 0 sizes it in normal flow; states 1–2
             overlay it, centered. z-30 keeps copy above scrim/stickers. */}
         <div className="relative z-30 max-w-4xl mx-auto px-6 w-full" style={{ textShadow: COPY_HALO }}>
-          <motion.div style={{ opacity: opA, x: xA, pointerEvents: ptr0, willChange: 'transform, opacity' }}>
+          <motion.div style={{ opacity: opA, y: yA, pointerEvents: ptr0, willChange: 'transform, opacity' }}>
             <HeroCopyState0 />
           </motion.div>
           <motion.div
             className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
-            style={{ opacity: opB, x: xB, willChange: 'transform, opacity' }}
+            style={{ opacity: opB, y: yB, scale: scaleB, willChange: 'transform, opacity' }}
           >
             <HeroCopyState1 />
           </motion.div>
           <motion.div
             className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
-            style={{ opacity: opC, x: xC, willChange: 'transform, opacity' }}
+            style={{ opacity: opC, y: yC, scale: scaleC, willChange: 'transform, opacity' }}
           >
             <HeroCopyState2 />
           </motion.div>
         </div>
+
+        {/* Scroll cue — invites the scroll-story, fades on first scroll. */}
+        <motion.div
+          aria-hidden="true"
+          style={{ opacity: opCue }}
+          className="absolute bottom-7 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1"
+        >
+          <span className="text-xs font-sans tracking-wide" style={{ color: 'var(--color-ink-muted)' }}>
+            Scroll
+          </span>
+          <ChevronDown size={18} className="animate-bounce" style={{ color: 'var(--color-ink-muted)' }} aria-hidden="true" />
+        </motion.div>
       </div>
     </section>
   );

@@ -151,7 +151,7 @@ export function Composer({ onSend, onVoice, showIcebreakers, placeholder = 'Writ
           >
             <Send size={16} className="text-white" aria-hidden="true" />
           </motion.button>
-        ) : (
+        ) : onVoice ? (
           <motion.button
             onClick={onVoice}
             whileTap={reduced ? {} : { scale: 0.88 }}
@@ -162,6 +162,15 @@ export function Composer({ onSend, onVoice, showIcebreakers, placeholder = 'Writ
           >
             <Mic size={18} aria-hidden="true" />
           </motion.button>
+        ) : (
+          <button
+            disabled
+            aria-label="Send message"
+            className="inline-flex items-center justify-center rounded-full shrink-0"
+            style={{ width: 44, height: 44, background: 'rgba(46,107,255,0.1)', color: 'var(--color-azure)', opacity: 0.45, cursor: 'default' }}
+          >
+            <Send size={16} aria-hidden="true" />
+          </button>
         )}
       </div>
     </div>

@@ -61,11 +61,10 @@ export function ClipReveal({
   const accentStart = accent ? text.indexOf(accent) : -1;
   const accentLen = accent ? accent.length : 0;
 
-  let charPos = 0;
+  // A word's start = sum of all earlier words' lengths + one space each. Computed
+  // functionally (no reassigned accumulator) so the render body stays pure.
   const wordMeta = words.map((word, i) => {
-    const start = charPos;
-    // Advance by word length + one space, except after the last word.
-    charPos += word.length + (i < words.length - 1 ? 1 : 0);
+    const start = words.slice(0, i).reduce((n, w) => n + w.length + 1, 0);
     const inAccent =
       accentStart >= 0 && start >= accentStart && start < accentStart + accentLen;
     return { word, inAccent };

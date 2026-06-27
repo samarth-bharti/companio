@@ -51,7 +51,7 @@ export const MessageBubble = memo(function MessageBubble({
       {/* Avatar slot — always reserve space so bubbles line up */}
       {!isMine && (
         showAuthor && authorPhoto
-          ? <Image src={authorPhoto} alt={authorName ?? ''} width={26} height={26} className="rounded-full object-cover self-end shrink-0" />
+          ? <Image src={authorPhoto} alt={authorName ?? ''} width={26} height={26} style={{ width: 26, height: 26 }} className="rounded-full object-cover self-end shrink-0" />
           : <span style={{ width: 26, flexShrink: 0 }} />
       )}
 

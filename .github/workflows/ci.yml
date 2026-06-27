@@ -1,0 +1,57 @@
+name: CI
+
+# Quality gates for every push and pull request targeting main.
+# Type-check, tests, and build are blocking. Lint runs informationally:
+# the repo still carries pre-existing React-19 hook warnings in UI files
+# that are tracked separately, so a lint failure must not block merges yet.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Type-check, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        # Needed for @prisma/client types to resolve; no database required.
+        run: npx prisma generate
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Lint (non-blocking)
+        # Pre-existing UI hook warnings remain; surface them without failing CI.
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # Headroom for Next's static-generation workers on the runner.
+          NODE_OPTIONS: --max-old-space-size=4096

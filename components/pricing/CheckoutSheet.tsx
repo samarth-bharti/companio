@@ -9,6 +9,7 @@ import { spring, durations, calm } from '@/lib/motion';
 import { Button } from '@/components/ui/Button';
 import { PaymentMethodTiles } from '@/components/explore/PaymentMethodTiles';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
+import { payWithRazorpay, type RazorpayIntent } from '@/lib/razorpayClient';
 
 type PayState = 'idle' | 'processing' | 'success';
 
@@ -24,6 +25,12 @@ interface CheckoutSheetProps {
   onClose: () => void;
   /** Caller handles addCredits/setPlan/addNotification — called synchronously on pay success. */
   onPaid: () => void;
+  /**
+   * What is being bought, for live Razorpay. When omitted (or when Razorpay
+   * isn't configured) the sheet runs the local demo animation instead — so
+   * existing callers keep working unchanged.
+   */
+  order?: RazorpayIntent;
 }
 
 const LABEL_ID = 'checkout-sheet-label';
@@ -39,7 +46,7 @@ const PROCESSING_PHASES = [
   { label: 'Confirming…',            duration: 500 },
 ] as const;
 
-export function CheckoutSheet({ open, item, onClose, onPaid }: CheckoutSheetProps) {
+export function CheckoutSheet({ open, item, onClose, onPaid, order }: CheckoutSheetProps) {
   const reduced = useReducedMotion();
   const router = useRouter();
   const [sel, setSel] = useState<string | null>(null);
@@ -49,6 +56,9 @@ export function CheckoutSheet({ open, item, onClose, onPaid }: CheckoutSheetProp
   const panelRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<Element | null>(null);
   const payTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // Synchronous double-submit guard (setPay is async; covers the reduced-motion
+  // path too, which calls onPaid immediately).
+  const payingRef = useRef(false);
 
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
@@ -89,6 +99,7 @@ export function CheckoutSheet({ open, item, onClose, onPaid }: CheckoutSheetProp
       // Clear any running pay timers when sheet closes mid-flow.
       payTimers.current.forEach(clearTimeout);
       payTimers.current = [];
+      payingRef.current = false;
       setTimeout(() => {
         setPay('idle');
         setSel(null);
@@ -103,20 +114,15 @@ export function CheckoutSheet({ open, item, onClose, onPaid }: CheckoutSheetProp
     return () => { payTimers.current.forEach(clearTimeout); };
   }, []);
 
-  function doPay() {
-    if (pay !== 'idle' || !sel) return;
-    setPay('processing');
+  // Local demo simulation — the original two-phase labor illusion (~1.2s).
+  // Used whenever live Razorpay isn't wired, so demo mode is unchanged.
+  function runDemoPay() {
     setProcessingLabel(PROCESSING_PHASES[0].label);
-
     if (reduced) {
-      // Reduced-motion: skip labor illusion, complete immediately.
       setPay('success');
       onPaid();
       return;
     }
-
-    // Two-phase labor illusion: ~1.2s total.
-    // Phase 1 label is already set above; swap to phase 2 at 700ms.
     payTimers.current.forEach(clearTimeout);
     payTimers.current = [
       setTimeout(() => setProcessingLabel(PROCESSING_PHASES[1].label), PROCESSING_PHASES[0].duration),
@@ -125,6 +131,23 @@ export function CheckoutSheet({ open, item, onClose, onPaid }: CheckoutSheetProp
         onPaid();
       }, PROCESSING_PHASES[0].duration + PROCESSING_PHASES[1].duration),
     ];
+  }
+
+  async function doPay() {
+    if (payingRef.current || !sel) return;
+    payingRef.current = true;
+    setPay('processing');
+
+    // No order intent supplied -> always demo (backward compatible).
+    if (!order) { runDemoPay(); return; }
+
+    // Try the real gateway; 'unconfigured' means demo mode — fall back.
+    const result = await payWithRazorpay(order);
+    if (result === 'unconfigured') { runDemoPay(); return; }
+    if (result === 'success') { setPay('success'); onPaid(); return; }
+    // 'dismissed' or 'failed' — re-arm so the user can retry.
+    payingRef.current = false;
+    setPay('idle');
   }
 
   // Contextual seal label — clearer than "Done!".

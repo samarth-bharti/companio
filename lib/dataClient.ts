@@ -59,6 +59,7 @@ export interface DataClient {
 
   // ── Messages ──────────────────────────────────────────────────────────────
   getThread(companionId: string): Promise<ChatMessage[]>;
+  getThreads(): Promise<Record<string, ChatMessage[]>>;
   appendMessage(
     companionId: string,
     msg: Omit<ChatMessage, 'id' | 'ts'>,
@@ -67,6 +68,7 @@ export interface DataClient {
   // ── Notifications ─────────────────────────────────────────────────────────
   getNotifications(): Promise<AppNotification[]>;
   addNotification(n: Pick<AppNotification, 'title' | 'body'>): Promise<void>;
+  markNotificationsRead(): Promise<void>;
 
   // ── Plan / subscription ───────────────────────────────────────────────────
   getPlan(): Promise<Plan>;
@@ -81,7 +83,7 @@ export interface DataClient {
 // Thin async wrappers around the existing sync lib functions.
 // Zero behaviour change — if it worked before, it works now.
 
-function makeLocalStorageDataClient(): DataClient {
+export function makeLocalStorageDataClient(): DataClient {
   return {
     // companion catalogue — import deferred inside fn to keep this file
     // free of top-level side-effects that might trip SSR tree-shaking
@@ -169,6 +171,10 @@ function makeLocalStorageDataClient(): DataClient {
       const { getThread } = await import('./appState');
       return getThread(companionId);
     },
+    async getThreads() {
+      const { getThreads } = await import('./appState');
+      return getThreads();
+    },
     async appendMessage(companionId, msg) {
       const { appendMessage } = await import('./appState');
       return appendMessage(companionId, msg);
@@ -182,6 +188,10 @@ function makeLocalStorageDataClient(): DataClient {
     async addNotification(n) {
       const { addNotification } = await import('./appState');
       addNotification(n);
+    },
+    async markNotificationsRead() {
+      const { markNotificationsRead } = await import('./appState');
+      markNotificationsRead();
     },
 
     // plan
@@ -206,24 +216,45 @@ function makeLocalStorageDataClient(): DataClient {
   };
 }
 
-// ── httpDataClient stub ───────────────────────────────────────────────────────
-// Replace each TODO stub with a real fetch('/api/...') call when the
-// corresponding API route is implemented. Each method mirrors the DataClient
-// interface exactly, so no call-site changes needed when you flip the flag.
+// ── httpDataClient ────────────────────────────────────────────────────────────
+// Real fetch('/api/...') implementation, used when NEXT_PUBLIC_DATA_CLIENT=http.
+// Each method mirrors the DataClient interface, so flipping the flag needs no
+// call-site changes.
+//
+// PAID actions are special: addCredits / setUnlocked / setPlan('plus') are NOT
+// free setters server-side (those endpoints return 403 by design). The real
+// grant happens only after a Razorpay payment — POST /api/razorpay/create-order
+// { kind } → checkout → /api/razorpay/verify → settlePurchase(). Wiring the
+// checkout into these methods is the Stage-3 data-layer task; until then they
+// target the hardened endpoints and will throw if called in http mode.
 
-function makeHttpDataClient(): DataClient {
+export function makeHttpDataClient(): DataClient {
   async function post<T>(path: string, body: unknown): Promise<T> {
     const res = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
+    // Writes must surface failures — a 401/403/500 means the action did not
+    // happen, and the caller needs to know (the UI gates these behind auth).
     if (!res.ok) throw new Error(`HTTP ${res.status} ${path}`);
     return res.json() as Promise<T>;
   }
 
+  // Strict read — throws on any non-2xx. For data that is always expected
+  // (e.g. the public companion catalogue).
   async function get<T>(path: string): Promise<T> {
     const res = await fetch(path);
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${path}`);
+    return res.json() as Promise<T>;
+  }
+
+  // Tolerant read — a 401 (signed out) returns the same default the
+  // localStorage client gives a fresh user, so flipping to http mode never
+  // crashes a page for an unauthenticated visitor. Other errors still throw.
+  async function getOr<T>(path: string, fallback: T): Promise<T> {
+    const res = await fetch(path);
+    if (res.status === 401) return fallback;
     if (!res.ok) throw new Error(`HTTP ${res.status} ${path}`);
     return res.json() as Promise<T>;
   }
@@ -233,11 +264,16 @@ function makeHttpDataClient(): DataClient {
       return get<Companion[]>('/api/companions');
     },
     async getCompanion(id) {
-      return get<Companion | undefined>(`/api/companions/${id}`);
+      // 404 → undefined, mirroring the local getCompanion for an unknown id.
+      const res = await fetch(`/api/companions/${id}`);
+      if (res.status === 404) return undefined;
+      if (!res.ok) throw new Error(`HTTP ${res.status} /api/companions/${id}`);
+      return res.json() as Promise<Companion>;
     },
 
     async getWallet() {
-      return get<Wallet>('/api/wallet');
+      // Matches WALLET_DEFAULT in journeyState.ts.
+      return getOr<Wallet>('/api/wallet', { credits: 2, used: 0 });
     },
     async addCredits(count) {
       return post<Wallet>('/api/wallet/add-credits', { count });
@@ -247,28 +283,28 @@ function makeHttpDataClient(): DataClient {
     },
 
     async getUnlocked() {
-      return get<boolean>('/api/user/unlocked');
+      return getOr<boolean>('/api/user/unlocked', false);
     },
     async setUnlocked(v) {
       await post('/api/user/unlocked', { value: v });
     },
 
     async getWelcomed() {
-      return get<boolean>('/api/user/welcomed');
+      return getOr<boolean>('/api/user/welcomed', false);
     },
     async setWelcomed(v) {
       await post('/api/user/welcomed', { value: v });
     },
 
     async getUser() {
-      return get<DemoUser | null>('/api/user');
+      return getOr<DemoUser | null>('/api/user', null);
     },
     async setUser(u) {
       await post('/api/user', u);
     },
 
     async getBookings() {
-      return get<Booking[]>('/api/bookings');
+      return getOr<Booking[]>('/api/bookings', []);
     },
     async addBooking(b) {
       return post<Booking>('/api/bookings', b);
@@ -278,35 +314,41 @@ function makeHttpDataClient(): DataClient {
     },
 
     async getFavorites() {
-      return get<string[]>('/api/favorites');
+      return getOr<string[]>('/api/favorites', []);
     },
     async toggleFavorite(companionId) {
       return post<string[]>('/api/favorites/toggle', { companionId });
     },
 
     async getThread(companionId) {
-      return get<ChatMessage[]>(`/api/messages/${companionId}`);
+      return getOr<ChatMessage[]>(`/api/messages/${companionId}`, []);
+    },
+    async getThreads() {
+      return getOr<Record<string, ChatMessage[]>>('/api/messages', {});
     },
     async appendMessage(companionId, msg) {
       return post<ChatMessage>(`/api/messages/${companionId}`, msg);
     },
 
     async getNotifications() {
-      return get<AppNotification[]>('/api/notifications');
+      return getOr<AppNotification[]>('/api/notifications', []);
     },
     async addNotification(n) {
       await post('/api/notifications', n);
     },
+    async markNotificationsRead() {
+      await post('/api/notifications/read', {});
+    },
 
     async getPlan() {
-      return get<Plan>('/api/subscription');
+      return getOr<Plan>('/api/subscription', null);
     },
     async setPlan(p) {
       await post('/api/subscription', { plan: p });
     },
 
     async getApplication() {
-      return get<CompanionApplication | null>('/api/application');
+      return getOr<CompanionApplication | null>('/api/application', null);
     },
     async saveApplication(a) {
       await post('/api/application', a);

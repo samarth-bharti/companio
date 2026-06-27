@@ -30,10 +30,10 @@ export default function NotFound() {
               className="font-display text-h1 leading-tight tracking-tight mb-5"
               style={{ color: "var(--color-ink)" }}
             >
-              This page is coming soon.
+              We couldn&apos;t find that page.
             </h1>
             <p className="text-lead mb-10" style={{ color: "var(--color-ink-muted)" }}>
-              We&apos;re building something here. In the meantime, explore what&apos;s already live, verified companions are waiting.
+              The link may be broken or the page may have moved. Let&apos;s get you back on track, verified companions are waiting.
             </p>
             <div className="flex items-center justify-center gap-4 flex-wrap">
               <Link

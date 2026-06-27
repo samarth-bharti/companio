@@ -49,7 +49,9 @@ export function useExploreFilters(): ExploreFiltersState {
   const [searchQuery, setSearchQuery] = useState('');
   const [activityFilters, setActivityFilters] = useState<string[]>([]);
   const [availability, setAvailability] = useState<Availability>('any');
-  const [sort, setSort] = useState<SortKey>('top_rated');
+  // Default to "nearest" for non-quiz users — ratings cluster 4.7–4.9 so
+  // "top rated" is a near-meaningless order; "who's closest" is actionable.
+  const [sort, setSort] = useState<SortKey>('nearest');
   const [freeNowOnly, setFreeNowOnly] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [quizDone, setQuizDone] = useState(false);
@@ -74,7 +76,7 @@ export function useExploreFilters(): ExploreFiltersState {
   const selectedCity: City = useMemo(() => getCity(cityId), [cityId]);
 
   // The "neutral" sort depends on whether the quiz is done.
-  const defaultSort: SortKey = quizDone ? 'best_match' : 'top_rated';
+  const defaultSort: SortKey = quizDone ? 'best_match' : 'nearest';
 
   /** Re-skin each companion with the selected city's name + localised area. */
   const localizedCompanions = useMemo(
@@ -101,7 +103,7 @@ export function useExploreFilters(): ExploreFiltersState {
     setSearchQuery('');
     setActivityFilters([]);
     setAvailability('any');
-    setSort(quizDone ? 'best_match' : 'top_rated');
+    setSort(quizDone ? 'best_match' : 'nearest');
     setFreeNowOnly(false);
   }, [quizDone]);
 

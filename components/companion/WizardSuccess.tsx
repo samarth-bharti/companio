@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { motion, useReducedMotion } from 'framer-motion';
 import { spring } from '@/lib/motion';
@@ -13,6 +14,27 @@ interface Props {
 export function WizardSuccess({ name }: Props) {
   const reduced = useReducedMotion();
   const first = name.trim().split(' ')[0];
+
+  // Celebratory confetti on first mount — guarded by reduced-motion preference.
+  useEffect(() => {
+    if (reduced) return;
+    let cancelled = false;
+    // Delay slightly so the Seal pop-in plays first.
+    const t = setTimeout(() => {
+      if (cancelled) return;
+      import('canvas-confetti').then((mod) => {
+        if (cancelled) return;
+        mod.default({
+          particleCount: 130,
+          spread: 80,
+          origin: { y: 0.3 },
+          colors: ['#2E6BFF', '#1FAE6B', '#8B5CF6', '#FFB23E'],
+        });
+      });
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="max-w-xl mx-auto px-6 py-16 text-center">

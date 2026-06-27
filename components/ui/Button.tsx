@@ -1,14 +1,18 @@
 "use client";
 
 import { cva, type VariantProps } from "class-variance-authority";
-import { forwardRef, type ButtonHTMLAttributes } from "react";
+import { forwardRef } from "react";
+import { motion, useReducedMotion, type HTMLMotionProps } from "framer-motion";
+import { spring } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
+// Transform (hover pop / tap press) is handled by Framer below so it springs
+// instead of tweening; CSS here only animates colour / shadow / opacity.
 const buttonVariants = cva(
   [
     "inline-flex items-center justify-center",
     "font-sans font-semibold tracking-wide",
-    "transition-all duration-150",
+    "transition-[background-color,box-shadow,opacity,color,border-color] duration-200",
     "disabled:pointer-events-none disabled:opacity-50",
     "cursor-pointer select-none",
   ].join(" "),
@@ -17,10 +21,7 @@ const buttonVariants = cva(
       variant: {
         primary: [
           "bg-navy text-white",
-          "hover:bg-navy-strong hover:-translate-y-0.5",
-          "hover:[box-shadow:var(--shadow-2)]",
-          "active:translate-y-0",
-          // White ring visible against dark navy bg
+          "hover:bg-navy-strong hover:[box-shadow:var(--shadow-2)]",
           "focus-visible:outline-white",
         ].join(" "),
         secondary: [
@@ -34,15 +35,13 @@ const buttonVariants = cva(
         cta: [
           "text-white",
           "[background:var(--grad-cta)] [box-shadow:var(--glow-azure)]",
-          "hover:-translate-y-0.5 hover:opacity-95",
-          "active:translate-y-0",
+          "hover:opacity-95",
           "focus-visible:outline-white",
         ].join(" "),
         aurora: [
           "text-white",
           "[background:var(--grad-aurora)] [box-shadow:var(--glow-violet)]",
-          "hover:-translate-y-0.5 hover:opacity-95",
-          "active:translate-y-0",
+          "hover:opacity-95",
           "focus-visible:outline-white",
         ].join(" "),
       },
@@ -61,17 +60,35 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
+  extends HTMLMotionProps<"button">,
     VariantProps<typeof buttonVariants> {}
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => (
-    <button
-      ref={ref}
-      className={cn(buttonVariants({ variant, size }), className)}
-      {...props}
-    />
-  )
+  ({ className, variant, size, disabled, ...props }, ref) => {
+    const reduce = useReducedMotion();
+
+    // Only the prominent action buttons get the full pop (hover lift + press);
+    // quieter variants (ghost text links, secondary outlines) get just a subtle
+    // press so the UI stays calm and human — not bouncy everywhere.
+    const prominent =
+      variant == null || variant === "primary" || variant === "cta" || variant === "aurora";
+    const tactile =
+      reduce || disabled
+        ? {}
+        : prominent
+          ? { whileHover: { scale: 1.03 }, whileTap: { scale: 0.96 }, transition: spring.snappy }
+          : { whileTap: { scale: 0.98 }, transition: spring.snappy };
+
+    return (
+      <motion.button
+        ref={ref}
+        disabled={disabled}
+        className={cn(buttonVariants({ variant, size }), className)}
+        {...tactile}
+        {...props}
+      />
+    );
+  }
 );
 
 Button.displayName = "Button";

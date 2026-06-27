@@ -5,6 +5,7 @@ import { Nav } from '@/components/layout/Nav';
 import { BackBar } from '@/components/layout/BackBar';
 import { Footer } from '@/components/layout/Footer';
 import { CompanionProfile } from '@/components/companion/CompanionProfile';
+import { ReportButton } from '@/components/safety/ReportButton';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -30,6 +31,9 @@ export default async function CompanionPage({ params }: Props) {
       <Nav />
       <BackBar backHref="/explore" label="Explore" />
       <CompanionProfile companion={companion} />
+      <div className="max-w-2xl mx-auto px-4 pb-10 flex justify-center">
+        <ReportButton companionId={companion.id} companionName={companion.firstName} />
+      </div>
       <Footer />
     </>
   );

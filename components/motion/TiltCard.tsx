@@ -36,20 +36,37 @@ export function TiltCard({ children, className, maxDeg = 7 }: TiltCardProps) {
   const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-maxDeg, maxDeg]), springCfg);
   const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [maxDeg, -maxDeg]), springCfg);
 
+  // RAF-throttle the pointer read. Mousemove can fire many times per frame;
+  // calling getBoundingClientRect() on each event forces a layout reflow every
+  // time — multiplied across every card in a grid, that's the jank/freeze.
+  // Coalescing to one rect read per frame removes the layout thrash.
+  const rafId = useRef<number | null>(null);
+  const pending = useRef({ x: 0, y: 0 });
+
   const onMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!ref.current) return;
-      const { left, top, width, height } = ref.current.getBoundingClientRect();
-      mx.set((e.clientX - left) / width - 0.5);
-      my.set((e.clientY - top) / height - 0.5);
+      pending.current = { x: e.clientX, y: e.clientY };
+      if (rafId.current !== null) return;
+      rafId.current = requestAnimationFrame(() => {
+        rafId.current = null;
+        const el = ref.current;
+        if (!el) return;
+        const { left, top, width, height } = el.getBoundingClientRect();
+        mx.set((pending.current.x - left) / width - 0.5);
+        my.set((pending.current.y - top) / height - 0.5);
+      });
     },
     [mx, my]
   );
 
   const onLeave = useCallback(() => {
+    if (rafId.current !== null) { cancelAnimationFrame(rafId.current); rafId.current = null; }
     mx.set(0);
     my.set(0);
   }, [mx, my]);
+
+  // Cancel any in-flight frame on unmount (cards unmount on filter/grid changes).
+  useEffect(() => () => { if (rafId.current !== null) cancelAnimationFrame(rafId.current); }, []);
 
   const active = fine && !shouldReduce;
 

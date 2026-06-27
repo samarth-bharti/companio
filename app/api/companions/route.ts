@@ -1,19 +1,22 @@
 // app/api/companions/route.ts
 //
-// GET /api/companions
-// Returns the full companion catalogue as JSON. Today this reads from the
-// static mock data in lib/data/companions. When DATABASE_URL is live,
-// replace the import with a Prisma query — the response shape stays identical.
-//
-// No auth required for browse (matches current UI behaviour).
-// Add ?city=mumbai filter param once multi-city DB rows exist.
+// GET /api/companions — full companion catalogue.
+// No auth (browse is public). Falls back to the static mock when DATABASE_URL
+// is not set, so the endpoint works during scaffolding before Neon is wired.
 
 import { NextResponse } from 'next/server';
 import { COMPANIONS } from '@/lib/data/companions';
+import { guard } from '@/lib/server/http';
 
-export const dynamic = 'force-dynamic'; // never cache at CDN edge
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  // Future: const companions = await prisma.companion.findMany({ where: { city } });
-  return NextResponse.json(COMPANIONS);
+  if (!process.env.DATABASE_URL) return NextResponse.json(COMPANIONS);
+
+  return guard(async () => {
+    const { prisma } = await import('@/lib/prisma');
+    const { toCompanion } = await import('@/lib/server/serialize');
+    const rows = await prisma.companion.findMany({ orderBy: { matchScore: 'desc' } });
+    return NextResponse.json(rows.map(toCompanion));
+  });
 }

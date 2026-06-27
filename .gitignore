@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local revert backups (not part of the project)
+.comp2-revert-backup/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

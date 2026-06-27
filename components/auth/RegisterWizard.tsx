@@ -32,6 +32,13 @@ const EMPTY: RegFormData = {
 
 const STEPS = ['Role', 'About you', 'Verify', 'Done'];
 
+// Why an account is needed, keyed by the gate that sent the user here.
+const GATE_COPY: Record<string, string> = {
+  unlock: 'Create your free account to unlock companions and claim your 2 included meetups.',
+  book: 'Create your free account to confirm your meetup.',
+  apply: "First, create your free account, then we'll take your details and ID.",
+};
+
 const slideVariants: Variants = {
   enter: (d: number) => ({ opacity: 0, x: d * 48 }),
   center: { opacity: 1, x: 0 },
@@ -44,13 +51,26 @@ const fadeVariants: Variants = {
   exit:  { opacity: 0 },
 };
 
-export function RegisterWizard({ next }: { next: string }) {
+export function RegisterWizard({
+  next,
+  presetRole,
+  gate,
+}: {
+  next: string;
+  presetRole?: 'member' | 'companion';
+  gate?: string;
+}) {
   const reduced   = useReducedMotion();
   const cardRef   = useRef<HTMLDivElement>(null);
-  const [step, setStep]               = useState(0);
+  // When a role is preset (e.g. arriving from "Apply as companion"), skip the
+  // role-picker step and start on "About you".
+  const [step, setStep]               = useState(presetRole ? 1 : 0);
   const [dir,  setDir]                = useState(1);
   const [prefilledName, setPrefilledName] = useState<string | undefined>();
-  const [form, setForm]               = useState<RegFormData>(EMPTY);
+  const [form, setForm]               = useState<RegFormData>(
+    presetRole ? { ...EMPTY, role: presetRole } : EMPTY,
+  );
+  const gateMessage = gate ? GATE_COPY[gate] : undefined;
 
   // Pre-fill from quiz without hydration mismatch (runs only on client)
   useEffect(() => {
@@ -84,6 +104,19 @@ export function RegisterWizard({ next }: { next: string }) {
       <div className="flex justify-center mb-8">
         <SegmentedPill steps={STEPS} current={step} />
       </div>
+
+      {gateMessage && (
+        <p
+          className="mb-5 rounded-2xl px-4 py-3 font-sans text-sm text-center"
+          style={{
+            background: 'rgba(46,107,255,0.07)',
+            border: '1.5px solid rgba(46,107,255,0.18)',
+            color: 'var(--color-azure-deep)',
+          }}
+        >
+          {gateMessage}
+        </p>
+      )}
 
       {/* Wizard card — tabIndex={-1} for programmatic focus only */}
       <div

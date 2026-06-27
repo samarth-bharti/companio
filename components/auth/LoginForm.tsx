@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { setUser } from '@/lib/journeyState';
+import { track } from '@/lib/analytics';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
 import { Reveal } from '@/components/motion/Reveal';
 import { FieldStatus, ShakeWrapper } from './FieldStatus';
@@ -80,7 +81,9 @@ export function LoginForm({ next }: { next: string }) {
     if (redirectedRef.current) return;
     redirectedRef.current = true;
     if (safetyRef.current) { clearTimeout(safetyRef.current); safetyRef.current = null; }
-    router.push(`${next || '/explore'}?welcome=1`);
+    const dest = next || '/explore';
+    const sep = dest.includes('?') ? '&' : '?';
+    router.push(`${dest}${sep}welcome=1`);
   }
 
   function startCelebration() {
@@ -114,6 +117,7 @@ export function LoginForm({ next }: { next: string }) {
     await new Promise(r => setTimeout(r, 700));
     const raw = email.split('@')[0].split('.')[0];
     setUser({ firstName: raw.charAt(0).toUpperCase() + raw.slice(1) });
+    track('login', { method: 'email' });
     setLoading(false);
     startCelebration();
   }
@@ -122,6 +126,7 @@ export function LoginForm({ next }: { next: string }) {
     setSocialLoading(provider);
     await new Promise(r => setTimeout(r, 600));
     setUser({ firstName: 'Friend' });
+    track('login', { method: provider });
     setSocialLoading(null);
     startCelebration();
   }

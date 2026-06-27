@@ -53,14 +53,14 @@ export function LaborIllusion({ answers, onDone }: LaborIllusionProps) {
       return () => clearTimeout(t);
     }
 
-    // Staggered: reveal a line every ~550ms, check it 550ms later
+    // Staggered: reveal a line every ~380ms, check it 380ms later.
+    // Total ≈ (5-1)*380 + 430 + 250 = 1520 + 680 = 2200ms target.
     const timers: ReturnType<typeof setTimeout>[] = [];
     lines.forEach((_, i) => {
-      timers.push(setTimeout(() => setVisibleCount(i + 1), i * 600 + 100));
-      timers.push(setTimeout(() => setCheckedCount(i + 1), i * 600 + 650));
+      timers.push(setTimeout(() => setVisibleCount(i + 1), i * 380 + 80));
+      timers.push(setTimeout(() => setCheckedCount(i + 1), i * 380 + 430));
     });
-    // Advance ~300ms after last check
-    const total = (lines.length - 1) * 600 + 650 + 300;
+    const total = (lines.length - 1) * 380 + 430 + 250;
     timers.push(setTimeout(() => { doneRef.current = true; onDone(); }, total));
 
     return () => timers.forEach(clearTimeout);

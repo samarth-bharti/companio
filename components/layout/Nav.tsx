@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Home, Compass, Newspaper, User, LayoutDashboard, MessageCircle } from "lucide-react";
+import { Home, Compass, User, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { Seal } from "@/components/ui/Seal";
 import { NavUser } from "@/components/layout/NavUser";
 import { getUser } from "@/lib/journeyState";
@@ -15,19 +15,17 @@ interface NavProps {
 
 const NAV_LINKS = [
   { href: "/explore",      label: "Explore" },
-  { href: "/feed",         label: "Feed" },
-  { href: "/lounge",       label: "Lounge" },
   { href: "/how-it-works", label: "How it works" },
-  { href: "/safety",       label: "Safety" },
+  // Feed + Lounge hidden for now (social layer parked) — re-add when ready.
 ];
+// Safety moved out of the main feature links into a small standalone button
+// in the right cluster (see below) + the footer — kept accessible, not crowding
+// the primary nav.
 
-// 4 fixed tabs + 1 dynamic You tab = 5 total.
-// "How it works" and "Earn" moved to desktop NAV_LINKS + footer only.
+// Fixed tabs + 1 dynamic You/Sign-in tab. Feed + Lounge hidden for now.
 const TABS = [
   { href: "/",        label: "Home",    Icon: Home },
   { href: "/explore", label: "Explore", Icon: Compass },
-  { href: "/feed",    label: "Feed",    Icon: Newspaper },
-  { href: "/lounge",  label: "Lounge",  Icon: MessageCircle },
 ];
 
 export function Nav({ heroMode = false }: NavProps) {
@@ -105,6 +103,19 @@ export function Nav({ heroMode = false }: NavProps) {
           </nav>
 
           <div className="hidden md:flex items-center gap-3 ml-auto shrink-0">
+            <Link
+              href="/safety"
+              aria-label="Safety center"
+              aria-current={pathname === "/safety" ? "page" : undefined}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-sans font-semibold transition-colors focus-visible:outline-azure",
+                pathname === "/safety" ? "text-azure" : "text-ink-muted hover:text-ink"
+              )}
+              style={{ border: "1px solid rgba(46,107,255,0.18)" }}
+            >
+              <ShieldCheck size={14} aria-hidden="true" />
+              Safety
+            </Link>
             <NavUser />
           </div>
         </div>
@@ -122,7 +133,10 @@ export function Nav({ heroMode = false }: NavProps) {
         }}
       >
         <div className="flex">
-          {[...TABS, signedIn
+          {[...TABS,
+            // Safety must stay reachable on mobile too — it's core to this product.
+            { href: "/safety", label: "Safety", Icon: ShieldCheck },
+            signedIn
             ? { href: "/dashboard", label: "You", Icon: LayoutDashboard }
             : { href: "/login", label: "Sign in", Icon: User },
           ].map(({ href, label, Icon }) => {

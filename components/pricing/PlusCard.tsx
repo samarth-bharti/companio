@@ -1,16 +1,18 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
-import { Zap, CalendarClock, RotateCcw, Star, MapPin } from 'lucide-react';
+import { Zap, Star, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { spring, stagger } from '@/lib/motion';
 
+// Honest benefits — only what the platform actually delivers today. Plus sets
+// your account to the lower-fee tier (lib/server/pricing.ts COMMISSION_PLUS_BPS)
+// and is a ONE-TIME purchase with no recurring charge (settlePurchase writes the
+// subscription with endsAt:null — it never expires and is never auto-billed).
 const BENEFITS = [
-  { Icon: Zap,           text: 'Meetups at ₹399 instead of ₹499' },
-  { Icon: CalendarClock, text: 'Priority booking slots' },
-  { Icon: RotateCcw,     text: 'Free reschedule anytime' },
-  { Icon: Star,          text: 'Early access to newly verified companions' },
-  { Icon: MapPin,        text: 'Member-only city walks' },
+  { Icon: Zap,   text: 'Lower platform fee on every meetup you book' },
+  { Icon: Star,  text: 'Plus badge on your profile' },
+  { Icon: MapPin, text: 'First to see newly verified companions' },
 ] as const;
 
 interface PlusCardProps {
@@ -39,7 +41,7 @@ export function PlusCard({ isPlus, onUpgrade }: PlusCardProps) {
           You&apos;re a Plus member
         </p>
         <p className="text-sm" style={{ color: 'rgba(244,242,255,0.65)' }}>
-          All benefits active, cancel anytime in two taps.
+          All benefits active — yours for good, no recurring charge.
         </p>
       </motion.div>
     );
@@ -71,7 +73,7 @@ export function PlusCard({ isPlus, onUpgrade }: PlusCardProps) {
             ₹299
           </p>
           <p className="text-sm mb-1.5" style={{ color: 'rgba(244,242,255,0.55)' }}>
-            /month
+            one-time
           </p>
         </div>
 
@@ -113,9 +115,9 @@ export function PlusCard({ isPlus, onUpgrade }: PlusCardProps) {
           Get Companio Plus
         </Button>
 
-        {/* Commitment-friction removal */}
+        {/* Honest: one-time purchase, no recurring billing. */}
         <p className="mt-3 text-xs text-center" style={{ color: 'rgba(244,242,255,0.45)' }}>
-          Cancel anytime in two taps, no lock-in, no fine print.
+          One-time payment. No subscription, no auto-charge, no expiry.
         </p>
       </div>
     </motion.div>

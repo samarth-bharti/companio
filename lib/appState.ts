@@ -5,7 +5,7 @@
 // addCredits below tops that same wallet up.
 
 import { readJSON, writeJSON, canUseStorage } from './storage';
-import { getWallet } from './journeyState';
+import { getWallet, KEY_WALLET } from './journeyState';
 
 const KEY_BOOKINGS = 'companio_bookings';
 const KEY_FAVES = 'companio_favorites';
@@ -13,6 +13,17 @@ const KEY_MESSAGES = 'companio_messages';
 const KEY_NOTIFS = 'companio_notifications';
 const KEY_PLAN = 'companio_plan';
 const KEY_APPLICATION = 'companio_companion_application';
+
+// Collision-resistant id. Position-based ids (length + 1) collide when two tabs
+// write concurrently or two creates land in the same render; crypto.randomUUID
+// (or a time+random fallback) avoids that.
+function uid(prefix: string): string {
+  const rand =
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}_${rand}`;
+}
 
 // ── Bookings ─────────────────────────────────────────────────────────────────
 
@@ -23,7 +34,7 @@ export interface Booking {
   dateISO: string; // meeting date, e.g. '2026-06-15'
   time: string; // display slot, e.g. 'Morning · 7–9 AM'
   place: string;
-  status: 'upcoming' | 'completed' | 'cancelled';
+  status: 'pending_payment' | 'upcoming' | 'completed' | 'cancelled' | 'refunded';
   usedCredit: boolean;
   pricePaid: number; // 0 when a credit was used
   review?: { stars: number; text: string };
@@ -38,7 +49,7 @@ export function addBooking(b: Omit<Booking, 'id' | 'createdAt' | 'status'>): Boo
   const all = getBookings();
   const booking: Booking = {
     ...b,
-    id: `bk_${all.length + 1}_${b.companionId}`,
+    id: uid('bk'),
     status: 'upcoming',
     createdAt: Date.now(),
   };
@@ -75,6 +86,9 @@ export interface ChatMessage {
   from: 'me' | 'them';
   text: string;
   ts: number;
+  // Optional, back-compatible extras (older stored messages simply omit them):
+  kind?: 'text' | 'sticker'; // 'sticker' → render `text` (a single emoji) large
+  reactions?: string[];      // emoji reactions attached to this message
 }
 
 type ThreadMap = Record<string, ChatMessage[]>;
@@ -90,9 +104,32 @@ export function getThreads(): ThreadMap {
 export function appendMessage(companionId: string, msg: Omit<ChatMessage, 'id' | 'ts'>): ChatMessage {
   const map = getThreads();
   const thread = map[companionId] ?? [];
-  const full: ChatMessage = { ...msg, id: `m_${companionId}_${thread.length + 1}`, ts: Date.now() };
+  const full: ChatMessage = { ...msg, id: uid('m'), ts: Date.now() };
   writeJSON(KEY_MESSAGES, { ...map, [companionId]: [...thread, full] });
   return full;
+}
+
+/**
+ * Toggle an emoji reaction on a message (tap again to remove — WhatsApp-style).
+ * Returns the updated thread so the caller can re-render.
+ */
+export function reactToMessage(
+  companionId: string,
+  messageId: string,
+  emoji: string,
+): ChatMessage[] {
+  const map = getThreads();
+  const thread = map[companionId] ?? [];
+  const updated = thread.map((m) => {
+    if (m.id !== messageId) return m;
+    const had = m.reactions?.includes(emoji);
+    const reactions = had
+      ? m.reactions!.filter((e) => e !== emoji)
+      : [...(m.reactions ?? []), emoji];
+    return { ...m, reactions };
+  });
+  writeJSON(KEY_MESSAGES, { ...map, [companionId]: updated });
+  return updated;
 }
 
 // ── Notifications ────────────────────────────────────────────────────────────
@@ -112,7 +149,7 @@ export function getNotifications(): AppNotification[] {
 export function addNotification(n: Pick<AppNotification, 'title' | 'body'>): void {
   const all = getNotifications();
   writeJSON(KEY_NOTIFS, [
-    { ...n, id: `n_${all.length + 1}`, ts: Date.now(), read: false },
+    { ...n, id: uid('n'), ts: Date.now(), read: false },
     ...all,
   ]);
 }
@@ -126,7 +163,7 @@ export function markNotificationsRead(): void {
 /** Adds purchased meetup credits to the journeyState wallet. */
 export function addCredits(count: number): void {
   const w = getWallet();
-  writeJSON('companio_wallet', { credits: w.credits + count, used: w.used });
+  writeJSON(KEY_WALLET, { credits: w.credits + count, used: w.used });
 }
 
 export type Plan = 'plus' | null;

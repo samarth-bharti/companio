@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { type Metadata } from 'next';
 import { BookingWizard } from '@/components/booking/BookingWizard';
+import { AccountGate } from '@/components/auth/AccountGate';
 
 export const metadata: Metadata = {
   title: 'Book a meetup, Companio',
@@ -29,8 +30,13 @@ function BookingLoading() {
  */
 export default function BookPage() {
   return (
-    <Suspense fallback={<BookingLoading />}>
-      <BookingWizard />
-    </Suspense>
+    <>
+      <h1 className="sr-only">Book a meetup</h1>
+      <Suspense fallback={<BookingLoading />}>
+        <AccountGate gate="book">
+          <BookingWizard />
+        </AccountGate>
+      </Suspense>
+    </>
   );
 }

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { getUnlocked, setUnlocked as persistUnlocked } from '@/lib/journeyState';
+import { getUnlocked, setUnlocked as persistUnlocked, getUser } from '@/lib/journeyState';
+import { track } from '@/lib/analytics';
 import { COMPANIONS, TOP_MATCH_ID, FREE_NOW_COUNT } from '@/lib/data/companions';
 import type { Companion } from '@/lib/data/companions';
 import { ExploreHeader } from './ExploreHeader';
@@ -55,6 +56,9 @@ export function ExploreClient() {
   const [showSeal, setShowSeal] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
 
+  // ── Account state — unlock (the ₹199 step) requires a free account ────────
+  const [signedIn, setSignedIn] = useState(false);
+
   // ── View mode (grid / map) ────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
@@ -66,12 +70,16 @@ export function ExploreClient() {
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const handleSurpriseMe = useCallback(() => {
-    const id = SURPRISE_CANDIDATES[surpriseIdxRef.current % SURPRISE_CANDIDATES.length];
+    // Locked users only have the top match clear — point them at it (drives
+    // unlock). Unlocked users cycle through strong non-top candidates.
+    const id = unlocked
+      ? SURPRISE_CANDIDATES[surpriseIdxRef.current % SURPRISE_CANDIDATES.length]
+      : TOP_MATCH_ID;
     surpriseIdxRef.current += 1;
     setHighlightId(null);
     // small delay so CompanionGrid sees a fresh id even if it's the same one
     setTimeout(() => setHighlightId(id), 40);
-  }, []);
+  }, [unlocked]);
 
   // ── Filter / city / favorites state (via hook) ────────────────────────────
   const {
@@ -89,6 +97,7 @@ export function ExploreClient() {
 
   // Hydrate unlock state from localStorage (SSR-safe; hook handles quiz/favorites).
   useEffect(() => {
+    setSignedIn(getUser() !== null);
     if (getUnlocked()) {
       setUnlocked(true);
       setUnlockedCount(COMPANIONS.length);
@@ -98,22 +107,28 @@ export function ExploreClient() {
   const openSheet = useCallback((c: Companion) => {
     setSeed(c);
     setSheetOpen(true);
+    track('unlock_intent', { companionId: c.id });
   }, []);
 
   // Unlock-sequence timers — tracked so unmount mid-sequence cancels them.
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  // One-shot guard: the unlock celebration runs exactly once (unlock is
+  // idempotent). A boolean is correct here — the old length check never reset.
+  const sequenceStartedRef = useRef(false);
   useEffect(() => {
     const timers = timersRef.current;
     return () => timers.forEach(clearTimeout);
   }, []);
 
   const onSheetSuccess = useCallback(() => {
-    if (timersRef.current.length > 0) return; // sequence already running
+    if (sequenceStartedRef.current) return; // sequence already ran
+    sequenceStartedRef.current = true;
     const tappedId = seed?.id ?? TOP_MATCH_ID;
     setSheetOpen(false);
     setUnlocked(true);
     setUnlockedCount(COMPANIONS.length);
     persistUnlocked(true);
+    track('unlock_success', {});
     setDeveloping({ tappedId });
 
     const later = (fn: () => void, ms: number) =>
@@ -123,12 +138,22 @@ export function ExploreClient() {
     later(() => setShowSeal(false), reduced ? 1500 : 1100);
 
     if (!reduced) {
+      // Confetti burst at the moment the sheet closes.
+      import('canvas-confetti').then((mod) => {
+        mod.default({ particleCount: 140, spread: 90, origin: { y: 0.55 }, colors: ['#2E6BFF', '#1FAE6B', '#8B5CF6', '#FFB23E', '#fff'] });
+      });
       later(() => setShowParticles(true), 1600);
       later(() => setShowParticles(false), 3500);
     }
 
     later(() => setDeveloping(null), 2200);
   }, [seed, reduced]);
+
+  // Guest tapped "Pay" — send them to register first, then back to explore.
+  const requireAccount = useCallback(() => {
+    setSheetOpen(false);
+    router.push('/register?next=/explore&gate=unlock');
+  }, [router]);
 
   const onBook = useCallback(
     (c: Companion) => {
@@ -180,27 +205,8 @@ export function ExploreClient() {
         onViewModeChange={setViewMode}
         isFiltered={isFiltered}
         onClearFilters={clearFilters}
+        onSurprise={handleSurpriseMe}
       />
-
-      {/* Surprise me — only meaningful when unlocked (full grid visible) */}
-      {unlocked && (
-        <div className="max-w-7xl mx-auto px-6 pb-2 flex justify-end">
-          <motion.button
-            onClick={handleSurpriseMe}
-            whileTap={reduced ? {} : { scale: 0.94 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-pill text-sm font-semibold"
-            style={{
-              background: 'rgba(122,79,224,0.08)',
-              border: '1.5px solid rgba(122,79,224,0.22)',
-              color: 'var(--color-violet)',
-            }}
-            aria-label="Surprise me, highlight a great activity match"
-          >
-            🎲 Surprise me
-          </motion.button>
-        </div>
-      )}
 
       {/* Grid/map wrapper — relative so ParticleField (absolute inset-0) overlays correctly */}
       <div className="relative overflow-hidden">
@@ -219,12 +225,7 @@ export function ExploreClient() {
             highlightId={highlightId}
           />
         ) : (
-          <MapView
-            companions={filteredCompanions}
-            unlocked={unlocked}
-            onBook={onBook}
-            onUnlockClick={openSheet}
-          />
+          <MapView companions={filteredCompanions} cityId={cityId} unlocked={unlocked} onCityChange={setCityId} quizDone={quizDone} highlightId={highlightId} />
         )}
         {showParticles && <ParticleField count={20} color="#FFB23E" fade />}
       </div>
@@ -260,6 +261,8 @@ export function ExploreClient() {
         seedName={seedName}
         city={selectedCity.name}
         count={COMPANIONS.length - 1}
+        isGuest={!signedIn}
+        onRequireAccount={requireAccount}
         onClose={() => setSheetOpen(false)}
         onSuccess={onSheetSuccess}
       />

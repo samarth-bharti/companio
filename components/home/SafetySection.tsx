@@ -60,7 +60,7 @@ function TrustPillar({ pillar, index }: { pillar: (typeof TRUST_PILLARS)[number]
           <h3 className="font-sans font-bold text-base mb-1.5 leading-snug" style={{ color: "var(--color-panel-text)" }}>
             {pillar.title}
           </h3>
-          <p className="font-sans text-sm leading-relaxed" style={{ color: "rgba(244,242,255,0.55)" }}>
+          <p className="font-sans text-sm leading-relaxed" style={{ color: "rgba(244,242,255,0.75)" }}>
             {pillar.body}
           </p>
         </div>
@@ -119,7 +119,7 @@ export function SafetySection() {
             <Reveal delay={0.16}>
               <p className="text-lead mb-10" style={{ color: "rgba(244,242,255,0.6)" }}>
                 We built every layer of Companio to ensure you can meet confidently, whether
-                it's your first session or your fiftieth. Verified identities, secure
+                it&apos;s your first session or your fiftieth. Verified identities, secure
                 payments, and real-time safety tools are always on.
               </p>
             </Reveal>
