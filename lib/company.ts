@@ -9,11 +9,12 @@
 // none — fill these from the incorporation papers before launch.
 
 export const COMPANY = {
-  legalName: 'Companio Technologies Pvt. Ltd.',
+  legalName: 'TRYCOMPANIOLABS LLP',
   brand: 'Companio',
-  // From incorporation — fill before launch:
-  cin: '[[CIN — e.g. U72900DL2026PTC000000]]',
-  registeredAddress: '[[Registered office address, City, State, PIN]]',
+  // From the LLP incorporation papers (LLPs have an LLPIN, not a CIN):
+  llpin: 'ACY-1464',
+  registeredAddress:
+    'DPT 808B, F 79–80, 8th Floor, DLF Prime Tower, Okhla Industrial Area Phase-I, New Delhi – 110020, Delhi, India',
   // Contact — confirm these mailboxes exist and are monitored:
   supportEmail: 'support@trycompanio.in',
   privacyEmail: 'privacy@trycompanio.in',
@@ -44,7 +45,7 @@ function unfilled(v: string): boolean {
  */
 export const COMPANY_DISPLAY = {
   legalName: COMPANY.legalName,
-  cin: unfilled(COMPANY.cin) ? null : COMPANY.cin,
+  llpin: unfilled(COMPANY.llpin) ? null : COMPANY.llpin,
   registeredAddress: unfilled(COMPANY.registeredAddress)
     ? 'Registered office details available on request'
     : COMPANY.registeredAddress,

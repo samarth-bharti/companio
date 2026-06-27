@@ -9,6 +9,7 @@ import { TicketStub } from '@/components/ui/TicketStub';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
 import { Stamp } from '@/components/ui/Stamp';
 import { Button } from '@/components/ui/Button';
+import { SosButton } from '@/components/safety/SosButton';
 import { type Companion } from '@/lib/data/companions';
 import { type Booking } from '@/lib/appState';
 
@@ -228,6 +229,15 @@ export function BookingConfirmed({ companion, booking }: Props) {
               </p>
             </div>
           ))}
+        </motion.div>
+
+        {/* SOS — live-location share during the meetup (free, client-side) */}
+        <motion.div
+          initial={reduced ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={reduced ? { duration: 0 } : { ...calm.slow, delay: 0.25 }}
+        >
+          <SosButton companionName={companion.firstName} />
         </motion.div>
 
         {/* CTAs */}

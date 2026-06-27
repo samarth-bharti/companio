@@ -149,7 +149,7 @@ export function Footer() {
         >
           <p>
             {COMPANY_DISPLAY.legalName} · {COMPANY_DISPLAY.registeredAddress}
-            {COMPANY_DISPLAY.cin ? ` · CIN ${COMPANY_DISPLAY.cin}` : ""}
+            {COMPANY_DISPLAY.llpin ? ` · LLPIN ${COMPANY_DISPLAY.llpin}` : ""}
           </p>
           <p>
             Grievance Officer: {COMPANY_DISPLAY.grievanceOfficer.name} ·{" "}

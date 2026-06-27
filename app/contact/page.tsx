@@ -32,7 +32,7 @@ export default function ContactPage() {
         {
           heading: 'Company',
           body: [
-            `${COMPANY_DISPLAY.legalName} · ${COMPANY_DISPLAY.registeredAddress}${COMPANY_DISPLAY.cin ? ` · CIN ${COMPANY_DISPLAY.cin}` : ''}.`,
+            `${COMPANY_DISPLAY.legalName} · ${COMPANY_DISPLAY.registeredAddress}${COMPANY_DISPLAY.llpin ? ` · LLPIN ${COMPANY_DISPLAY.llpin}` : ''}.`,
           ],
         },
       ]}

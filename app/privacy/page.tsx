@@ -59,7 +59,7 @@ export default function PrivacyPage() {
           heading: 'Grievance Officer & contact',
           body: [
             `In line with the DPDPA and the IT Act, you can raise any privacy concern or complaint with our Grievance Officer, ${COMPANY_DISPLAY.grievanceOfficer.name}, at ${COMPANY_DISPLAY.grievanceOfficer.email}${COMPANY_DISPLAY.grievanceOfficer.phone ? ` (${COMPANY_DISPLAY.grievanceOfficer.phone})` : ''}. We acknowledge complaints promptly and aim to resolve them within the timelines the law requires.`,
-            `${COMPANY_DISPLAY.legalName}, ${COMPANY_DISPLAY.registeredAddress}.${COMPANY_DISPLAY.cin ? ` CIN: ${COMPANY_DISPLAY.cin}.` : ''} General privacy queries: ${COMPANY.privacyEmail}.`,
+            `${COMPANY_DISPLAY.legalName}, ${COMPANY_DISPLAY.registeredAddress}.${COMPANY_DISPLAY.llpin ? ` LLPIN: ${COMPANY_DISPLAY.llpin}.` : ''} General privacy queries: ${COMPANY.privacyEmail}.`,
           ],
         },
       ]}

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { motion, useReducedMotion } from 'framer-motion';
 import { MapPin } from 'lucide-react';
 import { FlipPill } from '@/components/motion/FlipPill';
+import { SosButton } from '@/components/safety/SosButton';
 import { spring } from '@/lib/motion';
 import type { Booking } from '@/lib/appState';
 import type { Companion } from '@/lib/data/companions';
@@ -87,6 +88,9 @@ export function UpcomingCard({
           ) : (
             <motion.button whileTap={reduced ? {} : { scale: 0.97 }} transition={spring.snappy} onClick={() => onCancelRequest(b.id)} className="font-sans text-xs min-h-[36px] px-3 rounded-md" style={{ color: 'var(--color-ink-muted)' }}>Cancel</motion.button>
           )}
+        </div>
+        <div className="mt-3">
+          <SosButton companionName={c.firstName} />
         </div>
       </div>
     </motion.div>

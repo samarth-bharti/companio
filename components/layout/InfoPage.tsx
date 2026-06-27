@@ -111,7 +111,7 @@ export function InfoPage({ eyebrow, title, intro, sections, footnote }: InfoPage
           </div>
           <p className="font-sans text-xs mt-16 mb-8" style={{ color: 'rgba(20,26,46,0.4)' }}>
             {footnote ??
-              'Last updated June 2026 · Companio Technologies Pvt. Ltd. · This is a product demonstration; policies shown are illustrative.'}
+              'Last updated June 2026 · TRYCOMPANIOLABS LLP · This is a product demonstration; policies shown are illustrative.'}
           </p>
         </div>
       </main>
