@@ -154,7 +154,7 @@ export function BentoSection() {
           <Reveal delay={0.08}>
             <ClipReveal
               id="bento-heading"
-              text="Company for everything."
+              text="Companion for everything."
               accent="everything."
               accentStyle={{
                 background: 'linear-gradient(135deg, #2E6BFF, #7A4FE0)',

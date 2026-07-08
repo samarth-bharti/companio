@@ -114,7 +114,7 @@ export function Nav({ heroMode = false }: NavProps) {
               style={{ border: "1px solid rgba(46,107,255,0.18)" }}
             >
               <ShieldCheck size={14} aria-hidden="true" />
-              Safety
+              Safe
             </Link>
             <NavUser />
           </div>

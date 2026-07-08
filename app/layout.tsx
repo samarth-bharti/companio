@@ -60,8 +60,13 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
+    // suppressHydrationWarning: browser extensions (Grammarly, overlay tools, …)
+    // inject attributes onto <html>/<body> before React hydrates, causing a
+    // spurious attribute mismatch. This only ignores diffs on these two elements
+    // (one level deep) — real mismatches inside the app still surface.
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${fraunces.variable} ${plusJakarta.variable} ${lora.variable} h-full antialiased`}
     >
       <head>
@@ -77,7 +82,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: jsonLd(websiteJsonLd()) }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-bg text-ink font-sans">
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-bg text-ink font-sans">
         {/* Skip link — sighted keyboard users can jump past the nav. */}
         <a
           href="#main-content"

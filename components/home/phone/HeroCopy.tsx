@@ -1,10 +1,7 @@
 import Link from 'next/link';
-import { CheckCircle2 } from 'lucide-react';
 import { MagneticButton } from '@/components/motion/MagneticButton';
 import { RollLink } from '@/components/motion/RollLink';
 import { SpotlightText } from '@/components/home/SpotlightText';
-
-const TRUST_ITEMS = ['ID-verified', 'Background-checked', '₹ held in escrow'] as const;
 
 const HEADLINE_STYLE: React.CSSProperties = {
   fontFamily: 'var(--font-display)',
@@ -22,7 +19,7 @@ const H2_STYLE: React.CSSProperties = {
 };
 
 /**
- * State 0 — fully interactive: eyebrow, H1, sub-copy, CTAs, trust items.
+ * State 0 — fully interactive: eyebrow, H1, sub-copy, CTAs.
  * Center-aligned hero. Semantic anchor (id="hero-heading" lives here).
  */
 export function HeroCopyState0() {
@@ -38,7 +35,7 @@ export function HeroCopyState0() {
       <p className="text-lead mb-10 max-w-xl mx-auto" style={{ color: 'var(--color-ink-muted)' }}>
         Verified companions for city walks, gym sessions, café chats, live events, and more, strictly platonic.
       </p>
-      <div className="flex items-center justify-center gap-4 flex-wrap mb-8">
+      <div className="flex items-center justify-center gap-4 flex-wrap">
         <MagneticButton>
           <RollLink
             href="/explore"
@@ -49,21 +46,22 @@ export function HeroCopyState0() {
             Find a companion
           </RollLink>
         </MagneticButton>
+        {/* Frosted secondary button: plain muted text was washing out against the
+            hero video. Own background + border keeps it legible over the footage. */}
         <Link
           href="/how-it-works"
-          className="inline-flex items-center h-13 px-5 rounded-xl font-sans font-semibold text-base transition-colors hover:underline underline-offset-4"
-          style={{ color: 'var(--color-ink-muted)' }}
+          className="inline-flex items-center h-13 px-6 rounded-xl font-sans font-semibold text-base transition-colors hover:bg-white focus-visible:outline-azure"
+          style={{
+            color: 'var(--color-ink)',
+            background: 'rgba(255,255,255,0.78)',
+            border: '1px solid rgba(20,26,46,0.14)',
+            backdropFilter: 'blur(6px)',
+            boxShadow: '0 2px 12px rgba(20,26,46,0.10)',
+            textShadow: 'none',
+          }}
         >
           How it works →
         </Link>
-      </div>
-      <div className="flex flex-wrap justify-center gap-x-5 gap-y-2">
-        {TRUST_ITEMS.map((item) => (
-          <span key={item} className="flex items-center gap-1.5 text-sm font-sans" style={{ color: 'var(--color-emerald)' }}>
-            <CheckCircle2 size={14} strokeWidth={2.5} aria-hidden="true" />
-            {item}
-          </span>
-        ))}
       </div>
     </div>
   );

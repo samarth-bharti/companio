@@ -5,7 +5,6 @@ import { motion, useTransform, useReducedMotion, cubicBezier } from 'framer-moti
 import { ChevronDown } from 'lucide-react';
 import { useJsScroll } from '@/lib/useJsScroll';
 import { HeroCopyState0, HeroCopyState1, HeroCopyState2 } from './phone/HeroCopy';
-import { SparkleCluster } from './SparkleCluster';
 import { useIsMobile } from '@/lib/useIsMobile';
 
 // Smooth in-out used for every scroll-linked dissolve so transitions ease into
@@ -20,6 +19,19 @@ const SCRIM =
 
 // Soft white halo behind the dark copy so it stays legible over busy footage.
 const COPY_HALO = '0 1px 18px rgba(251,252,255,0.6)';
+
+// Bottom fade into the dark panel colour (--color-ink-dark-panel = #14122A) that
+// follows the hero. Doubles as a soft shadow. The first (radial) layer adds a
+// little extra darkness in the bottom-right corner, where the source video's
+// watermark sits, so it disappears without over-darkening the whole band.
+const BOTTOM_FADE =
+  'radial-gradient(60% 90% at 90% 100%, rgba(20,18,42,0.72) 0%, rgba(20,18,42,0.28) 55%, rgba(20,18,42,0) 100%),' +
+  'linear-gradient(to top,' +
+  ' rgba(20,18,42,0.96) 0%,' +
+  ' rgba(20,18,42,0.86) 18%,' +
+  ' rgba(20,18,42,0.48) 46%,' +
+  ' rgba(20,18,42,0.14) 74%,' +
+  ' rgba(20,18,42,0) 100%)';
 
 function VideoBackground() {
   return (
@@ -36,7 +48,11 @@ function VideoBackground() {
         aria-hidden="true"
       />
       <div aria-hidden="true" className="absolute inset-0" style={{ zIndex: 10, background: SCRIM }} />
-      <SparkleCluster />
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0"
+        style={{ zIndex: 12, height: 'min(42%, 340px)', background: BOTTOM_FADE }}
+      />
     </>
   );
 }
@@ -167,10 +183,11 @@ export function PhoneJourneyHero() {
           style={{ opacity: opCue }}
           className="absolute bottom-7 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1"
         >
-          <span className="text-xs font-sans tracking-wide" style={{ color: 'var(--color-ink-muted)' }}>
+          {/* Light-on-dark: the bottom fade darkens this corner of the hero. */}
+          <span className="text-xs font-sans tracking-wide" style={{ color: 'rgba(244,242,255,0.75)' }}>
             Scroll
           </span>
-          <ChevronDown size={18} className="animate-bounce" style={{ color: 'var(--color-ink-muted)' }} aria-hidden="true" />
+          <ChevronDown size={18} className="animate-bounce" style={{ color: 'rgba(244,242,255,0.75)' }} aria-hidden="true" />
         </motion.div>
       </div>
     </section>
