@@ -4,6 +4,11 @@ import {
   favoriteToggleBody, messageAppendBody, notificationBody, planBody, applicationBody,
 } from '@/lib/server/validation';
 
+// A date that is always in the future. Frozen literals rot: this suite used
+// '2026-06-15', which silently became a past date and then failed once bookings
+// began rejecting past dates.
+const FUTURE_DATE = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+
 const ok = (s: { success: boolean }) => s.success;
 
 describe('addCreditsBody', () => {
@@ -28,7 +33,7 @@ describe('userBody', () => {
 
 describe('bookingCreateBody', () => {
   // pricePaid and review are no longer client-supplied (server-computed / gated).
-  const valid = { companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15', time: 'AM', place: 'Bandra', usedCredit: false };
+  const valid = { companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE, time: 'AM', place: 'Bandra', usedCredit: false };
   it('accepts a full valid body', () => expect(ok(bookingCreateBody.safeParse(valid))).toBe(true));
   it('strips an unknown pricePaid field (not rejected, just ignored)', () => expect(ok(bookingCreateBody.safeParse({ ...valid, pricePaid: 49900 }))).toBe(true));
   it('rejects missing companionId', () => expect(ok(bookingCreateBody.safeParse({ ...valid, companionId: undefined }))).toBe(false));

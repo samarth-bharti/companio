@@ -84,7 +84,7 @@ export function IntroSequence() {
           <button
             aria-label="Skip intro"
             tabIndex={0}
-            className="absolute top-6 right-6 text-xs font-sans font-semibold px-4 py-2 rounded-pill border transition-colors hover:bg-white/10 focus-visible:outline-white"
+            className="absolute top-6 right-6 inline-flex min-h-11 items-center text-xs font-sans font-semibold px-4 py-2 rounded-pill border transition-colors hover:bg-white/10 focus-visible:outline-white"
             style={{ color: 'rgba(244,242,255,0.45)', borderColor: 'rgba(244,242,255,0.14)' }}
             onClick={(e) => { e.stopPropagation(); dismiss(); }}
           >

@@ -25,6 +25,11 @@ import { POST as createOrder } from '@/app/api/razorpay/create-order/route';
 import { POST as verifyPayment } from '@/app/api/razorpay/verify/route';
 import { hmac } from '@/lib/server/payments';
 
+// A date that is always in the future. Frozen literals rot: this suite used
+// '2026-06-15', which silently became a past date and then failed once bookings
+// began rejecting past dates.
+const FUTURE_DATE = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+
 function jsonReq(body?: unknown) {
   return new Request('http://test/api', {
     method: 'POST',
@@ -38,7 +43,7 @@ function getReq(url = 'http://test/api') {
 }
 
 const pBooking = {
-  id: 'b1', userId: 'u1', companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+  id: 'b1', userId: 'u1', companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
   time: 'AM', place: 'Bandra', status: 'upcoming', usedCredit: false, pricePaid: 49900,
   review: null, razorpayOrderId: null, razorpayPaymentId: null,
   createdAt: new Date(), updatedAt: new Date(),
@@ -145,7 +150,7 @@ describe('bookings', () => {
   it('POST creates and returns the booking (non-credit path)', async () => {
     prismaMock.booking.create.mockResolvedValue(pBooking);
     const res = await bookingsPost(jsonReq({
-      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
       time: 'AM', place: 'Bandra', usedCredit: false,
     }));
     expect(res.status).toBe(200);
@@ -173,7 +178,7 @@ describe('bookings', () => {
   it('POST refuses a booking when we have never asked for a date of birth (403)', async () => {
     prismaMock.user.findUnique.mockResolvedValue({ dateOfBirth: null });
     const res = await bookingsPost(jsonReq({
-      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
       time: 'Morning', place: 'Cafe', usedCredit: true,
     }));
     expect(res.status).toBe(403);
@@ -187,7 +192,7 @@ describe('bookings', () => {
     sixteen.setFullYear(sixteen.getFullYear() - 16);
     prismaMock.user.findUnique.mockResolvedValue({ dateOfBirth: sixteen });
     const res = await bookingsPost(jsonReq({
-      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
       time: 'Morning', place: 'Cafe', usedCredit: true,
     }));
     expect(res.status).toBe(403);
@@ -197,7 +202,7 @@ describe('bookings', () => {
   it('POST refuses a suspended companion (404) before spending a credit', async () => {
     prismaMock.companion.findFirst.mockResolvedValue(null); // filtered by VISIBLE_COMPANION
     const res = await bookingsPost(jsonReq({
-      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
       time: 'Morning', place: 'Cafe', usedCredit: true,
     }));
     expect(res.status).toBe(404);
@@ -209,7 +214,7 @@ describe('bookings', () => {
   it('POST credit path 402 when wallet is empty', async () => {
     prismaMock.wallet.updateMany.mockResolvedValue({ count: 0 });
     const res = await bookingsPost(jsonReq({
-      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
       time: 'AM', place: 'Bandra', usedCredit: true,
     }));
     expect(res.status).toBe(402);
@@ -222,7 +227,7 @@ describe('bookings', () => {
     prismaMock.creditLedger.create.mockResolvedValue({});
     prismaMock.booking.create.mockResolvedValue({ ...pBooking, usedCredit: true, pricePaid: 0 });
     const res = await bookingsPost(jsonReq({
-      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
       time: 'AM', place: 'Bandra', usedCredit: true,
     }));
     expect(res.status).toBe(200);

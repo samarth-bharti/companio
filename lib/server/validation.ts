@@ -14,6 +14,22 @@ const dateOnly = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD')
   .refine((s) => !Number.isNaN(Date.parse(s)), 'invalid calendar date');
 
+/**
+ * A `dateOnly` that has not already happened. A meetup is a future event: a
+ * booking for last Tuesday is meaningless, and the cron auto-completes any
+ * `upcoming` booking whose date has passed — so a back-dated booking could be
+ * created and completed in the same day, skipping the meetup entirely.
+ *
+ * Compared against today in UTC. Every Indian timezone is ahead of UTC, so a
+ * user booking their own "today" always passes; the only slack is that a date
+ * up to one day stale may be accepted near midnight UTC. Erring toward
+ * accepting is right — rejecting a user's valid "today" would be worse.
+ */
+const futureDate = dateOnly.refine(
+  (s) => s >= new Date().toISOString().slice(0, 10),
+  'date cannot be in the past',
+);
+
 export const addCreditsBody = z.object({ count: z.number().int().positive() });
 
 export const boolValueBody = z.object({ value: z.boolean() });
@@ -33,7 +49,7 @@ const reviewBody = z.object({ stars: z.number().int().min(1).max(5), text: z.str
 export const bookingCreateBody = z.object({
   companionId: z.string().min(1),
   activity: z.string().min(1),
-  dateISO: dateOnly,
+  dateISO: futureDate,
   time: z.string().min(1),
   place: z.string().min(1),
   usedCredit: z.boolean(),
@@ -45,7 +61,7 @@ export const bookingCreateBody = z.object({
 // usedCredit are set at create time and never mutable by the client.
 export const bookingPatchBody = z.object({
   activity: z.string().optional(),
-  dateISO: dateOnly.optional(),
+  dateISO: futureDate.optional(),
   time: z.string().optional(),
   place: z.string().optional(),
   status: z.literal('cancelled').optional(),

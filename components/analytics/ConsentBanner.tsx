@@ -47,18 +47,20 @@ export function ConsentBanner() {
         </Link>
         .
       </p>
+      {/* min-h-11 = 44px, the smallest comfortable touch target. These two are
+          the first buttons every visitor on a phone taps, and they were 36px. */}
       <div className="mt-3 flex items-center justify-end gap-2">
         <button
           type="button"
           onClick={() => choose('denied')}
-          className="rounded-full px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100"
+          className="inline-flex min-h-11 items-center rounded-full px-4 py-2 text-sm font-medium text-neutral-600 hover:bg-neutral-100"
         >
           Decline
         </button>
         <button
           type="button"
           onClick={() => choose('granted')}
-          className="rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
+          className="inline-flex min-h-11 items-center rounded-full bg-neutral-900 px-5 py-2 text-sm font-semibold text-white hover:bg-neutral-800"
         >
           Accept
         </button>
