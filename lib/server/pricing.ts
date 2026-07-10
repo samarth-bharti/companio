@@ -27,6 +27,37 @@ export function isPackId(v: string | undefined): v is PackId {
   return !!v && Object.prototype.hasOwnProperty.call(CREDIT_PACKS, v);
 }
 
+// ── Which purchase kinds may actually take money ────────────────────────────
+//
+// v1 sells the ₹199 unlock ONLY. `booking`, `credits` and `plus` all end with
+// Companio collecting a user's money and owing part of it to a companion
+// (settlePurchase writes a CompanionPayout). Pooling and settling funds on
+// behalf of a third party is exactly what the RBI's Payment Aggregator rules
+// licence — ₹15 crore net worth to apply, ₹25 crore within three years.
+//
+// Until that licence exists (or payouts move to Razorpay Route linked
+// accounts, where Razorpay is the aggregator of record), those kinds must be
+// unreachable. Supplying a Razorpay key must NOT silently arm them.
+//
+// Set MARKETPLACE_PAYMENTS_ENABLED=true only when the licence/Route wiring is
+// genuinely in place.
+
+/** Kinds that are always sellable — no third-party money is held. */
+const ALWAYS_ALLOWED_KINDS: readonly PurchaseKind[] = ['unlock'];
+
+/** Kinds that pool funds owed to a companion, and so need the licence gate. */
+const MARKETPLACE_KINDS: readonly PurchaseKind[] = ['booking', 'credits', 'plus'];
+
+export function marketplacePaymentsEnabled(): boolean {
+  return process.env.MARKETPLACE_PAYMENTS_ENABLED === 'true';
+}
+
+/** True when this purchase kind may legally be charged in the current config. */
+export function isPurchaseKindEnabled(kind: PurchaseKind): boolean {
+  if (ALWAYS_ALLOWED_KINDS.includes(kind)) return true;
+  return MARKETPLACE_KINDS.includes(kind) && marketplacePaymentsEnabled();
+}
+
 // ── Variable per-companion pricing ──────────────────────────────────────────
 // Companions set an hourly rate. We clamp to a sane band so a bad seed/import
 // can never charge ₹5 or ₹50,000. Premium companions get a higher ceiling.

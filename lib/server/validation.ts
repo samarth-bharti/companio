@@ -100,14 +100,29 @@ export const adminBanBody = z.object({
   reason: z.string().max(280).optional(),
 });
 
+// The editable surface of a companion profile. This deliberately covers every
+// field that drives the explore grid, the map and matching — the old schema
+// exposed only name/city/hourlyRate/bio, which meant an admin could create a
+// companion but never give them activities, languages, a photo or an area, and
+// the card rendered blank.
 export const adminEditCompanionBody = z.object({
   name: z.string().min(1).optional(),
   city: z.string().min(1).optional(),
+  area: z.string().min(1).optional(),
+  age: z.number().int().min(18).max(100).optional(),
   hourlyRate: z.number().int().min(0).optional(), // paise
   premium: z.boolean().optional(),
   bio: z.string().optional(),
+  photo: z.string().url().optional(),
+  accent: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb hex colour').optional(),
+  activities: z.array(z.string().min(1)).max(12).optional(),
+  languages: z.array(z.string().min(1)).max(12).optional(),
+  suggestions: z.array(z.string().min(1)).max(6).optional(),
+  availability: z.string().max(80).optional(),
   availableNow: z.boolean().optional(),
+  matchScore: z.number().int().min(0).max(100).optional(),
   verified: z.boolean().optional(),
+  topMatch: z.boolean().optional(),
 });
 
 export const adminEditUserBody = z.object({

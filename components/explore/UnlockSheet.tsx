@@ -24,6 +24,7 @@ export function UnlockSheet({
   const reduced = useEffectiveReducedMotion();
   const [sel, setSel] = useState<string | null>(null);
   const [pay, setPay] = useState<PayState>("idle");
+  const [payError, setPayError] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<Element | null>(null);
   // Synchronous double-submit guard + tracked timers. setPay is async, so a fast
@@ -57,6 +58,7 @@ export function UnlockSheet({
       payTimers.current.forEach(clearTimeout);
       payTimers.current = [];
       payingRef.current = false;
+      setPayError(null);
       setTimeout(() => { setPay("idle"); setSel(null); }, 300);
     }
     return () => { document.removeEventListener("keydown", handleKey); };
@@ -65,8 +67,9 @@ export function UnlockSheet({
   // Unmount-only safety: never let a scheduled onSuccess fire after teardown.
   useEffect(() => () => { payTimers.current.forEach(clearTimeout); }, []);
 
-  // Demo animation: the original local simulation, used whenever live Razorpay
-  // isn't wired (no key / no session). Kept verbatim so demo mode is unchanged.
+  // Demo animation: the original local simulation. Reachable ONLY when this
+  // build has no publishable Razorpay key, i.e. there is no gateway to fail.
+  // It grants the unlock for free, so it must never run in a keyed build.
   function runDemoPay() {
     setPay("processing");
     const t1 = setTimeout(() => {
@@ -76,22 +79,46 @@ export function UnlockSheet({
     payTimers.current.push(t1);
   }
 
+  function fail(message: string) {
+    payingRef.current = false;
+    setPay("idle");
+    setPayError(message);
+  }
+
   async function doPay() {
     if (payingRef.current) return;
     if (!sel) return; // a payment method must be chosen first
     payingRef.current = true;
+    setPayError(null);
 
-    // Try the real gateway first; 'unconfigured' means demo mode — fall back.
     const result = await payWithRazorpay({ kind: "unlock" });
-    if (result === "unconfigured") { runDemoPay(); return; }
-    if (result === "success") {
-      setPay("success");
-      payTimers.current.push(setTimeout(onSuccess, 450));
-      return;
+
+    switch (result) {
+      case "unconfigured":
+        // No gateway in this build at all — the local preview is the product.
+        runDemoPay();
+        return;
+      case "success":
+        setPay("success");
+        payTimers.current.push(setTimeout(onSuccess, 450));
+        return;
+      case "auth_required":
+        // Live gateway, but the server has no session for this visitor. Send
+        // them to sign in rather than pretending the payment worked.
+        payingRef.current = false;
+        setPay("idle");
+        onRequireAccount?.();
+        return;
+      case "dismissed":
+        payingRef.current = false;
+        setPay("idle");
+        return;
+      case "unavailable":
+        fail("Payments are temporarily unavailable. Please try again shortly.");
+        return;
+      default:
+        fail("That payment didn't go through. You have not been charged.");
     }
-    // 'dismissed' or 'failed' — re-arm so the user can retry.
-    payingRef.current = false;
-    setPay("idle");
   }
 
   // matchMedia in effect, not render — server and first client pass must agree.
@@ -177,6 +204,11 @@ export function UnlockSheet({
                 {isGuest && (
                   <p className="mt-2 text-xs text-center text-[var(--color-ink-muted)]">
                     Step 1: free account · Step 2: pay ₹199 (one-time, no subscription)
+                  </p>
+                )}
+                {payError && (
+                  <p role="alert" className="mt-2 text-xs text-center" style={{ color: '#C0392B' }}>
+                    {payError}
                   </p>
                 )}
               </div>

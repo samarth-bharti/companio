@@ -15,6 +15,7 @@ import { orderCreateBody } from '@/lib/server/validation';
 import {
   CREDIT_PACKS,
   isPackId,
+  isPurchaseKindEnabled,
   UNLOCK_AMOUNT,
   PLUS_AMOUNT,
 } from '@/lib/server/pricing';
@@ -39,6 +40,13 @@ export async function POST(req: Request) {
     const parsed = orderCreateBody.safeParse(await readJsonBody(req));
     if (!parsed.success) return badRequest(parsed.error.flatten());
     const { kind, packId, bookingId } = parsed.data;
+
+    // Refuse any kind that would leave us holding a companion's money without
+    // an RBI Payment Aggregator licence. 503, so the client shows "temporarily
+    // unavailable" rather than falling back to a free grant.
+    if (!isPurchaseKindEnabled(kind)) {
+      return json({ error: 'purchase_kind_disabled', kind }, 503);
+    }
 
     const { prisma } = await import('@/lib/prisma');
 

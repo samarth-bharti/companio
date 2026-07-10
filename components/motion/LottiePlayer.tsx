@@ -26,7 +26,15 @@ interface LottiePlayerProps {
   className?: string;
   style?: React.CSSProperties;
   loop?: boolean;
+  /** Playback rate. 1 = as authored. >1 plays faster. */
   speed?: number;
+  /**
+   * Restart from frame 0 each time the animation scrolls into view, instead of
+   * resuming wherever it paused. Use for short one-beat animations (a high-five,
+   * a clap) whose payoff sits partway through the timeline — otherwise the beat
+   * has already happened by the time the user arrives, or lands seconds late.
+   */
+  restartOnEnter?: boolean;
 }
 
 export function LottiePlayer({
@@ -36,7 +44,8 @@ export function LottiePlayer({
   className,
   style,
   loop = true,
-  // speed kept in signature for API compat; lottie-react speed is set on the ref
+  speed = 1,
+  restartOnEnter = false,
 }: LottiePlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,13 +65,23 @@ export function LottiePlayer({
     reducedMotionRef.current = reducedMotion;
   }, [reducedMotion]);
 
-  // Live-apply toggle changes to an already-mounted animation.
+  // Stable refs for the observer callback, which is created once per `src`.
+  const speedRef = useRef(speed);
+  const restartRef = useRef(restartOnEnter);
+  useEffect(() => {
+    speedRef.current = speed;
+    restartRef.current = restartOnEnter;
+  }, [speed, restartOnEnter]);
+
+  // Live-apply toggle changes to an already-mounted animation, and apply speed
+  // (lottie-react has no `speed` prop — it must be set imperatively on the ref).
   useEffect(() => {
     const l = lottieRef.current;
     if (!l || !animationData) return;
+    l.setSpeed?.(speed);
     if (reducedMotion) l.goToAndStop(0, true);
     else l.play();
-  }, [reducedMotion, animationData]);
+  }, [reducedMotion, animationData, speed]);
 
   // Two observers with different margins:
   // ① loadObs (1200px out) — fetch + parse the JSON well BEFORE the animation
@@ -89,15 +108,22 @@ export function LottiePlayer({
 
     const playObs = new IntersectionObserver(
       ([entry]) => {
+        const l = lottieRef.current;
         if (entry.isIntersecting) {
-          if (lottieRef.current && !reducedMotionRef.current) {
-            lottieRef.current.play();
+          if (l && !reducedMotionRef.current) {
+            l.setSpeed?.(speedRef.current);
+            // Restart so the beat lands as the user arrives, not mid-loop.
+            if (restartRef.current) l.goToAndPlay(0, true);
+            else l.play();
           }
         } else {
-          lottieRef.current?.pause();
+          l?.pause();
         }
       },
-      { rootMargin: '100px' },
+      // No margin: fire when it is actually on screen, not 100px early. With
+      // restartOnEnter that 100px head start meant the beat played just above
+      // the fold and the user scrolled in after it had finished.
+      { rootMargin: '0px', threshold: 0.35 },
     );
 
     loadObs.observe(el);

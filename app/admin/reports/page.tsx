@@ -1,6 +1,7 @@
 // app/admin/reports/page.tsx — the report queue (IT Act review trail).
 
 import { prisma } from '@/lib/prisma';
+import { ActionForm } from '@/components/admin/ActionForm';
 import { setReportStatus } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -31,15 +32,17 @@ export default async function AdminReports() {
             <p className="text-sm text-[var(--color-ink)]">{r.reason}</p>
             {r.detail && <p className="text-sm text-[var(--color-ink-muted)] mt-1">{r.detail}</p>}
             <p className="text-xs text-[var(--color-ink-muted)] mt-1">{r.createdAt.toLocaleString('en-IN')}</p>
-            <div className="flex gap-2 mt-3">
+            <div className="flex items-start gap-2 mt-3">
               {(NEXT[r.status] ?? []).map((action) => (
-                <form key={action.status} action={setReportStatus}>
+                <ActionForm
+                  key={action.status}
+                  action={setReportStatus}
+                  submitLabel={action.label}
+                  submitClassName="text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--color-azure)]/30 text-[var(--color-azure)] hover:bg-[var(--color-azure)]/5 disabled:opacity-50 disabled:cursor-wait"
+                >
                   <input type="hidden" name="id" value={r.id} />
                   <input type="hidden" name="status" value={action.status} />
-                  <button className="text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--color-azure)]/30 text-[var(--color-azure)] hover:bg-[var(--color-azure)]/5">
-                    {action.label}
-                  </button>
-                </form>
+                </ActionForm>
               ))}
             </div>
           </div>

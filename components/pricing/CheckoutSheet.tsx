@@ -52,6 +52,7 @@ export function CheckoutSheet({ open, item, onClose, onPaid, order }: CheckoutSh
   const router = useRouter();
   const [sel, setSel] = useState<string | null>(null);
   const [pay, setPay] = useState<PayState>('idle');
+  const [payError, setPayError] = useState<string | null>(null);
   const [processingLabel, setProcessingLabel] = useState<string>(PROCESSING_PHASES[0].label);
   const [isMd, setIsMd] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -137,18 +138,24 @@ export function CheckoutSheet({ open, item, onClose, onPaid, order }: CheckoutSh
   async function doPay() {
     if (payingRef.current || !sel) return;
     payingRef.current = true;
+    setPayError(null);
     setPay('processing');
 
     // No order intent supplied -> always demo (backward compatible).
     if (!order) { runDemoPay(); return; }
 
-    // Try the real gateway; 'unconfigured' means demo mode — fall back.
     const result = await payWithRazorpay(order);
+    // 'unconfigured' = this build has no publishable key, so there is no
+    // gateway that could have charged anyone; the demo animation is the whole
+    // product. Every other outcome is a real gateway outcome and must NOT
+    // fall through to the demo, which grants the benefit for free.
     if (result === 'unconfigured') { runDemoPay(); return; }
     if (result === 'success') { setPay('success'); onPaid(); return; }
-    // 'dismissed' or 'failed' — re-arm so the user can retry.
     payingRef.current = false;
     setPay('idle');
+    if (result === 'auth_required') setPayError('Please sign in to complete this purchase.');
+    else if (result === 'unavailable') setPayError('Payments are temporarily unavailable. Please try again shortly.');
+    else if (result === 'failed') setPayError("That payment didn't go through. You have not been charged.");
   }
 
   // Contextual seal label — clearer than "Done!".
@@ -212,6 +219,12 @@ export function CheckoutSheet({ open, item, onClose, onPaid, order }: CheckoutSh
                   )}
 
                   <PaymentMethodTiles selected={sel} onSelect={setSel} />
+
+                  {payError && (
+                    <p role="alert" className="text-xs text-center" style={{ color: '#C0392B' }}>
+                      {payError}
+                    </p>
+                  )}
 
                   <div aria-live="polite" aria-atomic="true">
                     <Button variant="cta" size="xl" className="w-full"

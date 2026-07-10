@@ -23,7 +23,9 @@ export async function GET(
   return guard(async () => {
     const { prisma } = await import('@/lib/prisma');
     const { toCompanion } = await import('@/lib/server/serialize');
-    const row = await prisma.companion.findUnique({ where: { id } });
+    const { VISIBLE_COMPANION } = await import('@/lib/server/visibility');
+    // A suspended profile is a 404 to members, not a hidden-but-fetchable row.
+    const row = await prisma.companion.findFirst({ where: { id, ...VISIBLE_COMPANION } });
     return row ? NextResponse.json(toCompanion(row)) : NextResponse.json(null, { status: 404 });
   });
 }

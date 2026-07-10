@@ -2,12 +2,13 @@
 // document-check results, then approve (creates the Companion profile) or reject.
 
 import { prisma } from '@/lib/prisma';
+import { ActionForm } from '@/components/admin/ActionForm';
 import { approveApplication, rejectApplication } from '../actions/applications';
 
 export const dynamic = 'force-dynamic';
 
-const btnGreen = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-[var(--color-emerald)] text-white';
-const btnRed = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-rose-300 text-rose-600 hover:bg-rose-50';
+const btnGreen = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-[var(--color-emerald)] text-white disabled:opacity-50 disabled:cursor-wait';
+const btnRed = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-wait';
 const inp = 'h-8 px-2 text-xs rounded-lg border border-[var(--color-ink)]/15';
 
 function StatusPill({ s }: { s: string }) {
@@ -69,16 +70,19 @@ export default async function AdminApplications() {
               {a.backgroundConsent && <span className="text-[var(--color-emerald)]">bg-consent ✓</span>}
             </div>
 
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--color-ink)]/5">
-              <form action={approveApplication}>
+            <div className="flex flex-wrap items-start gap-2 pt-2 border-t border-[var(--color-ink)]/5">
+              <ActionForm
+                action={approveApplication}
+                submitLabel="Approve → create companion"
+                submitClassName={btnGreen}
+                confirm={`Approve ${a.name}? This creates a live companion profile and promotes their account.`}
+              >
                 <input type="hidden" name="id" value={a.id} />
-                <button className={btnGreen}>Approve → create companion</button>
-              </form>
-              <form action={rejectApplication} className="flex gap-1.5 items-center">
+              </ActionForm>
+              <ActionForm action={rejectApplication} submitLabel="Reject" submitClassName={btnRed}>
                 <input type="hidden" name="id" value={a.id} />
                 <input name="reason" placeholder="Reject reason" className={inp} style={{ width: 130 }} />
-                <button className={btnRed}>Reject</button>
-              </form>
+              </ActionForm>
             </div>
           </div>
         ))}

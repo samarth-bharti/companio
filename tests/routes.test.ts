@@ -58,12 +58,18 @@ beforeEach(() => {
   prismaMock.notification = { updateMany: vi.fn() };
   prismaMock.purchase = { findFirst: vi.fn(), create: vi.fn() };
   prismaMock.companionApplication = { upsert: vi.fn(), findUnique: vi.fn() };
+  // Moderation gates: routes now confirm the companion is visible and that the
+  // sender isn't message-blocked before writing. Default both to "allowed", so
+  // each test opts INTO the blocked case rather than every test having to opt out.
+  prismaMock.companion = { findFirst: vi.fn().mockResolvedValue({ id: 'ananya' }) };
+  prismaMock.user = { findUnique: vi.fn().mockResolvedValue({ messageBlocked: false }) };
 });
 
 afterEach(() => {
   delete process.env.RAZORPAY_KEY_ID;
   delete process.env.RAZORPAY_KEY_SECRET;
   delete process.env.RAZORPAY_WEBHOOK_SECRET;
+  delete process.env.MARKETPLACE_PAYMENTS_ENABLED;
 });
 
 describe('wallet', () => {
@@ -153,6 +159,18 @@ describe('bookings', () => {
     }));
     expect(res.status).toBe(400);
     expect(prismaMock.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('POST refuses a suspended companion (404) before spending a credit', async () => {
+    prismaMock.companion.findFirst.mockResolvedValue(null); // filtered by VISIBLE_COMPANION
+    const res = await bookingsPost(jsonReq({
+      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      time: 'Morning', place: 'Cafe', usedCredit: true,
+    }));
+    expect(res.status).toBe(404);
+    expect(prismaMock.booking.create).not.toHaveBeenCalled();
+    // The credit must survive a rejected booking.
+    expect(prismaMock.wallet.updateMany).not.toHaveBeenCalled();
   });
 
   it('POST credit path 402 when wallet is empty', async () => {
@@ -294,6 +312,22 @@ describe('messages', () => {
     expect((await res.json()).ts).toBe(1700000000000);
   });
 
+  // Moderation is only real if a query reads the flag. These pin that.
+  it('POST is refused (403) when the sender is message-blocked', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ messageBlocked: true });
+    const res = await msgPost(jsonReq({ from: 'me', text: 'hi' }), { params: Promise.resolve({ companionId: 'ananya' }) });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ error: 'messaging_blocked' });
+    expect(prismaMock.message.create).not.toHaveBeenCalled();
+  });
+
+  it('POST is refused (404) when the companion is suspended or banned', async () => {
+    prismaMock.companion.findFirst.mockResolvedValue(null); // filtered by VISIBLE_COMPANION
+    const res = await msgPost(jsonReq({ from: 'me', text: 'hi' }), { params: Promise.resolve({ companionId: 'ananya' }) });
+    expect(res.status).toBe(404);
+    expect(prismaMock.message.create).not.toHaveBeenCalled();
+  });
+
   it('GET /api/messages groups all threads by companion (ts serialized)', async () => {
     prismaMock.message.findMany.mockResolvedValue([
       { id: 'm1', companionId: 'ananya', from: 'me', text: 'hi', ts: BigInt(1) },
@@ -368,9 +402,26 @@ describe('razorpay (payment authorization)', () => {
     expect(res.status).toBe(503);
   });
 
-  it('create-order rejects an unknown credit pack (400)', async () => {
+  // ── Marketplace gate ──────────────────────────────────────────────────────
+  // booking/credits/plus all end with Companio owing money to a companion, which
+  // needs an RBI Payment Aggregator licence. Supplying a Razorpay key must not
+  // silently arm them. Only 'unlock' may be charged until the gate is opened.
+
+  it.each(['booking', 'credits', 'plus'] as const)(
+    'create-order refuses kind=%s (503) while MARKETPLACE_PAYMENTS_ENABLED is unset',
+    async (kind) => {
+      process.env.RAZORPAY_KEY_ID = 'k';
+      process.env.RAZORPAY_KEY_SECRET = 's';
+      const res = await createOrder(jsonReq({ kind, packId: 'pack5', bookingId: 'b1' }));
+      expect(res.status).toBe(503);
+      expect(await res.json()).toMatchObject({ error: 'purchase_kind_disabled', kind });
+    },
+  );
+
+  it('create-order rejects an unknown credit pack (400) once the gate is open', async () => {
     process.env.RAZORPAY_KEY_ID = 'k';
     process.env.RAZORPAY_KEY_SECRET = 's';
+    process.env.MARKETPLACE_PAYMENTS_ENABLED = 'true';
     const res = await createOrder(jsonReq({ kind: 'credits', packId: 'nope' }));
     expect(res.status).toBe(400);
   });

@@ -6,7 +6,7 @@
 // JSON.stringify does not throw; Date fields are serialized to ISO strings
 // by the default JSON replacer behaviour.
 
-import { getSessionUserId } from '@/lib/server/session';
+import { getRawSessionUserId } from '@/lib/server/session';
 import { unauthorized, guard } from '@/lib/server/http';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +18,7 @@ function bigIntReplacer(_key: string, value: unknown): unknown {
 
 export async function GET() {
   return guard(async () => {
-    const userId = await getSessionUserId();
+    const userId = await getRawSessionUserId();
     if (!userId) return unauthorized();
 
     const { prisma } = await import('@/lib/prisma');

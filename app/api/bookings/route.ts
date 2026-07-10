@@ -39,6 +39,15 @@ export async function POST(req: Request) {
     const { usedCredit, ...fields } = parsed.data;
     const { prisma } = await import('@/lib/prisma');
     const { toBooking } = await import('@/lib/server/serialize');
+    const { VISIBLE_COMPANION } = await import('@/lib/server/visibility');
+
+    // A suspended companion must not take new bookings. Checked before the
+    // credit is spent, so a rejected booking never costs the user anything.
+    const bookable = await prisma.companion.findFirst({
+      where: { id: fields.companionId, ...VISIBLE_COMPANION },
+      select: { id: true },
+    });
+    if (!bookable) return json({ error: 'companion_unavailable' }, 404);
 
     // pricePaid is always 0 at create time — the server stamps it later:
     //   credit path  → stays 0 (no cash changes hands)

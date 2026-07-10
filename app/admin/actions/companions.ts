@@ -1,133 +1,244 @@
 'use server';
 
-// Admin → companion mutations. Gate → validate → mutate → log → revalidate.
+// Admin → companion mutations. Gate → validate → mutate → log → revalidate,
+// and always return a message the operator can read.
 
 import { revalidatePath } from 'next/cache';
-import { getAdminUserId, logAdminAction } from '@/lib/server/admin';
+import { logAdminAction } from '@/lib/server/admin';
+import {
+  adminAction,
+  succeeded,
+  failed,
+  field,
+  describeZod,
+  type ActionState,
+} from '@/lib/server/adminAction';
 import { adminEditCompanionBody, adminBanBody } from '@/lib/server/validation';
 
 const PATH = '/admin/companions';
 
-function g(f: FormData, k: string): string {
-  return String(f.get(k) ?? '').trim();
+/** Split a comma-separated form field into a clean string[] (undefined if absent). */
+function list(f: FormData, k: string): string[] | undefined {
+  const raw = f.get(k);
+  if (raw === null) return undefined;
+  const items = String(raw)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return items;
 }
 
-export async function createCompanion(formData: FormData) {
-  const adminId = await getAdminUserId();
-  if (!adminId) return;
-  const id = g(formData, 'id');
-  const name = g(formData, 'name');
-  const city = g(formData, 'city');
-  const area = g(formData, 'area');
-  const bio = g(formData, 'bio');
-  if (!id || !name || !city || !area || !bio) return;
-  const hourlyRate = Math.max(0, Number(formData.get('hourlyRate')) || 50000);
-  const photo = g(formData, 'photo') ||
-    'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800';
-  const accent = g(formData, 'accent') || '#5b5bd6';
-  const firstName = name.split(' ')[0];
-  const lastInitial = name.split(' ')[1]?.[0];
-  const maskedName = lastInitial ? `${firstName} ${lastInitial}.` : firstName;
-  const { prisma } = await import('@/lib/prisma');
-  await prisma.companion.create({
-    data: {
-      id, name, firstName, maskedName, city, area, bio,
-      hourlyRate, ratePerMeeting: hourlyRate, photo, accent,
-      activities: [], languages: [], suggestions: [],
-    },
+/** Parse a numeric form field, or undefined when the field wasn't submitted. */
+function num(f: FormData, k: string): number | undefined {
+  const raw = f.get(k);
+  if (raw === null || String(raw).trim() === '') return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : NaN; // NaN fails zod, surfacing a real message
+}
+
+/** Turn "companion name" into a URL-safe, stable id. */
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+}
+
+export async function createCompanion(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return adminAction(async (adminId) => {
+    const name = field(formData, 'name');
+    const city = field(formData, 'city');
+    const area = field(formData, 'area');
+    const bio = field(formData, 'bio');
+    if (!name || !city || !area || !bio) {
+      return failed('Name, city, area and bio are all required.');
+    }
+
+    // The id used to be typed by hand: one typo and the profile was unreachable
+    // and un-deletable through the UI. Derive it, and make collisions explicit.
+    const id = field(formData, 'id') || slugify(name);
+    if (!id) return failed('Could not derive an id from that name — set one explicitly.');
+
+    const { prisma } = await import('@/lib/prisma');
+    const clash = await prisma.companion.findUnique({ where: { id }, select: { id: true } });
+    if (clash) return failed(`A companion with id "${id}" already exists.`);
+
+    const hourlyRate = Math.max(0, Number(formData.get('hourlyRate')) || 50000);
+    const photo =
+      field(formData, 'photo') ||
+      'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800';
+    const accent = field(formData, 'accent') || '#5b5bd6';
+    const firstName = name.split(' ')[0];
+    const lastInitial = name.split(' ')[1]?.[0];
+    const maskedName = lastInitial ? `${firstName} ${lastInitial}.` : firstName;
+
+    await prisma.companion.create({
+      data: {
+        id,
+        name,
+        firstName,
+        maskedName,
+        city,
+        area,
+        bio,
+        hourlyRate,
+        ratePerMeeting: hourlyRate,
+        photo,
+        accent,
+        // These drive the explore card and the match sort. Creating a companion
+        // with all three empty renders a blank tile, so accept them up front.
+        activities: list(formData, 'activities') ?? [],
+        languages: list(formData, 'languages') ?? [],
+        suggestions: list(formData, 'suggestions') ?? [],
+        availability: field(formData, 'availability') || 'Available tomorrow',
+      },
+    });
+    await logAdminAction(adminId, 'createCompanion', 'companion', id);
+    revalidatePath(PATH);
+    return succeeded(`Companion "${name}" created with id ${id}.`);
   });
-  await logAdminAction(adminId, 'createCompanion', 'companion', id);
-  revalidatePath(PATH);
 }
 
-export async function editCompanion(formData: FormData) {
-  const adminId = await getAdminUserId();
-  if (!adminId) return;
-  const id = g(formData, 'id');
-  if (!id) return;
-  const hrRaw = formData.get('hourlyRate');
-  const parsed = adminEditCompanionBody.safeParse({
-    name: g(formData, 'name') || undefined,
-    city: g(formData, 'city') || undefined,
-    hourlyRate: hrRaw ? Number(hrRaw) : undefined,
-    bio: g(formData, 'bio') || undefined,
+export async function editCompanion(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return adminAction(async (adminId) => {
+    const id = field(formData, 'id');
+    if (!id) return failed('Missing companion id.');
+
+    const parsed = adminEditCompanionBody.safeParse({
+      name: field(formData, 'name') || undefined,
+      city: field(formData, 'city') || undefined,
+      area: field(formData, 'area') || undefined,
+      age: num(formData, 'age'),
+      hourlyRate: num(formData, 'hourlyRate'),
+      bio: field(formData, 'bio') || undefined,
+      photo: field(formData, 'photo') || undefined,
+      accent: field(formData, 'accent') || undefined,
+      activities: list(formData, 'activities'),
+      languages: list(formData, 'languages'),
+      suggestions: list(formData, 'suggestions'),
+      availability: field(formData, 'availability') || undefined,
+      matchScore: num(formData, 'matchScore'),
+    });
+    if (!parsed.success) return failed(describeZod(parsed.error));
+    if (Object.keys(parsed.data).length === 0) return failed('Nothing to change.');
+
+    const { prisma } = await import('@/lib/prisma');
+    // Keep the derived display names in step with the name the admin typed.
+    const data: Record<string, unknown> = { ...parsed.data };
+    if (parsed.data.name) {
+      const firstName = parsed.data.name.split(' ')[0];
+      const lastInitial = parsed.data.name.split(' ')[1]?.[0];
+      data.firstName = firstName;
+      data.maskedName = lastInitial ? `${firstName} ${lastInitial}.` : firstName;
+    }
+
+    await prisma.companion.update({ where: { id }, data });
+    await logAdminAction(adminId, 'editCompanion', 'companion', id, JSON.stringify(parsed.data));
+    revalidatePath(PATH);
+    return succeeded('Companion updated.');
   });
-  if (!parsed.success) return;
-  const { prisma } = await import('@/lib/prisma');
-  await prisma.companion.update({ where: { id }, data: parsed.data });
-  await logAdminAction(adminId, 'editCompanion', 'companion', id, JSON.stringify(parsed.data));
-  revalidatePath(PATH);
 }
 
-export async function suspendCompanion(formData: FormData) {
-  const adminId = await getAdminUserId();
-  if (!adminId) return;
-  const id = g(formData, 'id');
-  if (!id) return;
-  const { prisma } = await import('@/lib/prisma');
-  await prisma.companion.update({ where: { id }, data: { suspended: true } });
-  await logAdminAction(adminId, 'suspendCompanion', 'companion', id);
-  revalidatePath(PATH);
-}
-
-export async function unsuspendCompanion(formData: FormData) {
-  const adminId = await getAdminUserId();
-  if (!adminId) return;
-  const id = g(formData, 'id');
-  if (!id) return;
-  const { prisma } = await import('@/lib/prisma');
-  await prisma.companion.update({ where: { id }, data: { suspended: false } });
-  await logAdminAction(adminId, 'unsuspendCompanion', 'companion', id);
-  revalidatePath(PATH);
-}
-
-export async function banCompanion(formData: FormData) {
-  const adminId = await getAdminUserId();
-  if (!adminId) return;
-  const id = g(formData, 'id');
-  if (!id) return;
-  const parsed = adminBanBody.safeParse({ reason: g(formData, 'reason') || undefined });
-  if (!parsed.success) return;
-  const { prisma } = await import('@/lib/prisma');
-  await prisma.companion.update({
-    where: { id },
-    data: { bannedAt: new Date(), banReason: parsed.data.reason ?? null, suspended: true },
+export async function suspendCompanion(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return adminAction(async (adminId) => {
+    const id = field(formData, 'id');
+    if (!id) return failed('Missing companion id.');
+    const { prisma } = await import('@/lib/prisma');
+    await prisma.companion.update({ where: { id }, data: { suspended: true } });
+    await logAdminAction(adminId, 'suspendCompanion', 'companion', id);
+    revalidatePath(PATH);
+    return succeeded('Companion suspended — hidden from explore, the map, and new bookings.');
   });
-  await logAdminAction(adminId, 'banCompanion', 'companion', id, parsed.data.reason);
-  revalidatePath(PATH);
 }
 
-export async function deleteCompanion(formData: FormData) {
-  const adminId = await getAdminUserId();
-  if (!adminId) return;
-  const id = g(formData, 'id');
-  if (!id) return;
-  const { prisma } = await import('@/lib/prisma');
-  await prisma.companion.delete({ where: { id } });
-  await logAdminAction(adminId, 'deleteCompanion', 'companion', id);
-  revalidatePath(PATH);
+export async function unsuspendCompanion(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return adminAction(async (adminId) => {
+    const id = field(formData, 'id');
+    if (!id) return failed('Missing companion id.');
+    const { prisma } = await import('@/lib/prisma');
+    await prisma.companion.update({ where: { id }, data: { suspended: false } });
+    await logAdminAction(adminId, 'unsuspendCompanion', 'companion', id);
+    revalidatePath(PATH);
+    return succeeded('Companion is visible again.');
+  });
 }
 
-export async function setVerified(formData: FormData) {
-  const adminId = await getAdminUserId();
-  if (!adminId) return;
-  const id = g(formData, 'id');
-  if (!id) return;
-  const verified = formData.get('verified') === 'true';
-  const { prisma } = await import('@/lib/prisma');
-  await prisma.companion.update({ where: { id }, data: { verified } });
-  await logAdminAction(adminId, 'setVerified', 'companion', id, String(verified));
-  revalidatePath(PATH);
+export async function banCompanion(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return adminAction(async (adminId) => {
+    const id = field(formData, 'id');
+    if (!id) return failed('Missing companion id.');
+    const parsed = adminBanBody.safeParse({ reason: field(formData, 'reason') || undefined });
+    if (!parsed.success) return failed(describeZod(parsed.error));
+    const { prisma } = await import('@/lib/prisma');
+    await prisma.companion.update({
+      where: { id },
+      data: { bannedAt: new Date(), banReason: parsed.data.reason ?? null, suspended: true },
+    });
+    await logAdminAction(adminId, 'banCompanion', 'companion', id, parsed.data.reason);
+    revalidatePath(PATH);
+    return succeeded('Companion banned and removed from the marketplace.');
+  });
 }
 
-export async function setPremium(formData: FormData) {
-  const adminId = await getAdminUserId();
-  if (!adminId) return;
-  const id = g(formData, 'id');
-  if (!id) return;
-  const premium = formData.get('premium') === 'true';
-  const { prisma } = await import('@/lib/prisma');
-  await prisma.companion.update({ where: { id }, data: { premium } });
-  await logAdminAction(adminId, 'setPremium', 'companion', id, String(premium));
-  revalidatePath(PATH);
+export async function unbanCompanion(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return adminAction(async (adminId) => {
+    const id = field(formData, 'id');
+    if (!id) return failed('Missing companion id.');
+    const { prisma } = await import('@/lib/prisma');
+    await prisma.companion.update({
+      where: { id },
+      data: { bannedAt: null, banReason: null, suspended: false },
+    });
+    await logAdminAction(adminId, 'unbanCompanion', 'companion', id);
+    revalidatePath(PATH);
+    return succeeded('Ban lifted. The profile is live again.');
+  });
+}
+
+export async function deleteCompanion(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return adminAction(async (adminId) => {
+    const id = field(formData, 'id');
+    if (!id) return failed('Missing companion id.');
+    const { prisma } = await import('@/lib/prisma');
+    const { eraseCompanion } = await import('@/lib/server/erase');
+    const result = await eraseCompanion(prisma, id);
+    if (!result.ok) {
+      return failed(
+        `Cannot delete: this companion has ${result.bookings} booking${
+          result.bookings === 1 ? '' : 's'
+        }. Deleting would destroy the record of a real meetup. Ban them instead.`,
+      );
+    }
+    await logAdminAction(adminId, 'deleteCompanion', 'companion', id);
+    revalidatePath(PATH);
+    return succeeded('Companion permanently deleted.');
+  });
+}
+
+export async function setVerified(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return adminAction(async (adminId) => {
+    const id = field(formData, 'id');
+    if (!id) return failed('Missing companion id.');
+    const verified = formData.get('verified') === 'true';
+    const { prisma } = await import('@/lib/prisma');
+    await prisma.companion.update({ where: { id }, data: { verified } });
+    await logAdminAction(adminId, 'setVerified', 'companion', id, String(verified));
+    revalidatePath(PATH);
+    return succeeded(verified ? 'Marked as ID-verified.' : 'Verification removed.');
+  });
+}
+
+export async function setPremium(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return adminAction(async (adminId) => {
+    const id = field(formData, 'id');
+    if (!id) return failed('Missing companion id.');
+    const premium = formData.get('premium') === 'true';
+    const { prisma } = await import('@/lib/prisma');
+    await prisma.companion.update({ where: { id }, data: { premium } });
+    await logAdminAction(adminId, 'setPremium', 'companion', id, String(premium));
+    revalidatePath(PATH);
+    return succeeded(premium ? 'Moved to the premium tier.' : 'Removed from the premium tier.');
+  });
 }

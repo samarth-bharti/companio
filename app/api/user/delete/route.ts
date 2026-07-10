@@ -5,7 +5,7 @@
 // transaction. Child rows that lack onDelete:Cascade are removed explicitly
 // before the user row to avoid FK constraint violations.
 
-import { getSessionUserId } from '@/lib/server/session';
+import { getRawSessionUserId } from '@/lib/server/session';
 import { json, unauthorized, guard } from '@/lib/server/http';
 import { rateLimit, clientKey } from '@/lib/server/rateLimit';
 
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   return guard(async () => {
-    const userId = await getSessionUserId();
+    const userId = await getRawSessionUserId();
     if (!userId) return unauthorized();
 
     // Account erasure is irreversible — keep the request rate very low.

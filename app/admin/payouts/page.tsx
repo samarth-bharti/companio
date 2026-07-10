@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { rupees } from '@/lib/server/admin';
+import { ActionForm } from '@/components/admin/ActionForm';
 import { markPayoutPaid } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -30,11 +31,15 @@ export default async function AdminPayouts() {
                 Paid{p.paidAt ? ` · ${p.paidAt.toLocaleDateString('en-IN')}` : ''}
               </span>
             ) : (
-              <form action={markPayoutPaid} className="flex items-center gap-2">
+              <ActionForm
+                action={markPayoutPaid}
+                submitLabel="Mark paid"
+                submitClassName="text-xs font-semibold px-3 py-1.5 rounded-full bg-[var(--color-azure)] text-white disabled:opacity-50 disabled:cursor-wait"
+                confirm={`Mark ${rupees(p.amountPaise)} as paid to ${p.companion?.name ?? p.companionId}? Only do this once the transfer has actually left the bank.`}
+              >
                 <input type="hidden" name="id" value={p.id} />
                 <input name="reference" placeholder="UPI/bank ref" className="h-9 px-2 text-xs rounded-lg border border-[var(--color-ink)]/15 w-32" />
-                <button className="text-xs font-semibold px-3 py-1.5 rounded-full bg-[var(--color-azure)] text-white">Mark paid</button>
-              </form>
+              </ActionForm>
             )}
           </div>
         ))}

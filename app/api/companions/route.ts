@@ -16,7 +16,12 @@ export async function GET() {
   return guard(async () => {
     const { prisma } = await import('@/lib/prisma');
     const { toCompanion } = await import('@/lib/server/serialize');
-    const rows = await prisma.companion.findMany({ orderBy: { matchScore: 'desc' } });
+    const { VISIBLE_COMPANION } = await import('@/lib/server/visibility');
+    // Suspended and banned profiles must not reach the explore grid or the map.
+    const rows = await prisma.companion.findMany({
+      where: VISIBLE_COMPANION,
+      orderBy: { matchScore: 'desc' },
+    });
     return NextResponse.json(rows.map(toCompanion));
   });
 }

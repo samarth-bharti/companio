@@ -2,6 +2,7 @@
 // messaging block, delete. All mutations are server-action forms.
 
 import { prisma } from '@/lib/prisma';
+import { ActionForm } from '@/components/admin/ActionForm';
 import {
   suspendUser, unsuspendUser, banUser, unbanUser,
   deleteUser, grantCredits, blockUserMessaging, unblockUserMessaging,
@@ -10,9 +11,9 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-const btn = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--color-ink)]/20 text-[var(--color-ink)] hover:bg-[var(--color-ink)]/5';
-const btnBlue = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-[var(--color-azure)] text-white';
-const btnRed = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-rose-300 text-rose-600 hover:bg-rose-50';
+const btn = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--color-ink)]/20 text-[var(--color-ink)] hover:bg-[var(--color-ink)]/5 disabled:opacity-50 disabled:cursor-wait';
+const btnBlue = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-[var(--color-azure)] text-white disabled:opacity-50 disabled:cursor-wait';
+const btnRed = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-wait';
 const inp = 'h-8 px-2 text-xs rounded-lg border border-[var(--color-ink)]/15';
 
 function Badge({ label, variant = 'neutral' }: { label: string; variant?: 'neutral' | 'green' | 'red' | 'blue' }) {
@@ -66,57 +67,64 @@ export default async function AdminUsers() {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--color-ink)]/5">
-                {/* Suspend / Unsuspend */}
-                <form action={u.suspended ? unsuspendUser : suspendUser}>
+              {/* Actions. Every one is an ActionForm: pending state so a slow
+                  Neon round-trip can't be double-submitted (a double "Grant
+                  credits" grants twice), and an inline result message. */}
+              <div className="flex flex-wrap items-start gap-2 pt-2 border-t border-[var(--color-ink)]/5">
+                <ActionForm
+                  action={u.suspended ? unsuspendUser : suspendUser}
+                  submitLabel={u.suspended ? 'Unsuspend' : 'Suspend'}
+                  submitClassName={btn}
+                >
                   <input type="hidden" name="id" value={u.id} />
-                  <button className={btn}>{u.suspended ? 'Unsuspend' : 'Suspend'}</button>
-                </form>
+                </ActionForm>
 
-                {/* Ban / Unban */}
                 {isBanned ? (
-                  <form action={unbanUser}>
+                  <ActionForm action={unbanUser} submitLabel="Unban" submitClassName={btn}>
                     <input type="hidden" name="id" value={u.id} />
-                    <button className={btn}>Unban</button>
-                  </form>
+                  </ActionForm>
                 ) : (
-                  <form action={banUser} className="flex gap-1.5 items-center">
+                  <ActionForm
+                    action={banUser}
+                    submitLabel="Ban"
+                    submitClassName={btnRed}
+                    confirm={`Ban ${u.firstName}? They will be signed out and blocked from booking, messaging and paying.`}
+                  >
                     <input type="hidden" name="id" value={u.id} />
                     <input name="reason" placeholder="Ban reason" className={inp} style={{ width: 120 }} />
-                    <button className={btnRed}>Ban</button>
-                  </form>
+                  </ActionForm>
                 )}
 
-                {/* Messaging block */}
-                <form action={u.messageBlocked ? unblockUserMessaging : blockUserMessaging}>
+                <ActionForm
+                  action={u.messageBlocked ? unblockUserMessaging : blockUserMessaging}
+                  submitLabel={u.messageBlocked ? 'Unblock msgs' : 'Block msgs'}
+                  submitClassName={btn}
+                >
                   <input type="hidden" name="id" value={u.id} />
-                  <button className={btn}>{u.messageBlocked ? 'Unblock msgs' : 'Block msgs'}</button>
-                </form>
+                </ActionForm>
 
-                {/* Grant credits */}
-                <form action={grantCredits} className="flex gap-1.5 items-center">
+                <ActionForm action={grantCredits} submitLabel="Grant credits" submitClassName={btnBlue}>
                   <input type="hidden" name="userId" value={u.id} />
                   <input name="count" type="number" defaultValue="1" className={inp} style={{ width: 52 }} />
-                  <button className={btnBlue}>Grant credits</button>
-                </form>
+                </ActionForm>
 
-                {/* Role change */}
-                <form action={editUser} className="flex gap-1.5 items-center">
+                <ActionForm action={editUser} submitLabel="Set role" submitClassName={btn}>
                   <input type="hidden" name="id" value={u.id} />
                   <select name="role" defaultValue={u.role} className={`${inp} pr-6`}>
                     <option value="user">user</option>
                     <option value="companion">companion</option>
                     <option value="admin">admin</option>
                   </select>
-                  <button className={btn}>Set role</button>
-                </form>
+                </ActionForm>
 
-                {/* Delete */}
-                <form action={deleteUser}>
+                <ActionForm
+                  action={deleteUser}
+                  submitLabel="Delete"
+                  submitClassName={btnRed}
+                  confirm={`Permanently delete ${u.firstName} and every booking, message and payment record they own? This cannot be undone.`}
+                >
                   <input type="hidden" name="id" value={u.id} />
-                  <button className={btnRed}>Delete</button>
-                </form>
+                </ActionForm>
               </div>
             </div>
           );

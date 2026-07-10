@@ -47,6 +47,23 @@ export async function POST(
     if (!parsed.success) return badRequest(parsed.error.flatten());
     const { prisma } = await import('@/lib/prisma');
     const { toMessage } = await import('@/lib/server/serialize');
+    const { VISIBLE_COMPANION } = await import('@/lib/server/visibility');
+
+    // An admin who blocks a user's messaging must actually silence them.
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { messageBlocked: true },
+    });
+    if (me?.messageBlocked) return json({ error: 'messaging_blocked' }, 403);
+
+    // No new messages into a suspended or banned companion's thread. Reading
+    // history above stays allowed so an existing conversation isn't erased.
+    const reachable = await prisma.companion.findFirst({
+      where: { id: companionId, ...VISIBLE_COMPANION },
+      select: { id: true },
+    });
+    if (!reachable) return json({ error: 'companion_unavailable' }, 404);
+
     const msg = await prisma.message.create({
       data: {
         threadId: `${userId}_${companionId}`,

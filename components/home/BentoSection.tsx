@@ -216,10 +216,15 @@ export function BentoSection() {
         {/* High-five accent — centered at the bottom of the light bento section */}
         <Reveal delay={0.1}>
           <div className="flex flex-col items-center gap-4 mt-12 text-center">
+            {/* The high-five is a single beat: play it fast, and restart it the
+                moment it enters view so the clap lands with the user's scroll
+                rather than seconds after they've arrived. */}
             <LottiePlayer
               src="/lottie/high-five.json"
               width={210}
               height={210}
+              speed={1.8}
+              restartOnEnter
               aria-hidden
             />
             <div>
