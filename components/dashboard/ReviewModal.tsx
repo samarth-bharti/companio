@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X } from 'lucide-react';
 import { updateBooking, addNotification } from '@/lib/appState';
 import { calm, spring } from '@/lib/motion';
@@ -19,7 +20,7 @@ export function ReviewModal({ booking, onClose, onSaved }: ReviewModalProps) {
   const [text, setText]           = useState('');
   const [submitting, setSubmitting] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   // Focus trap + ESC + restore focus on unmount
   useEffect(() => {

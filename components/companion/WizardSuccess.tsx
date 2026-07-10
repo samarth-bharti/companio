@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import { Seal } from '@/components/ui/Seal';
 import { VerificationTimeline } from './VerificationTimeline';
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export function WizardSuccess({ name }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const first = name.trim().split(' ')[0];
 
   // Celebratory confetti on first mount — guarded by reduced-motion preference.

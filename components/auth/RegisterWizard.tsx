@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import type { Variants } from 'framer-motion';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
 import { spring, calm } from '@/lib/motion';
@@ -60,7 +61,7 @@ export function RegisterWizard({
   presetRole?: 'member' | 'companion';
   gate?: string;
 }) {
-  const reduced   = useReducedMotion();
+  const reduced   = useEffectiveReducedMotion();
   const cardRef   = useRef<HTMLDivElement>(null);
   // When a role is preset (e.g. arriving from "Apply as companion"), skip the
   // role-picker step and start on "About you".

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Gift, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -41,7 +42,7 @@ const WHEEL_TRANSITION = { duration: 4, ease: [0.16, 1, 0.3, 1] as const };
 const WHEEL_TRANSITION_REDUCED = { duration: 0.4, ease: 'easeOut' as const };
 
 export function SpinWheel() {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [s, setS] = useState<SpinState>({ status: 'loading', rotation: 0, resultLabel: null, nextSpinAt: null });
   const isWin = s.status === 'done' && s.resultLabel !== null && !s.resultLabel.startsWith('No win');
 

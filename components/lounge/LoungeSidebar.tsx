@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Search, Users, MessageCircle } from 'lucide-react';
 import { Reveal } from '@/components/motion/Reveal';
 import { spring } from '@/lib/motion';
@@ -35,7 +36,7 @@ export function LoungeSidebar({
   activeLoungeId, setActiveLoungeId, activeDirectId, setActiveDirectId, readDirectIds,
 }: LoungeSidebarProps) {
   const [query, setQuery] = useState('');
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   const qLower = query.toLowerCase();
   const filteredLounges = lounges.filter(l => l.name.toLowerCase().includes(qLower));

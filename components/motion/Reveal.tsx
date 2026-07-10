@@ -1,7 +1,8 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import { motion, useReducedMotion, type Variants } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { useRevealInView } from '@/lib/useRevealInView';
@@ -32,7 +33,7 @@ interface RevealGroupProps {
  * stuck-at-opacity-0 blank-section bug).
  */
 export function Reveal({ children, delay = 0, className, once = true }: RevealProps) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const group = useContext(GroupReveal);
   const inGroup = group !== null;
 
@@ -40,12 +41,18 @@ export function Reveal({ children, delay = 0, className, once = true }: RevealPr
   const { ref, revealed: self } = useRevealInView<HTMLDivElement>({ once, enabled: !inGroup });
   const revealed = inGroup ? group! : self;
 
+  // `hidden` must NOT depend on shouldReduce: framer's useEffectiveReducedMotion() is
+  // false on the server and true on the client's first render, so varying the
+  // initial style renders a different `transform` on each side and fails
+  // hydration for every reduced-motion visitor. Keep the initial DOM identical
+  // and honour the preference purely through the transition — the element then
+  // snaps to its composed state with no perceptible motion.
   const variants: Variants = {
-    hidden: { opacity: 0, y: shouldReduce ? 0 : 24 },
+    hidden: { opacity: 0, y: 24 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: shouldReduce ? { duration: 0.01, delay } : { ...spring.soft, delay },
+      transition: shouldReduce ? { duration: 0 } : { ...spring.soft, delay },
     },
   };
 

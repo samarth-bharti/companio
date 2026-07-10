@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
 import { Button } from '@/components/ui/Button';
 import { getApplication, saveApplication, addNotification } from '@/lib/appState';
@@ -46,7 +47,7 @@ export function ApplyWizard() {
   const [accountName, setAccountName] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     const app = getApplication();

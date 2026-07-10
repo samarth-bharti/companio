@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useReducedMotion, animate } from 'framer-motion';
+import { animate } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { cn } from '@/lib/utils';
 import { durations } from '@/lib/motion';
 import { useRevealInView } from '@/lib/useRevealInView';
@@ -27,7 +28,7 @@ export function CountUp({
   className,
   duration = durations.slow,
 }: CountUpProps) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   // Bulletproof trigger so the counter can't stick at 0 if its observer misses.
   const { ref, revealed: isInView } = useRevealInView<HTMLSpanElement>();
   const [flashed, setFlashed] = useState(false);

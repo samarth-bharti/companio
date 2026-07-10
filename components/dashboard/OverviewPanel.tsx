@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { getWallet, getUnlocked } from '@/lib/journeyState';
 import { getBookings, getPlan } from '@/lib/appState';
 import { getCompanion } from '@/lib/data/companions';
@@ -23,7 +24,7 @@ export function OverviewPanel() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [unlocked, setUnlocked] = useState(false);
   const [plan, setPlan]         = useState<Plan>(null);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     setWallet(getWallet());
@@ -54,7 +55,7 @@ export function OverviewPanel() {
       }}
     >
       <motion.div variants={cardVariant}>
-        <WalletCard wallet={wallet} plan={plan} />
+        <WalletCard wallet={wallet} />
       </motion.div>
 
       <motion.div variants={cardVariant}>

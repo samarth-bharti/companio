@@ -1,118 +1,142 @@
 # Status & next steps
 
-_Last updated: 2026-06-26._
+_Last updated: 2026-07-10._
 
 The single source of truth for **where the project is and what to do next**.
 Keep this current — it's the first file to read when resuming.
 **Launch plan / buying / deploy steps live in [`GO-LIVE.md`](GO-LIVE.md).**
 
-## Quality gates (all green — verified 2026-06-26)
+## The one-line summary
+
+A beautiful, well-engineered **demo**. Every quality gate is green, and the app
+**cannot take a single rupee** — login is fake and payment is an animation.
+
+## Quality gates (all green — verified 2026-07-10, by running them)
 
 - `npx tsc --noEmit` → **0 errors**
 - `npx vitest run` → **150 passing** (9 files)
 - prod build → **success**, all routes compile incl. 9 `/admin/*` routes
   (`NODE_OPTIONS=--max-old-space-size=6144 npx next build`)
+- every page route returns 200; API returns 401 signed-out; `/api/health` 200
 - lint → our code clean; pre-existing React-19 hook warnings remain (not a regression)
 
-## Built 2026-06-26 (document checks + MNC admin)
+> Green gates are not a working product. They prove the code compiles and the
+> units behave — not that a stranger can pay you. See below.
 
-- **Free document validation** (no vendor): `lib/idFormat.ts` (client-safe:
-  Aadhaar Verhoeff checksum, PAN format, magic-byte file integrity, masking) +
-  `lib/server/documentValidation.ts` (adds SHA-256 hashing). 18 unit tests.
-  Apply wizard wired: live ID validation, file-type rejection, lazy client OCR
-  (tesseract.js, guarded — never blocks), live camera selfie, and
-  `POST /api/application/upload` (server re-validate + duplicate-ID block 409 +
-  masked storage). Demo-mode safe (upload only fires in http mode).
-- **MNC-grade admin** — 9 routes (Overview, Users, Companions, Applications,
-  Bookings, Discounts, Reports, Payouts, Surge). Users: suspend/ban/block-msgs/
-  grant-credits/role/edit/delete. Companions: add/edit/suspend/ban/verify/
-  premium/delete. Discounts: create %/₹ codes, max-uses, expiry, toggle/delete.
-  Bookings: cancel(+credit refund)/refund(best-effort Razorpay)/complete.
-  Applications: approve(creates companion)/reject. **Every action audit-logged**
-  (`AdminAuditLog`). Actions in `app/admin/actions/*.ts`; gate re-checked each.
-- **Schema additions:** `DocVerifyStatus`/`DiscountType` enums; `refunded`
-  BookingStatus; User+Companion suspend/ban/banReason (+User.messageBlocked);
-  Booking refundedAt/refundReason/discountCode; CompanionApplication doc fields
-  (idHash/photoHash/idDocMasked/idVerifyStatus/ocrMatched/verifiedAt); new
-  `DiscountCode` + `AdminAuditLog` models. zod schemas added in
-  `lib/server/validation.ts`. Schema validates; client generated.
+## What actually blocks launch
+
+Verified by driving the funnel in a real browser on 2026-07-10:
+
+1. **Login is fake.** `components/auth/LoginForm.tsx` never imports next-auth.
+   `handleSocial()` and `handleSubmit()` write a name into `localStorage` after a
+   `setTimeout`. Any email + any password "works". (`lib/auth.ts` *does* have a
+   real Google provider drafted — nothing calls it.)
+2. **Guests never see a pay button.** `UnlockSheet.tsx` renders
+   "Create a free account to unlock →" for guests, and the account it asks for
+   cannot actually be created.
+3. **Payment is a demo.** `payWithRazorpay()` returns `'unconfigured'` without
+   keys *and* a session, falling back to `runDemoPay()` — a 900 ms spinner.
+4. **`lib/dataClient.ts` has ZERO importers.** ~36 components read `localStorage`
+   synchronously. `NEXT_PUBLIC_DATA_CLIENT=http` **is not a switch that turns the
+   product on.** This is a repo-wide async migration.
+
+**Fix order:** SessionProvider + real `signIn('google')` → `dataClient` migration
+(wallet first) → Razorpay live. Everything else is decoration on top of this.
+
+## v1 scope decision (locked 2026-07-10)
+
+**We sell the ₹199 unlock and nothing else.** First two meetings are included and
+free. Companions are compensated by Companio directly.
+
+**Why:** collecting a ₹499 meetup fee and paying a companion out of it is pooling
+and settling funds for a third party — unlicensed **Payment Aggregator** activity
+under RBI. Selling the unlock is just selling access to our own product.
+
+Consequently the credit packs (`pack1`/`pack5`/`pack10` in `lib/server/pricing.ts`)
+and the ₹299 Plus membership are **not sold**. `PackCard`, `PlusCard` and
+`CheckoutSheet` stay in the tree, unused, for when **Razorpay Route** (linked
+accounts) lands — which is also what will make an "escrow" claim true.
+
+## Done 2026-07-10 (truth-up + honesty pass)
+
+- **Secrets:** `NEXTAUTH_SECRET` + `CRON_SECRET` were committed in plaintext in
+  `GO-LIVE.md` in a **public** repo since `07c46b1`. Removed from the file and
+  flagged as burned — **they must be regenerated**; they live in history forever.
+- **"₹ held in escrow" removed everywhere.** It appeared in **18** places
+  including the Terms of Service, Trust, Safety, Press, and two SEO meta
+  descriptions. There is no escrow. Replaced with what is true: the two included
+  meetings, and the 7-day refund window.
+- **Terms §3 rewritten** to describe the unlock-only model and to state plainly
+  that Companio does not collect, hold, or settle payments between members and
+  companions.
+- **Pricing page rebuilt** as a single honest ₹199 offer. `TopUpMenu` is now a
+  read-only wallet (it used to sell credit packs straight from the nav);
+  `WalletCard`'s "Top up →" became "What's included →".
+- **Booking guarded:** a meetup can only be booked against an included meeting.
+  The confirm button disables at zero rather than silently creating a free
+  booking (`BookingWizard`, `BookingStepReview`, `CompanionProfileBookingRail`).
+- **Dead "Continue with Apple" button removed** — no Apple provider exists, or
+  ever did.
+- **Site-wide hydration bug fixed (reduced-motion users).** Framer's
+  `useReducedMotion()` returns `false` on the server but `true` on the client's
+  first render. **92 components** branched markup or inline styles on it, so
+  every visitor with `prefers-reduced-motion` hit
+  *"Hydration failed because the server rendered HTML didn't match the client"*
+  on the homepage and React threw the whole tree away and re-rendered it.
+  All of them now use the repo's SSR-safe `useEffectiveReducedMotion()`
+  (which returns `false` until mounted) — exactly what `journey-spec.md` §0.4
+  already mandated. `app/template.tsx` and `components/motion/Reveal.tsx` were
+  the worst offenders (`Reveal` wraps nearly every section on the site).
+  Verified: 11 routes × both motion modes, zero JS errors.
+- **`middleware.ts` → `proxy.ts`** (Next 16 deprecated the old convention).
+- **Sentry build wrapper added** to `next.config.ts`. The runtime init existed;
+  the `withSentryConfig` wrapper did not, so nothing was instrumented at build.
+- **`/styleguide` 404s in production** (it was publicly reachable).
+- **Hero video no longer downloads for everyone.** `public/hero.mp4` is 2.48 MB of
+  a ~4.8 MB homepage. It is now skipped under reduced-motion, Data Saver and
+  2G/3G, mounts after first paint, and `preload="auto"` → `"metadata"`.
+  **It still needs re-encoding.**
+- **Domain settled: `trycompanio.com`** — `lib/company.ts` mailboxes updated.
+- **Docs:** deleted `backend-plan.md` (every step done; it told you to create
+  files that exist and to use `ts-node` where the repo uses `tsx`). Test count
+  corrected to **150** — it had been quoted as 71, 96, 102 and 150 in four
+  different places.
+
+## Known-stale / open
+
+- **Grievance Officer name + phone are still `[[placeholders]]`** in
+  `lib/company.ts`. `COMPANY_DISPLAY` prevents them rendering raw, but DPDPA
+  requires a real reachable person. **Blocks legal validity of the public pages.**
+- CSP is `Report-Only` with `unsafe-inline`/`unsafe-eval` (`proxy.ts`).
+- `GST_ACTIVE` is used in `lib/server/payments.ts` but missing from `.env.example`;
+  `SMS_SENDER_ID` is in `.env.example` but read nowhere.
+- Five **dead components** still exist, unimported: `home/HowItWorks.tsx`,
+  `home/HeroSection.tsx`, `home/FinalCta.tsx`, `home/ProcessSection.tsx`,
+  `home/MoneySplit.tsx`. Their copy was corrected too, so reviving one cannot
+  resurrect a false claim, but they should be deleted.
+- `scripts/` holds 19 ad-hoc Playwright probes wired into neither `package.json`
+  nor CI (`probe-hero2.js`, `shoot-quick.js`, …). Only `gen-icons.mjs` had a
+  lasting purpose, and it has already run.
+- `docs/journey-spec.md` lists `three`/`r3f` as available — they are not
+  installed — and places `AuroraWipe`/`FlipPill` under `components/journey/`
+  when they live in `components/motion/`. Treat it as a historical build spec.
+- `docs/LAUNCH-AUDIT.md` (25 Jun) is **partly superseded**: B1 (free cash
+  bookings), B4 (feed/lounge), B6 (no /contact), M3 (wallet upsert) and the
+  spoofable rate-limit key are all fixed. B3 (no real auth) and the `dataClient`
+  gap remain the whole story.
+- `/feed` and `/lounge` call `notFound()` on purpose — **deferred until after
+  launch**, not a bug.
 
 ## Team split
 
-- **Us:** backend, UX/flow, data. **A collaborator:** UI (working in parallel,
-  writing an end-to-end plan). Keep our changes off pure-visual files where we
-  can, and **coordinate commits** — the backend work changed `package.json` +
-  lockfile.
-
-## Done
-
-- **Merge** of our account-gated onboarding flow into the shared repo, kept the
-  collaborator's design/copy. Flow verified structurally identical to the
-  `companio-frontend-3` reference.
-- **Lounge/feed** bug + UX pass (deferred for further feature work).
-- **Perf:** fixed the `TiltCard` mousemove layout-thrash (was the explore-grid
-  jank); `next/image` aspect-ratio warnings silenced.
-- **Nav:** Safety moved out of the primary links into a small shield button.
-- **Backend (complete, dormant):** full Prisma schema, the `dataClient` seam,
-  every API route, Auth.js wiring (stub provider), Razorpay order/verify/webhook,
-  seed script, and a 71-test suite. See [`BACKEND.md`](BACKEND.md).
-- **Monitoring & analytics (Stage 1, dormant):** GA4 + Consent Mode, SPA
-  pageviews, a typed event taxonomy with a central `track()`, Core Web Vitals,
-  a DPDP/GDPR consent banner, PostHog, Sentry, and Vercel Analytics / Speed
-  Insights — all env-gated and no-op until keyed, nothing fires before consent.
-  Funnel events wired (login, signup, unlock, booking). See [`ANALYTICS.md`](ANALYTICS.md).
-- **CI:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — type-check,
-  test, and build are blocking; lint runs non-blocking (pre-existing UI hook
-  warnings tracked separately). Runs on push / PR to `main`.
-- **Transactional email (seam wired, dormant):** `lib/server/notify.ts` sends a
-  booking confirmation on booking creation and a payment receipt on first
-  settlement (idempotent — verify + webhook fire once). No-op without
-  `RESEND_API_KEY`; never throws, never blocks the response.
-- **`SECURITY.md`:** responsible-disclosure policy + posture summary.
-- **PWA + social:** generated brand assets (`public/icon-192.png`,
-  `icon-512.png` maskable, `apple-icon.png`, `og.png`) via
-  `scripts/gen-icons.mjs`; wired into `manifest.ts` + layout OG/Twitter metadata.
-- **`httpDataClient` hardened:** getters return signed-out defaults on `401`
-  (matching the local client) instead of crashing; writes still throw. Covered by
-  `tests/dataClient.test.ts` (13 tests). The remaining go-live step is migrating
-  UI call sites onto the seam — recipe in [`BACKEND.md`](BACKEND.md#wiring-the-ui-to-the-backend-the-remaining-gap).
-- **Security hardening:** `app/api/application` create branch now clamps `status`
-  to `draft`/`submitted` server-side (defense-in-depth against mass-assignment,
-  robust even if the enum is widened); update branch still strips `status`.
-  Covered by 3 route tests.
-
-## Resume point / what's pending (2026-06-26)
-
-**Everything is UNCOMMITTED** (owner authorized committing the full tree). Local
-git remote is still `ninjaaaaaa7/Comp`; target is `samarth-bharti/companio`,
-commits authored **samarth / samarthsgsits23@gmail.com** only.
-
-**Immediate next action (blocks deploy):** user runs the two governance overrides
-in the Claude Code terminal, then ME: set identity → commit → push to
-samarth-bharti. See [`GO-LIVE.md`](GO-LIVE.md) §A:
-`$env:CLAUDE_SKIP_IDENTITY_CHECK = '1'; $env:CLAUDE_ALLOW_OTHER_REPO = '1'`
-
-**Strategy: free-tier first, full E2E today, buy ~29 Jun** (official release).
-Auth = Google only (OTP skipped). Email/Resend skipped. KYC = free doc-checks +
-manual approve (vendor later). Full buying + env + deploy plan in
-[`GO-LIVE.md`](GO-LIVE.md).
-
-Backend runs the moment creds arrive: **Neon** (`DATABASE_URL`+`DIRECT_URL` →
-`prisma migrate deploy` + `db seed`), **Google OAuth** (auto-enables with
-`GOOGLE_CLIENT_ID/SECRET`), **Razorpay** test keys. Then
-`NEXT_PUBLIC_DATA_CLIENT=http` + promote account to `role='admin'` + smoke-test.
-
-## Next candidates (not started)
-
-- Draft both real auth providers behind a one-line switch so picking one is trivial.
-- Resume lounge/feed feature work (deferred).
-- Wire footer `#sos` / `#promise` anchors (currently no target) — collaborator's
-  Footer design, confirm first.
-- DB integration tests (need Neon).
+- **Us:** backend, UX/flow, data. **Dhruv:** UI (working in parallel).
+  Keep our changes off pure-visual files where we can, and **coordinate commits**.
 
 ## Conventions
 
 - **Strictly platonic** content rule (legal/processor/trust). No romance framing.
+- **Never claim something the product does not do.** Escrow was the cautionary
+  tale: it reached the Terms of Service.
 - **CRLF** line endings; surgical edits only (shared repo).
 - New API routes follow the pattern in [`BACKEND.md`](BACKEND.md#api-routes-appapi):
   session→401, zod→400, lazy Prisma import, serialize on return, `guard()` wrap.

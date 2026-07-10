@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useReducedMotion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import type { CSSProperties } from 'react';
 
 /**
@@ -40,7 +40,10 @@ const MAX_STICKERS = 12; // safety cap on concurrent DOM nodes
 const SIZE = 200; // px
 
 export function CursorStickers() {
-  const shouldReduce = useReducedMotion();
+  // SSR-safe: framer's useReducedMotion() is false on the server but true on the
+  // client's first render, so branching markup on it fails hydration. This hook
+  // returns false until mounted.
+  const shouldReduce = useEffectiveReducedMotion();
   const layerRef = useRef<HTMLDivElement>(null);
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const last = useRef({ x: 0, y: 0, seeded: false });

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Send, Mic, Smile, Shield } from 'lucide-react';
 import { spring } from '@/lib/motion';
 import { CONTACT_RE } from '@/components/dashboard/chatReplies';
@@ -25,7 +26,7 @@ export function Composer({ onSend, onVoice, showIcebreakers, placeholder = 'Writ
   const [blocked, setBlocked] = useState(false);
   const [setIdx, setSetIdx] = useState(0);
   const ref = useRef<HTMLTextAreaElement>(null);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   // Rotate icebreaker set every 9 s when visible
   useEffect(() => {

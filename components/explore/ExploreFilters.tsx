@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Search, X, Zap, LayoutGrid, Map, SlidersHorizontal, Shuffle } from 'lucide-react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { Availability, SortKey } from './useExploreFilters';
@@ -67,7 +68,7 @@ export function ExploreFilters({
   isFiltered, onClearFilters,
   onSurprise,
 }: ExploreFiltersProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Count of "extra" filters for the mobile Filters badge.

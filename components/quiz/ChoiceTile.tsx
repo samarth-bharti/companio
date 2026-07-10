@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Check } from 'lucide-react';
 import { spring } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -24,7 +25,7 @@ export function ChoiceTile({
   accent = 'var(--color-azure)',
   className,
 }: ChoiceTileProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   return (
     <motion.button

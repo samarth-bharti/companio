@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 interface FlipPillProps {
   /** Target date for the countdown. */
   targetISO: string;
@@ -20,7 +20,7 @@ function unitsUntil(targetISO: string): { d: number; h: number; m: number } | nu
 }
 
 function FlipDigit({ value, label }: { value: number; label: string }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   return (
     <span className="inline-flex items-baseline gap-0.5">
       <span

@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { CheckCircle2 } from 'lucide-react';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
 import { setUser } from '@/lib/journeyState';
@@ -23,7 +24,7 @@ const PERKS = [
 
 export function StepDone({ form, next }: Props) {
   const router  = useRouter();
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const name    = form.firstName || 'Friend';
 
   // Persist demo user — runs only once on mount, client-side only.

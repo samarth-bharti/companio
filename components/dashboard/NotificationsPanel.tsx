@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { getNotifications, markNotificationsRead } from '@/lib/appState';
 import type { AppNotification } from '@/lib/appState';
 import { calm, stagger, spring } from '@/lib/motion';
@@ -21,7 +22,7 @@ const itemVariant = {
 
 export function NotificationsPanel() {
   const [notifs, setNotifs] = useState<AppNotification[]>([]);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     setNotifs(getNotifications());

@@ -15,8 +15,8 @@ const TRUST_PILLARS = [
   },
   {
     icon: Lock,
-    title: "₹ held in escrow",
-    body: "Your payment is locked in escrow until after you meet. No meeting, no charge.",
+    title: "7-day refund promise",
+    body: "Didn't find anyone you'd like to meet? Ask for a full refund within 7 days.",
     color: "#7A4FE0",
   },
   {

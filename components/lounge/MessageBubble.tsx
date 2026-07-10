@@ -2,7 +2,8 @@
 
 import { memo, useState } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import { VoiceNote } from './VoiceNote';
 import type { Reaction } from './data';
@@ -31,7 +32,7 @@ export const MessageBubble = memo(function MessageBubble({
 }: MessageBubbleProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [burstEmoji, setBurstEmoji] = useState<string | null>(null);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   const fireReact = (emoji: string) => {
     onReact(id, emoji);

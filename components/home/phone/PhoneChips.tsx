@@ -1,15 +1,8 @@
 'use client';
 
 import { useRef, useCallback, useEffect, useState, type ReactNode } from 'react';
-import {
-  motion,
-  useMotionValue,
-  useSpring,
-  useTransform,
-  useReducedMotion,
-  type MotionValue,
-  type MotionStyle,
-} from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform, type MotionValue, type MotionStyle } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { BadgeCheck, Check } from 'lucide-react';
 
 /** Parallax wrapper: pointer offset scaled by `depth`, optional scroll-opacity via `style`. */
@@ -51,7 +44,7 @@ export function PhoneChipsWrapper({
   scrollYProgress: MotionValue<number>;
   children: ReactNode;
 }) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const [fine, setFine] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const cachedRect = useRef<{ left: number; top: number; width: number; height: number } | null>(null);

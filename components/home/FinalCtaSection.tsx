@@ -16,8 +16,8 @@ const CTA_BG =
 
 const REASSURANCES = [
   "Free to browse",
-  "Pay only when you book",
-  "₹ held in escrow until you meet",
+  "Your first 2 meetings are included",
+  "Full refund within 7 days",
 ] as const;
 
 export function FinalCtaSection() {

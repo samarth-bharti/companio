@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { calm, spring } from '@/lib/motion';
 import { MessageBubble } from './MessageBubble';
 import type { Reaction } from './data';
@@ -9,7 +10,7 @@ import type { Reaction } from './data';
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function TypingIndicator() {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   return (
     <div className="flex justify-start pl-8" aria-label="Typing…">
       <span
@@ -72,7 +73,7 @@ interface ChatStreamProps {
 export function ChatStream({ messages, isTyping, isGroup, onReact }: ChatStreamProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [newCount, setNewCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const prevLengthRef = useRef(messages.length);

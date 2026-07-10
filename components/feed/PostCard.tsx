@@ -2,7 +2,8 @@
 
 import { memo, useState } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Heart, MessageCircle, Share2, Users, MoreHorizontal } from 'lucide-react';
 import { spring } from '@/lib/motion';
 import { ActivityPost } from './ActivityPost';
@@ -24,7 +25,7 @@ export const PostCard = memo(function PostCard({ post }: PostCardProps) {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [flyKey, setFlyKey]       = useState(0);
   const [showFly, setShowFly]     = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   const baseReactions = post.type === 'photo' ? post.likeCount : post.reactions;
   const displayReactions = baseReactions + likeDelta;

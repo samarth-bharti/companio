@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X, Lock, BadgeCheck, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/motion";
@@ -20,7 +21,7 @@ export function UnlockSheet({
   count: number; isGuest?: boolean; onRequireAccount?: () => void;
   onClose: () => void; onSuccess: () => void;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [sel, setSel] = useState<string | null>(null);
   const [pay, setPay] = useState<PayState>("idle");
   const panelRef = useRef<HTMLDivElement>(null);

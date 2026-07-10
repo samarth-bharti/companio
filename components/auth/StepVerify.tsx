@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import type { KeyboardEvent, ClipboardEvent } from 'react';
 import { ChevronLeft } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import { Reveal } from '@/components/motion/Reveal';
 import { FieldStatus, ShakeWrapper } from './FieldStatus';
@@ -33,7 +34,7 @@ interface Props {
 }
 
 export function StepVerify({ form, patch, onBack, onNext }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [showOtp,     setShowOtp]     = useState(false);
   const [phoneErr,    setPhoneErr]    = useState('');
   const [phoneShakeKey, setPhoneShakeKey] = useState(0);

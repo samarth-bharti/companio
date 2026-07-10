@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Seal } from '@/components/ui/Seal';
 
 const STORE_KEY = 'companio_intro_seen';
@@ -29,7 +30,7 @@ const SHARDS = [
  * Skippable via click / Esc / first scroll.
  */
 export function IntroSequence() {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const [show, setShow] = useState(false);
 
   const dismiss = useCallback(() => setShow(false), []);

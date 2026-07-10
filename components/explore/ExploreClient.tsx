@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { getUnlocked, setUnlocked as persistUnlocked, getUser } from '@/lib/journeyState';
 import { track } from '@/lib/analytics';
 import { COMPANIONS, TOP_MATCH_ID, FREE_NOW_COUNT } from '@/lib/data/companions';
@@ -44,7 +45,7 @@ const SURPRISE_CANDIDATES = COMPANIONS
 export function ExploreClient() {
   const router = useRouter();
   const params = useSearchParams();
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const matched = params.get('matched') === '1';
 
   // ── Unlock / sheet state (preserved exactly) ──────────────────────────────

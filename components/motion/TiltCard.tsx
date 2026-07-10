@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useCallback, useEffect, useState } from 'react';
-import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { cn } from '@/lib/utils';
 
 interface TiltCardProps {
@@ -20,7 +21,7 @@ interface TiltCardProps {
  */
 export function TiltCard({ children, className, maxDeg = 7 }: TiltCardProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const [fine, setFine] = useState(false);
 
   useEffect(() => {

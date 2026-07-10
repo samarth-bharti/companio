@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Check } from 'lucide-react';
 import { spring, stagger, calm } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export function BookingStepActivity({ activities, selected, onSelect }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   return (
     <fieldset className="border-0 p-0 m-0 space-y-4">

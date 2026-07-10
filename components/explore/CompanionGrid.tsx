@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useReducedMotion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import type { Companion } from '@/lib/data/companions';
 import { CompanionCard } from './CompanionCard';
 import { BlurLockCard } from './BlurLockCard';
@@ -59,7 +59,7 @@ export function CompanionGrid({
   favorites, onToggleFavorite,
   quizDone, compareIds, onToggleCompare, highlightId,
 }: CompanionGridProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const cols = useColumnCount();
   // refs keyed by companion id so we can scroll to highlighted card
   const cardRefs = useRef<Record<string, HTMLLIElement | null>>({});

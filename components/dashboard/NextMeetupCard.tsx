@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { MapPin } from 'lucide-react';
 import { FlipPill } from '@/components/motion/FlipPill';
 import { spring } from '@/lib/motion';
@@ -22,7 +23,7 @@ function fmtDate(iso: string): string {
 }
 
 export function NextMeetupCard({ booking, companion }: NextMeetupCardProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   // Parent OverviewPanel stagger wrapper handles entrance; this only owns hover/tap
   return (

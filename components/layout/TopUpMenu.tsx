@@ -2,20 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Wallet, Plus } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { getWallet } from '@/lib/journeyState';
-import { addCredits, addNotification } from '@/lib/appState';
-import { CheckoutSheet, type CheckoutItem } from '@/components/pricing/CheckoutSheet';
-import { type RazorpayIntent } from '@/lib/razorpayClient';
-
-const PACKS = [
-  { id: 'single', name: 'Single meetup', price: 499, credits: 1, detail: null },
-  { id: 'five', name: '5-pack', price: 1999, credits: 5, detail: '₹400 / meetup · popular' },
-  { id: 'ten', name: '10-pack', price: 2999, credits: 10, detail: 'Best value · ₹300 / meetup' },
-] as const;
-
-// Display id -> server CREDIT_PACKS key (for live Razorpay create-order).
-const PACK_ID_MAP: Record<string, string> = { single: 'pack1', five: 'pack5', ten: 'pack10' };
 
 const PANEL_STYLE: React.CSSProperties = {
   background: 'var(--color-surface)',
@@ -24,16 +12,16 @@ const PANEL_STYLE: React.CSSProperties = {
 };
 
 /**
- * TopUpMenu — quick wallet + top-up popover in the nav (no separate page needed).
- * Shows the credit balance; opens a popover of packs; buying runs the shared
- * CheckoutSheet inline and adds credits. Full plans still live at /pricing.
+ * TopUpMenu — wallet popover in the nav.
+ *
+ * v1 is unlock-only: the ₹199 unlock includes two meetings and there is nothing
+ * further to buy, so this is a read-only balance view. The credit-pack purchase
+ * flow was removed rather than left as a dead affordance; it returns with
+ * Razorpay Route (see app/pricing/page.tsx for why).
  */
 export function TopUpMenu() {
   const [credits, setCredits] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
-  const [item, setItem] = useState<CheckoutItem | null>(null);
-  const [order, setOrder] = useState<RazorpayIntent | undefined>(undefined);
-  const pending = useRef<(typeof PACKS)[number] | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => setCredits(getWallet().credits), []);
@@ -52,33 +40,13 @@ export function TopUpMenu() {
     };
   }, [close]);
 
-  function buy(pack: (typeof PACKS)[number]) {
-    pending.current = pack;
-    setOrder({ kind: 'credits', packId: PACK_ID_MAP[pack.id] });
-    setItem({
-      label: pack.name,
-      priceDisplay: `₹${pack.price.toLocaleString('en-IN')}`,
-      detail: pack.detail ?? undefined,
-    });
-    setOpen(false);
-  }
-
-  function onPaid() {
-    const pack = pending.current;
-    if (!pack) return;
-    addCredits(pack.credits);
-    addNotification({
-      title: 'Credits added',
-      body: `${pack.credits} meetup credit${pack.credits > 1 ? 's' : ''} added to your wallet.`,
-    });
-    setCredits((c) => (c ?? 0) + pack.credits);
-  }
+  const hasCredits = (credits ?? 0) > 0;
 
   return (
     <div className="relative" ref={ref}>
       <button
         type="button"
-        aria-label="Wallet and top-up"
+        aria-label="Wallet"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className="inline-flex items-center gap-1.5 h-9 px-3 rounded-pill font-sans font-semibold text-sm transition-colors hover:bg-azure-tint focus-visible:outline-azure"
@@ -89,50 +57,28 @@ export function TopUpMenu() {
       </button>
 
       {open && (
-        <div role="region" aria-label="Top up meetups" className="absolute right-0 top-12 w-72 rounded-2xl p-2 z-50" style={PANEL_STYLE}>
+        <div role="region" aria-label="Your wallet" className="absolute right-0 top-12 w-72 rounded-2xl p-2 z-50" style={PANEL_STYLE}>
           <div className="px-3 pt-2 pb-1.5">
             <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>Your wallet</p>
             <p className="font-display font-bold text-lg" style={{ color: 'var(--color-ink)' }}>
               {credits ?? 0} meeting{credits === 1 ? '' : 's'} ready
             </p>
+            <p className="font-sans text-xs mt-1" style={{ color: 'var(--color-ink-muted)' }}>
+              {hasCredits
+                ? 'Included with your unlock. Yours anytime, no expiry.'
+                : "You've used both included meetings. More meetups are coming soon."}
+            </p>
           </div>
-          <ul>
-            {PACKS.map((p) => (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  onClick={() => buy(p)}
-                  className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl hover:bg-black/[.03] focus-visible:outline-azure text-left"
-                >
-                  <span>
-                    <span className="block font-sans text-sm font-semibold" style={{ color: 'var(--color-ink)' }}>{p.name}</span>
-                    {p.detail && <span className="block font-sans text-[11px]" style={{ color: 'var(--color-ink-muted)' }}>{p.detail}</span>}
-                  </span>
-                  <span className="inline-flex items-center gap-1 font-sans text-sm font-bold shrink-0" style={{ color: 'var(--color-azure)' }}>
-                    <Plus size={13} aria-hidden="true" />₹{p.price.toLocaleString('en-IN')}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
           <Link
             href="/pricing"
             onClick={close}
             className="block px-3 py-2.5 mt-1 rounded-xl text-center font-sans text-sm font-semibold hover:bg-black/[.03] focus-visible:outline-azure"
             style={{ color: 'var(--color-ink-muted)' }}
           >
-            View all plans &amp; Companio Plus →
+            What&apos;s included &rarr;
           </Link>
         </div>
       )}
-
-      <CheckoutSheet
-        open={item !== null}
-        item={item ?? { label: '', priceDisplay: '' }}
-        order={order}
-        onClose={() => setItem(null)}
-        onPaid={onPaid}
-      />
     </div>
   );
 }

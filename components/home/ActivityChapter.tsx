@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef } from 'react';
-import { motion, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, useTransform } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { useJsScroll } from '@/lib/useJsScroll';
 import { ActivityScene } from '@/components/home/ActivityScene';
 import { ClipReveal } from '@/components/journey/ClipReveal';
@@ -48,7 +49,7 @@ const IntroHeading = () => (
 
 export function ActivityChapter() {
   const sectionRef = useRef<HTMLElement>(null);
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const isMobile = useIsMobile();
   const { scrollYProgress } = useJsScroll({ target: sectionRef, offset: ['start start', 'end end'] });
 

@@ -49,7 +49,8 @@ change on the server, never from the client:
   filtered by the session user id; cross-user access returns `404`.
 - **Input validation** with zod on every write; malformed bodies return `400`.
 - **Security headers + CSP** and per-bucket rate limiting are applied in
-  `middleware.ts`.
+  `proxy.ts` (renamed from `middleware.ts` for Next 16). Note the CSP is
+  currently sent as `Content-Security-Policy-Report-Only`.
 - **Environment validation** at boot (`lib/env.ts`) fails fast on malformed
   configuration; every integration is optional and dormant until keyed.
 - **Open-redirect protection** on `next` parameters (`lib/safeRedirect.ts`).

@@ -28,8 +28,9 @@ export default function TermsPage() {
         {
           heading: '3. Bookings, payments & fees',
           body: [
-            'All payments run through the platform (via Razorpay) and are held in escrow until your meetup has happened. Companions are paid after the session completes. Paying or accepting payment off-platform breaks these terms and removes every protection we offer.',
-            'Companion rates are set per companion and shown before you book. Companio charges the companion a platform commission on each completed booking (a lower rate applies to Companio Plus members). Applicable taxes (including GST, once we are registered) are shown at checkout. Meetup credits never expire.',
+            'Companio currently charges a single one-time fee of ₹199, which unlocks every verified companion profile in your city and includes your first two meetings. You are not charged to book or attend those meetings. If you have not found anyone you would like to meet, you may request a full refund of the ₹199 within 7 days of payment.',
+            'Payments are processed by Razorpay. Companio does not currently collect, hold, or settle any payment between you and a companion. Companions are compensated by Companio directly. Paying or accepting payment off-platform breaks these terms and removes every protection we offer.',
+            'Paid meetups beyond your two included meetings are not yet available. When they launch, the price will always be shown before you book, and these terms will be updated before any such charge is made. Applicable taxes (including GST, once we are registered) will be shown at checkout. Included meetings never expire.',
           ],
         },
         {

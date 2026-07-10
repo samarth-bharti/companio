@@ -31,12 +31,17 @@ No database or keys are needed until you wire the backend.
 
 The **frontend is fully built** and runs today on browser `localStorage` (per-device,
 no sign-in required). The **backend is complete and tested but dormant**: the full
-Prisma schema, every API route, server-authoritative payments, and a 96-test suite
-all exist behind the `lib/dataClient.ts` seam, but no UI call site imports it yet.
-Flipping `NEXT_PUBLIC_DATA_CLIENT=http` (after providing a database + auth + keys)
-switches the app onto the real backend — see
-[`docs/BACKEND.md`](docs/BACKEND.md#going-live-what-you-must-provide) for the steps
-and the call-site migration recipe.
+Prisma schema, every API route, server-authoritative payments, and a 150-test suite
+all exist behind the `lib/dataClient.ts` seam, but **no UI call site imports it yet**.
+
+> **Flipping `NEXT_PUBLIC_DATA_CLIENT=http` does nothing on its own.** The
+> `httpDataClient` has zero importers — ~36 components read `localStorage`
+> directly. Going live is a repo-wide async migration, plus real auth. Today
+> **login is fake** (`LoginForm` never calls next-auth) and **payment is a demo
+> animation**. See [`docs/STATUS.md`](docs/STATUS.md#what-actually-blocks-launch)
+> for the honest picture, and
+> [`docs/BACKEND.md`](docs/BACKEND.md#wiring-the-ui-to-the-backend-the-remaining-gap)
+> for the migration recipe.
 
 ## Scripts
 
@@ -64,13 +69,22 @@ docs/           This documentation
 ## Documentation
 
 - [`docs/STATUS.md`](docs/STATUS.md) — **start here**: what's done, what's next, blockers.
+- [`docs/GO-LIVE.md`](docs/GO-LIVE.md) — launch runbook, real infra costs, deploy steps.
 - [`docs/BACKEND.md`](docs/BACKEND.md) — API routes, the data-client seam, and how to go live.
-- [`docs/backend-plan.md`](docs/backend-plan.md) — original step-by-step migration checklist.
-- [`docs/journey-spec.md`](docs/journey-spec.md) — the master design/journey spec.
+- [`docs/ANALYTICS.md`](docs/ANALYTICS.md) — consent-gated GA4 / PostHog / Sentry wiring.
+- [`docs/LAUNCH-AUDIT.md`](docs/LAUNCH-AUDIT.md) — security/UX audit (25 Jun; partly superseded).
+- [`docs/journey-spec.md`](docs/journey-spec.md) — the master design/journey spec (historical).
 
 ## Hard rules
 
 - **Strictly platonic.** No romantic/sexual/flirtatious copy or imagery, no
   couple photos. "People having fun" = friends/groups/activities. This is a
   legal + processor + trust requirement, not a style choice.
+- **Never claim something the product doesn't do.** "₹ held in escrow" was
+  written into 18 places — including the Terms of Service — for a feature that
+  does not exist. On a payments product in India that is a liability, not a
+  copy nit. If a claim isn't true today, don't ship it.
+- **v1 sells the ₹199 unlock only.** Taking a meetup fee and paying a companion
+  from it is unlicensed Payment Aggregator activity under RBI. See
+  [`docs/STATUS.md`](docs/STATUS.md#v1-scope-decision-locked-2026-07-10).
 - **Line endings: CRLF.** Keep edits surgical; do not mass-reformat (shared repo).

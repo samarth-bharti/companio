@@ -37,7 +37,7 @@ const BENEFITS = [
   {
     icon: Shield,
     title: "Safety first, always",
-    body: "In-app SOS, escrow protection, and a dedicated trust team make every booking safe for companions and members alike.",
+    body: "In-app SOS, verified members, and a dedicated trust team make every booking safe for companions and members alike.",
     color: "#FFB23E",
     bg: "#FFF8EC",
   },

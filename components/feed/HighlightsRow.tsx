@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X } from 'lucide-react';
 import { spring } from '@/lib/motion';
 
@@ -56,7 +57,7 @@ const HIGHLIGHTS: Highlight[] = [
 
 export function HighlightsRow() {
   const [open, setOpen] = useState<Highlight | null>(null);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   return (
     <>

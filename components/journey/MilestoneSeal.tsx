@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Seal } from '@/components/ui/Seal';
 import { Confetti } from '@/components/journey/Confetti';
 import { spring } from '@/lib/motion';
@@ -24,7 +25,7 @@ export function MilestoneSeal({
   onDone,
   className,
 }: MilestoneSealProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   // When confetti is absent, drive onDone from here.
   // When confetti is present, Confetti calls onDone on completion (including

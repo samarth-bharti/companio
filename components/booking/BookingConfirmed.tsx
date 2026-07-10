@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import Link from 'next/link';
 import { ShieldCheck, Smartphone, BellRing, CalendarPlus } from 'lucide-react';
 import { calm } from '@/lib/motion';
@@ -64,7 +65,7 @@ interface Props {
 }
 
 export function BookingConfirmed({ companion, booking }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const dateLabel = formatDate(booking.dateISO);
 
   function addToCalendar() {
@@ -197,12 +198,10 @@ export function BookingConfirmed({ companion, booking }: Props) {
                 style={{ background: 'var(--color-azure-tint)' }}
               >
                 <p className="font-sans font-bold text-sm" style={{ color: 'var(--color-azure-deep)' }}>
-                  {booking.usedCredit
-                    ? '₹0 today, included meeting used'
-                    : '₹499 · UPI (demo)'}
+                  ₹0 today, included meeting used
                 </p>
                 <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-                  ₹ held in escrow until you meet
+                  Free to cancel any time before you meet
                 </p>
               </div>
             </div>
@@ -218,7 +217,7 @@ export function BookingConfirmed({ companion, booking }: Props) {
           aria-label="Booking reassurances"
         >
           {[
-            { icon: ShieldCheck, text: '₹ in escrow until you meet' },
+            { icon: ShieldCheck, text: 'Verified companion' },
             { icon: Smartphone, text: 'SOS one tap away' },
             { icon: BellRing, text: `${companion.firstName} has been notified` },
           ].map(({ icon: Icon, text }) => (

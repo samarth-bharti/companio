@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Check, Smartphone, Wallet, CreditCard, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { spring, durations } from "@/lib/motion";
@@ -22,7 +23,7 @@ export function PaymentMethodTiles({
   onSelect: (id: string) => void;
 }) {
   const [cardOpen, setCardOpen] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   return (
     <div className="flex flex-col gap-3">

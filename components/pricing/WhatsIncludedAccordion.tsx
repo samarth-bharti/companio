@@ -1,15 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { ChevronDown, ShieldCheck, BadgeCheck, Headphones, RotateCcw, Undo2 } from 'lucide-react';
 import { durations, spring, stagger } from '@/lib/motion';
 
 const ITEMS = [
   {
     Icon: ShieldCheck,
-    title: 'Money held in escrow',
-    body: 'Your ₹ is held securely until after the meetup. If anything feels off, it comes straight back.',
+    title: 'Nothing to pay to meet',
+    body: 'Your first two meetings are included with the unlock. You are never charged to meet a companion.',
   },
   {
     Icon: BadgeCheck,
@@ -35,7 +36,7 @@ const ITEMS = [
 
 export function WhatsIncludedAccordion() {
   const [open, setOpen] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   return (
     <div

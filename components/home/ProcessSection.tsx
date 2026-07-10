@@ -17,7 +17,7 @@ const STEPS = [
     n: "02",
     icon: MessageSquare,
     title: "Book & chat before you meet",
-    body: "Message your companion, ask questions, align on plans. Payment is held safely in escrow, released only after you meet.",
+    body: "Message your companion, ask questions, align on plans. Your first two meetings are included, so there's nothing to pay to meet.",
     color: "#7A4FE0",
     bg: "#F0EBFF",
   },

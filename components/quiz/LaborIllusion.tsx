@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
 import { spring } from '@/lib/motion';
 import type { QuizAnswers } from './quizData';
@@ -36,7 +37,7 @@ function buildLines(answers: QuizAnswers): string[] {
  * Ethics: every line describes a real filter step — no fake countdown or fake numbers.
  */
 export function LaborIllusion({ answers, onDone }: LaborIllusionProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const lines = buildLines(answers);
   const [visibleCount, setVisibleCount] = useState(0);
   const [checkedCount, setCheckedCount] = useState(0);

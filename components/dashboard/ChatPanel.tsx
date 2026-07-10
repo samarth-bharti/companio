@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Shield, Send, Smile } from 'lucide-react';
 import { getThread, appendMessage, reactToMessage } from '@/lib/appState';
 import type { ChatMessage } from '@/lib/appState';
@@ -14,7 +15,7 @@ import { MessageBubble } from './MessageBubble';
 
 // Three bouncing dots shown while the companion is "typing".
 function TypingIndicator() {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   return (
     <div className="flex justify-start" aria-label="Typing…">
       <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid rgba(46,107,255,0.1)' }}>
@@ -39,7 +40,7 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const logRef   = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const reduced  = useReducedMotion();
+  const reduced  = useEffectiveReducedMotion();
 
   useEffect(() => { setThread(getThread(companion.id)); }, [companion.id]);
 

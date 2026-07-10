@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Heart, Star } from 'lucide-react';
 import { getFavorites, toggleFavorite } from '@/lib/appState';
 import { getCompanion } from '@/lib/data/companions';
@@ -16,7 +17,7 @@ const cardVariant = {
 
 export function SavedPanel() {
   const [favorites, setFavorites] = useState<Companion[]>([]);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     const ids = getFavorites();

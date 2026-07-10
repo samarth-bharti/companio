@@ -25,7 +25,7 @@ export default function TrustPage() {
         {
           heading: 'Money protection',
           body: [
-            'Your payment is locked in escrow until after you meet. No meeting, no charge. Companions are paid only after the session completes.',
+            'One ₹199 fee unlocks every verified profile in your city and includes your first two meetings. You are never charged to meet. If nobody feels like the right fit, ask for a full refund within 7 days.',
           ],
         },
         {

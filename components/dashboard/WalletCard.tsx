@@ -1,18 +1,17 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { CountUp } from '@/components/motion/CountUp';
 import { spring } from '@/lib/motion';
 import type { Wallet } from '@/lib/journeyState';
-import type { Plan } from '@/lib/appState';
 
 interface WalletCardProps {
   wallet: Wallet;
-  plan: Plan;
 }
 
-export function WalletCard({ wallet, plan }: WalletCardProps) {
-  const reduced = useReducedMotion();
+export function WalletCard({ wallet }: WalletCardProps) {
+  const reduced = useEffectiveReducedMotion();
   const { credits } = wallet;
   const worth = credits * 499;
   const totalPips = Math.max(credits, 2);
@@ -83,32 +82,21 @@ export function WalletCard({ wallet, plan }: WalletCardProps) {
         Yours anytime, no expiry.
       </p>
 
+      {/* v1 is unlock-only — there is nothing to top up, so this links to the
+          explanation rather than dangling a purchase that does not exist. */}
       <div className="flex flex-wrap items-center gap-3">
         <a
           href="/pricing"
           className="font-sans text-sm font-medium underline underline-offset-2 min-h-[44px] inline-flex items-center"
           style={{ color: 'var(--color-ink-muted)' }}
         >
-          Top up →
+          What&apos;s included →
         </a>
-        {plan === 'plus' && (
-          <span
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-semibold"
-            style={{
-              background: 'rgba(255,178,62,0.12)',
-              color: '#965F00',
-              border: '1px solid rgba(255,178,62,0.35)',
-            }}
-          >
-            ✦ Plus member · meetups at ₹399
-          </span>
-        )}
       </div>
 
       {/* Screen-reader text equivalent */}
       <span className="sr-only">
         {credits} meetings remaining, worth ₹{worth}. Yours anytime, no expiry.
-        {plan === 'plus' ? ' Plus member, meetups at ₹399.' : ''}
       </span>
     </div>
   );

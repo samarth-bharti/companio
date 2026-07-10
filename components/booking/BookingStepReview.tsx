@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { BadgeCheck, MapPin, Clock, Calendar, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { getWallet, type Wallet } from '@/lib/journeyState';
@@ -38,7 +39,7 @@ function Row({ icon: Icon, label, value }: { icon: LucideIcon; label: string; va
 
 export function BookingStepReview({ companion, state, onConfirm, onBack }: Props) {
   const [wallet, setWallet] = useState<Wallet | null>(null);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     setWallet(getWallet());
@@ -141,10 +142,10 @@ export function BookingStepReview({ companion, state, onConfirm, onBack }: Props
         ) : (
           <>
             <p className="font-sans font-bold text-base" style={{ color: 'var(--color-ink)' }}>
-              ₹499 for this meetup
+              You&apos;ve used both included meetings
             </p>
             <p className="font-sans text-sm mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
-              ₹499 · UPI (demo), ₹ held in escrow until you meet.
+              Paid meetups are coming soon. We&apos;ll email you the moment they open.
             </p>
           </>
         )}
@@ -160,16 +161,24 @@ export function BookingStepReview({ companion, state, onConfirm, onBack }: Props
         >
           Back
         </Button>
+        {/* v1 is unlock-only: a meetup can only be booked with an included
+            meeting. Without one there is nothing to charge against, so the
+            action is disabled rather than silently creating a free booking. */}
         <Button
           variant="cta"
           size="lg"
           type="button"
           className="flex-1"
           onClick={onConfirm}
+          disabled={!hasCredits}
           style={{ minHeight: 44 }}
-          aria-label="Confirm your meetup booking"
+          aria-label={
+            hasCredits
+              ? 'Confirm your meetup booking'
+              : 'Booking unavailable — you have used both included meetings'
+          }
         >
-          Confirm meetup
+          {hasCredits ? 'Confirm meetup' : 'No meetings left'}
         </Button>
       </div>
     </div>

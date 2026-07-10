@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 
 interface AuroraWipeProps {
   /** Fires mid-wipe (screen fully covered) — do the route push here. */
@@ -17,7 +18,10 @@ interface AuroraWipeProps {
  * Reduced motion: a quick opacity dip instead of the sweep.
  */
 export function AuroraWipe({ onCovered, onDone }: AuroraWipeProps) {
-  const reduced = useReducedMotion();
+  // SSR-safe: framer's useReducedMotion() is false on the server but true on the
+  // client's first render, so branching markup on it fails hydration. This hook
+  // returns false until mounted.
+  const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     const cover = setTimeout(onCovered, reduced ? 120 : 480);

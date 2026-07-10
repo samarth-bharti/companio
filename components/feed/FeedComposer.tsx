@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X, Camera, CalendarPlus, Footprints } from 'lucide-react';
 import { spring } from '@/lib/motion';
 import { getUser } from '@/lib/journeyState';
@@ -30,7 +31,7 @@ export function FeedComposer({ onPost }: FeedComposerProps) {
   const [draftType, setDraftType] = useState<DraftType>('activity');
   const [text, setText]           = useState('');
   const [userName, setUserName]   = useState('You');
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     const u = getUser();

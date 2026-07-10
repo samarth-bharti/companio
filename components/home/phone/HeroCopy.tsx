@@ -89,7 +89,7 @@ export function HeroCopyState2() {
         Then meet,<br />this week.
       </h2>
       <p className="text-lead max-w-xl mx-auto" style={{ color: 'var(--color-ink-muted)' }}>
-        Book in a tap. ₹ held in escrow until you meet.
+        Book in a tap. Your first two meetings are included.
       </p>
     </div>
   );

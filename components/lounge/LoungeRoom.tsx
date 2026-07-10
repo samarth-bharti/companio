@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Users, CheckCircle } from 'lucide-react';
 import { spring } from '@/lib/motion';
 import { ChatStream } from './ChatStream';
@@ -49,7 +50,7 @@ function toggleReaction(msgs: LoungeMessage[], msgId: string, emoji: string): Lo
 export function LoungeRoom({ lounge, onBack }: LoungeRoomProps) {
   const [msgs, setMsgs] = useState<LoungeMessage[]>(lounge.messages);
   const [joined, setJoined] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   const onSend = useCallback((text: string) => {
     setMsgs(prev => [...prev, {

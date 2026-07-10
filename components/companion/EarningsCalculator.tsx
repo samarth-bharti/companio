@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useId } from 'react';
-import { animate, useReducedMotion } from 'framer-motion';
+import { animate } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { cn } from '@/lib/utils';
 
 const RATE = 499;
@@ -13,7 +14,7 @@ interface Props {
 
 export function EarningsCalculator({ className }: Props) {
   const [meetups, setMeetups] = useState(6);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const sliderId = useId();
   const displayRef = useRef<HTMLSpanElement>(null);
   const prevRef = useRef<number | null>(null);

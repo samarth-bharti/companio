@@ -3,7 +3,8 @@
 import { memo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { BadgeCheck, Heart, Plus, Check, MapPin, Languages } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { durations } from '@/lib/motion';
@@ -52,7 +53,7 @@ export const CompanionCard = memo(function CompanionCard({
   isCompared, onToggleCompare,
   quizDone,
 }: CompanionCardProps) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const {
     id, name, city, area, age, rating, reviews,
     activities, languages, bio, photo, topMatch,

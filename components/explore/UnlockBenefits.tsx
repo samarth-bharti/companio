@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { type LucideIcon } from "lucide-react";
 import { Users, CalendarHeart, ShieldCheck } from "lucide-react";
 import { stagger } from "@/lib/motion";
@@ -36,7 +37,7 @@ export function UnlockBenefits({
   count: number;
   headlineId: string;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const total = count + 1;
 
   return (

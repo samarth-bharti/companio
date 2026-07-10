@@ -27,9 +27,11 @@ const lora = Lora({
   subsets: ["latin"],
 });
 
-const TITLE = "Companio, Trusted. Verified. Companionship.";
+// Say the concrete thing first: someone arriving cold from search or a shared
+// link must know what they can actually do here before they read any poetry.
+const TITLE = "Companio, book a verified companion. Strictly platonic.";
 const DESCRIPTION =
-  "Book ID-verified companions for city guiding, events, gym, conversation, and more. Strictly platonic. Indian market.";
+  "Book an ID-verified companion for a city walk, café chat or gym session. Strictly platonic. ₹199 unlocks every profile in your city, first 2 meetings included.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

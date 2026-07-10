@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { spring, durations, calm } from '@/lib/motion';
@@ -47,7 +48,7 @@ const PROCESSING_PHASES = [
 ] as const;
 
 export function CheckoutSheet({ open, item, onClose, onPaid, order }: CheckoutSheetProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const router = useRouter();
   const [sel, setSel] = useState<string | null>(null);
   const [pay, setPay] = useState<PayState>('idle');

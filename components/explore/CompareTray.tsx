@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X, Columns2 } from 'lucide-react';
 import type { Companion } from '@/lib/data/companions';
 import { spring } from '@/lib/motion';
@@ -26,7 +27,7 @@ function CompareModal({
   quizDone: boolean;
   onClose: () => void;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const panelRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<Element | null>(null);
 
@@ -173,7 +174,7 @@ export function CompareTray({
   compareIds, companions, quizDone, onToggle, onClear,
 }: CompareTrayProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   const selected = compareIds
     .map((id) => companions.find((c) => c.id === id))

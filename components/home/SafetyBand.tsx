@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import {
   Heart, MapPin, Phone, ShieldAlert,
 } from "lucide-react";
@@ -23,7 +23,7 @@ const PILLARS: Pillar[] = [
 ];
 
 export function SafetyBand() {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const sealRef = useRef<HTMLDivElement>(null);
   const [sealInView, setSealInView] = useState(false);
 

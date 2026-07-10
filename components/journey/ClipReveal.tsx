@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { cn } from '@/lib/utils';
 import { useRevealInView } from '@/lib/useRevealInView';
 
@@ -48,7 +49,10 @@ export function ClipReveal({
   delay = 0,
   id,
 }: ClipRevealProps) {
-  const shouldReduce = useReducedMotion();
+  // SSR-safe: framer's useReducedMotion() is false on the server but true on the
+  // client's first render, so branching markup on it fails hydration. This hook
+  // returns false until mounted.
+  const shouldReduce = useEffectiveReducedMotion();
   // One root trigger for the whole heading (the unclipped root always has size,
   // so it reveals reliably — no per-word 50%-visible requirement that could
   // leave a last-on-page heading stuck hidden).

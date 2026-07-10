@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { getUser } from '@/lib/journeyState';
 import { getBookings, updateBooking, getPlan } from '@/lib/appState';
 import { ActivityToast } from '@/components/journey/ActivityToast';
@@ -59,7 +60,7 @@ export function DashboardClient() {
   const [mounted, setMounted]     = useState(false);
   const [journeyStep, setJourneyStep] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     // Seed tab + companion thread from the URL (deep-link from profile "Message").

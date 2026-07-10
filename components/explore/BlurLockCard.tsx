@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Lock, BadgeCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TiltCard } from '@/components/motion/TiltCard';
@@ -26,7 +27,7 @@ export function BlurLockCard({
   companion: Companion;
   onUnlockClick: (c: Companion) => void;
 }) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
 
   // Privacy: fetch a tiny, server-blurred version (Unsplash transform) so the
   // full-resolution photo never reaches the browser — a CSS-only blur of the

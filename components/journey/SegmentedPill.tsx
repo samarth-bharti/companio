@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
@@ -18,7 +19,7 @@ interface SegmentedPillProps {
  * label is highlighted. Purely presentational; parent owns the step state.
  */
 export function SegmentedPill({ steps, current, className }: SegmentedPillProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   return (
     <div

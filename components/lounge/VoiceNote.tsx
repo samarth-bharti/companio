@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Play, Pause } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 
 interface VoiceNoteProps {
@@ -15,7 +16,7 @@ const BARS = [3, 5, 8, 12, 9, 14, 10, 6, 11, 8, 5, 13, 7, 4, 9, 11, 6, 8, 3, 7];
 
 export function VoiceNote({ duration, isMine }: VoiceNoteProps) {
   const [playing, setPlaying] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   // Mock: auto-stop after the duration (seconds) * 1000 ms
   const handlePlay = () => {

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { MessageCircle } from 'lucide-react';
 import { spring } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,7 @@ export function LoungeClient() {
   const [activeDirectId, setActiveDirectId] = useState<string | null>(null);
   // DMs whose unread badge has been cleared by opening the thread.
   const [readDirectIds, setReadDirectIds] = useState<Set<string>>(() => new Set());
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   const hasActive = activeLoungeId !== null || activeDirectId !== null;
   const activeLounge = LOUNGES.find(l => l.id === activeLoungeId) ?? null;

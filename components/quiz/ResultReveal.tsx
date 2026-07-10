@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import Image from 'next/image';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
 import { AuroraWipe } from '@/components/motion/AuroraWipe';
@@ -23,7 +24,7 @@ const otherCompanions = COMPANIONS.filter((c) => c.id !== TOP_MATCH_ID).slice(0,
  * blurred mini-grid, and AuroraWipe CTA.
  */
 export function ResultReveal({ name, onNavigate }: ResultRevealProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [wipeActive, setWipeActive] = useState(false);
 
   return (

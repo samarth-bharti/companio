@@ -2,7 +2,8 @@
 
 import { cva, type VariantProps } from "class-variance-authority";
 import { forwardRef } from "react";
-import { motion, useReducedMotion, type HTMLMotionProps } from "framer-motion";
+import { motion, type HTMLMotionProps } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -65,7 +66,7 @@ export interface ButtonProps
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, disabled, ...props }, ref) => {
-    const reduce = useReducedMotion();
+    const reduce = useEffectiveReducedMotion();
 
     // Only the prominent action buttons get the full pop (hover lift + press);
     // quieter variants (ghost text links, secondary outlines) get just a subtle

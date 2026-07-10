@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Zap, Star, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { spring, stagger } from '@/lib/motion';
@@ -21,7 +22,7 @@ interface PlusCardProps {
 }
 
 export function PlusCard({ isPlus, onUpgrade }: PlusCardProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   if (isPlus) {
     return (

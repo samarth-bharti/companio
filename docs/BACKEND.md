@@ -1,8 +1,13 @@
 # Backend reference
 
 The backend is **fully implemented but dormant** — every route exists, is typed,
-and is tested, but the app keeps using the localStorage mock until you flip one
-env flag. Nothing in a component changes when you go live.
+and is tested.
+
+> **It is not one env flag away from being live.** `lib/dataClient.ts` has **zero
+> importers**: ~36 components read `localStorage` directly, so setting
+> `NEXT_PUBLIC_DATA_CLIENT=http` changes nothing. Sign-in is also fake —
+> `components/auth/LoginForm.tsx` never calls next-auth. See
+> [the remaining gap](#wiring-the-ui-to-the-backend-the-remaining-gap).
 
 ## The data-access seam
 
@@ -64,6 +69,13 @@ anything else `→500` (logged, no internals leaked).
 
 ## Payments
 
+> **v1 sells only the ₹199 unlock.** `CREDIT_PACKS` (`pack1`/`pack5`/`pack10`) and
+> the `plus` kind still exist in `lib/server/pricing.ts` and are fully
+> implemented, but **no UI sells them**. Charging for a meetup and paying a
+> companion out of that money is unlicensed Payment Aggregator activity under
+> RBI; they return once **Razorpay Route** (linked accounts) is wired, so that
+> Razorpay is the settling entity. `splitEarnings()` exists for that future.
+
 Payment authority is **server-side**. The client names *what* it buys
 (`kind` + `packId`); `create-order` fixes the price from `lib/server/pricing.ts`
 (the single source of truth, in paise) and records a `Purchase` row. The benefit
@@ -91,8 +103,16 @@ blocks the response.
 ## Auth
 
 `lib/auth.ts` holds `authOptions` (JWT strategy, no Prisma adapter — we own the
-`User` row, a better fit for phone-OTP). **The provider is a stub**:
-`authorize()` returns `null`. Pick a provider and implement it (see STATUS).
+`User` row, a better fit for phone-OTP). **Both providers are drafted behind an
+env switch:** Google OAuth auto-enables once `GOOGLE_CLIENT_ID` +
+`GOOGLE_CLIENT_SECRET` are set; the phone-OTP credentials form is registered but
+`verifyOtp()` returns `false` until an SMS gateway is wired. There is **no Apple
+provider** — the sign-in button for it has been removed.
+
+> **Nothing in the UI calls any of this.** `LoginForm` fakes a session by writing
+> to `localStorage`, and no `SessionProvider` is mounted. Wiring
+> `signIn('google')` and mounting the provider is step one of going live.
+
 Routes only depend on `session.user.id` via `lib/server/session.ts`, so the
 provider choice changes nothing else.
 
@@ -135,7 +155,7 @@ anything. Recommended approach (small, reversible, mergeable):
 
 ## Tests
 
-`npm test` (Vitest, 102 tests): `serialize` (BigInt/Date conversion), `validation`
+`npm test` (Vitest, **150 tests across 9 files**): `serialize` (BigInt/Date conversion), `validation`
 (every zod schema, valid/invalid/boundary), `http` (guard + helpers), `payments`
 (signature + idempotency), `routes` (handlers with mocked session + Prisma —
 401/400/404 and edge cases like wallet-at-zero and the booking IDOR guard), and

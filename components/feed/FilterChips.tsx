@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import type { PostType } from './data';
 
@@ -19,7 +20,7 @@ interface FilterChipsProps {
 }
 
 export function FilterChips({ value, onChange }: FilterChipsProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   return (
     <div
       className="flex gap-2 overflow-x-auto pb-1"

@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Reveal } from '@/components/motion/Reveal';
 import { spring, stagger } from '@/lib/motion';
@@ -32,7 +33,7 @@ function StarRow({
   size?: number;
   animated?: boolean;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const path = 'M8 1.5l1.85 3.74 4.12.6-2.98 2.9.7 4.1L8 10.8l-3.69 1.94.7-4.1L2.03 5.84l4.12-.6L8 1.5z';
 
   return (
@@ -128,7 +129,7 @@ function ReviewCard({ r }: { r: Review }) {
  * Reduced motion: snaps instantly, drag spring disabled.
  */
 export function CompanionProfileReviews({ reviews, rating, reviewCount }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [current, setCurrent] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
 

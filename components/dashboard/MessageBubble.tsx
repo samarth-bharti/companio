@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { SmilePlus } from 'lucide-react';
 import type { ChatMessage } from '@/lib/appState';
 import { QUICK_REACTIONS, isEmojiOnly } from '@/lib/chat/emoji';
@@ -11,7 +12,7 @@ import { spring } from '@/lib/motion';
 // a big sticker. Hover (desktop) or long-press (mobile) opens a quick-react bar;
 // reactions show as little pills under the bubble (tap a pill to remove).
 export function MessageBubble({ msg, onReact }: { msg: ChatMessage; onReact: (emoji: string) => void }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [barOpen, setBarOpen] = useState(false);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 

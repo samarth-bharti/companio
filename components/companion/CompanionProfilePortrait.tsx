@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BadgeCheck, Heart, MessageCircle } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { TiltCard } from '@/components/motion/TiltCard';
 import { getFavorites, toggleFavorite } from '@/lib/appState';
 import { type Companion } from '@/lib/data/companions';
@@ -51,7 +52,7 @@ interface Props {
 
 export function CompanionProfilePortrait({ companion }: Props) {
   const [isFav, setIsFav] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     setIsFav(getFavorites().includes(companion.id));

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import {
   CheckCircle2,
   MapPin,
@@ -17,7 +18,7 @@ import { spring, durations } from "@/lib/motion";
 const TRUST_ITEMS = [
   "ID-verified",
   "Background-checked",
-  "₹ held in escrow",
+  "Full refund in 7 days",
 ] as const;
 
 const ACTIVITY_CARDS = [
@@ -40,7 +41,7 @@ function ActivityCard({
   floatPhase: number;
   delay: number;
 }) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const Icon = card.icon;
 
   return (

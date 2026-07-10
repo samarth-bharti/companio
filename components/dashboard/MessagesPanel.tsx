@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { getThreads, appendMessage, getBookings } from '@/lib/appState';
 import { getCompanion } from '@/lib/data/companions';
 import type { Companion } from '@/lib/data/companions';
@@ -32,7 +33,7 @@ interface MessagesPanelProps {
 export function MessagesPanel({ initialCompanionId }: MessagesPanelProps) {
   const [companions, setCompanions] = useState<Companion[]>([]);
   const [selectedId, setSelectedId] = useState<string | undefined>(initialCompanionId);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     const threadIds  = Object.keys(getThreads());

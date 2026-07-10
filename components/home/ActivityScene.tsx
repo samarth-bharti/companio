@@ -1,13 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import {
-  motion,
-  useReducedMotion,
-  useMotionValue,
-  useTransform,
-  type MotionValue,
-} from 'framer-motion';
+import { motion, useMotionValue, useTransform, type MotionValue } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Reveal } from '@/components/motion/Reveal';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +21,7 @@ export interface ActivitySceneProps {
   progress?: MotionValue<number>;
   /**
    * Vertical-stack mode (parent decided: reduced motion OR mobile).
-   * Must come from the parent — the scene's own useReducedMotion() cannot
+   * Must come from the parent — the scene's own useEffectiveReducedMotion() cannot
    * know about the mobile fallback, and the horizontal-mode fallback
    * MotionValue would leave scenes 2–5 stuck at opacity 0.
    */
@@ -71,7 +66,7 @@ export function ActivityScene({
   stacked = false,
   introNode,
 }: ActivitySceneProps) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   // Fallback MotionValue so hooks are always called unconditionally.
   const fallback = useMotionValue(index === 0 ? 1 : 0);
   const motionSrc = progress ?? fallback;

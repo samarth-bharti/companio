@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { ArrowLeft, X } from 'lucide-react';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
 import { QuizQuestion } from './QuizQuestion';
@@ -24,7 +25,7 @@ type Phase = 'question' | 'echo' | 'illusion' | 'result';
  */
 export function QuizClient() {
   const router = useRouter();
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   const [step, setStep] = useState(0);
   const [phase, setPhase] = useState<Phase>('question');

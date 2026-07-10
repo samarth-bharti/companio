@@ -3,7 +3,8 @@
 import { useState, useId } from 'react';
 import type { ReactNode } from 'react';
 import { Eye, EyeOff, ChevronLeft } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import { CITIES } from '@/lib/data/cities';
 import { Reveal } from '@/components/motion/Reveal';
@@ -104,7 +105,7 @@ interface Props {
 
 export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Props) {
   const id      = useId();
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const maxDob = getMaxDob();

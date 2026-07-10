@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { ShieldCheck, Fingerprint, Lock, Siren, Flag } from 'lucide-react';
 import { ClipReveal } from '@/components/journey/ClipReveal';
 import { Reveal, RevealGroup } from '@/components/motion/Reveal';
@@ -26,8 +27,8 @@ type Pillar = { icon: React.ElementType; title: string; body: string; color: str
 const PILLARS: Pillar[] = [
   { icon: Fingerprint, title: 'Aadhaar & KYC verified',   color: '#2E6BFF',
     body: "Every companion's identity is verified via Aadhaar before their profile is activated. No exceptions, no shortcuts." },
-  { icon: Lock,        title: '₹ held in escrow',          color: '#7A4FE0',
-    body: 'Your payment is locked in escrow until after you meet. No meeting, no charge, your money is always protected.' },
+  { icon: Lock,        title: '7-day refund promise',      color: '#7A4FE0',
+    body: "Your first two meetings are included, and you're never charged to meet. Didn't find anyone you'd like to meet? Ask for a full refund within 7 days." },
   { icon: Siren,       title: 'SOS & live-share',          color: '#FFB23E', id: 'sos',
     body: 'One tap activates emergency contact sharing and location broadcast during any active booking.' },
   { icon: ShieldCheck, title: 'Strictly platonic promise', color: '#1FAE6B', id: 'promise',
@@ -43,7 +44,7 @@ const STATS = [
 ];
 
 export function SafetyJourney() {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   // Track seal visibility so the CSS spin only runs when on-screen.
   const sealRef = useRef<HTMLDivElement>(null);
   const [sealInView, setSealInView] = useState(false);

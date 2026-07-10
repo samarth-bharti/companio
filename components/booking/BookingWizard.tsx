@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { calm } from '@/lib/motion';
 import { getWallet, decrementMeeting } from '@/lib/journeyState';
 import { addBooking, addNotification } from '@/lib/appState';
@@ -54,7 +55,7 @@ export function BookingWizard() {
   const [confirmed, setConfirmed] = useState(false);
   const [booking, setBooking] = useState<Booking | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   // Synchronous double-submit guard: setConfirmed is async, so a fast double-tap
   // on "Confirm" would otherwise call addBooking()/decrementMeeting() twice.
   const submittingRef = useRef(false);
@@ -108,20 +109,25 @@ export function BookingWizard() {
     if (submittingRef.current) return;
     submittingRef.current = true;
     const wallet = getWallet();
-    const usedCredit = wallet.credits > 0;
-    if (usedCredit) decrementMeeting();
+    // v1 is unlock-only — a meetup is always paid for with an included meeting.
+    // Without one there is nothing to charge, so never create a free booking.
+    if (wallet.credits <= 0) {
+      submittingRef.current = false;
+      return;
+    }
+    decrementMeeting();
     const b = addBooking({
       companionId: companion.id,
       activity: form.activity,
       dateISO: form.dateISO,
       time: form.time,
       place: form.place,
-      usedCredit,
-      pricePaid: usedCredit ? 0 : 499,
+      usedCredit: true,
+      pricePaid: 0,
     });
     addNotification({
       title: 'Meetup confirmed',
-      body: `You're meeting ${companion.firstName} on ${formatDate(form.dateISO)}, ₹ held in escrow.`,
+      body: `You're meeting ${companion.firstName} on ${formatDate(form.dateISO)}. Free to cancel any time before you meet.`,
     });
     track('booking_complete', { companionId: companion.id, bookingId: b.id });
     setBooking(b);

@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { MapPin } from 'lucide-react';
 import { FlipPill } from '@/components/motion/FlipPill';
 import { SosButton } from '@/components/safety/SosButton';
@@ -58,7 +59,7 @@ export function UpcomingCard({
   booking: b, companion: c,
   cancelTarget, onCancelRequest, onCancelConfirm, onCancelDismiss,
 }: UpcomingCardProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   return (
     <motion.div
       variants={cardVariant}
@@ -104,7 +105,7 @@ interface PastCardProps {
 }
 
 export function PastCard({ booking: b, companion: c, onReview }: PastCardProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   return (
     <motion.div
       variants={cardVariant}

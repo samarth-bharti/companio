@@ -1,5 +1,8 @@
-// middleware.ts — security headers on every response + rate limiting on
-// sensitive API writes. Runs on the edge for all routes except static assets.
+// proxy.ts — security headers on every response + rate limiting on sensitive
+// API writes. Runs on the edge for all routes except static assets.
+//
+// Renamed from middleware.ts: Next 16 deprecated the `middleware` file
+// convention in favour of `proxy` (same capabilities, same `config.matcher`).
 //
 // CSP is sent as Content-Security-Policy-Report-Only on purpose: it observes
 // violations (logged by the browser) WITHOUT breaking the app, so we can tighten
@@ -40,7 +43,7 @@ const LIMITS: { test: RegExp; limit: number; windowMs: number; bucket: string }[
   { test: /^\/api\/messages\//, limit: 30, windowMs: 60_000, bucket: 'msg' },
 ];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (req.method === 'POST' && pathname.startsWith('/api/')) {

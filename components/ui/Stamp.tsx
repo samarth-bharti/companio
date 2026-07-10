@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { motion, type Variants } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +26,7 @@ export function Stamp({
   onClick,
   transitionDelay = 0,
 }: StampProps) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
 
   const variants: Variants = {
     hidden: {

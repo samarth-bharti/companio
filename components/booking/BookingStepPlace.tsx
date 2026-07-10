@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Check, MapPin } from 'lucide-react';
 import { spring, stagger, calm } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -33,7 +34,7 @@ interface Props {
 }
 
 export function BookingStepPlace({ area, selected, onSelect }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const places  = getPlaces(area);
 
   return (

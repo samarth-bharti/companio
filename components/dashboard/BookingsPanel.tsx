@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { getBookings, updateBooking, addNotification } from '@/lib/appState';
 import { getCompanion } from '@/lib/data/companions';
 import type { Booking } from '@/lib/appState';
@@ -90,7 +91,7 @@ export function BookingsPanel() {
 
 // Section: renders title + stagger container for child cards
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   return (
     <section>
       <h2 className="font-sans font-semibold text-sm mb-3 tracking-wide" style={{ color: 'var(--color-ink-muted)' }}>

@@ -2,7 +2,8 @@
 
 import { useCallback, useRef, useState } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { BadgeCheck } from 'lucide-react';
 import type { PhotoPost as PhotoPostData } from './data';
 
@@ -15,7 +16,7 @@ interface Props {
 export function PhotoPost({ post, liked, onDoubleTapLike }: Props) {
   const [burst, setBurst] = useState(false);
   const lastTap = useRef(0);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   // Double-tap detection — works for both touch and desktop double-click.
   const handleInteract = useCallback(() => {

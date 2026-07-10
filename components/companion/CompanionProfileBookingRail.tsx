@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Button } from '@/components/ui/Button';
 import { getWallet, type Wallet } from '@/lib/journeyState';
 import { type Companion } from '@/lib/data/companions';
@@ -14,7 +15,7 @@ interface Props {
 }
 
 function StarMini({ rating }: { rating: number }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const path = 'M8 1.5l1.85 3.74 4.12.6-2.98 2.9.7 4.1L8 10.8l-3.69 1.94.7-4.1L2.03 5.84l4.12-.6L8 1.5z';
 
   return (
@@ -44,7 +45,7 @@ function StarMini({ rating }: { rating: number }) {
 
 export function CompanionProfileBookingRail({ companion, mobile }: Props) {
   const router  = useRouter();
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [wallet, setWallet] = useState<Wallet | null>(null);
 
   useEffect(() => {
@@ -90,10 +91,12 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
         <p className="font-sans font-bold text-base" style={{ color: 'var(--color-ink)' }}>
           {hasCredits
             ? `${wallet?.credits} meeting${(wallet?.credits ?? 0) > 1 ? 's' : ''} included`
-            : '₹499 per meetup'}
+            : 'Both included meetings used'}
         </p>
         <p className="font-sans text-sm mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
-          {hasCredits ? 'then ₹499/meetup · no subscription' : 'ID-verified · ₹ in escrow'}
+          {hasCredits
+            ? 'Yours anytime · no expiry · no subscription'
+            : 'ID-verified · paid meetups coming soon'}
         </p>
       </div>
 
@@ -138,19 +141,24 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
           size="lg"
           className="w-full"
           onClick={handleBook}
+          disabled={wallet !== null && !hasCredits}
           style={{ minHeight: 44 }}
-          aria-label={`Book a meetup with ${companion.firstName}`}
+          aria-label={
+            wallet !== null && !hasCredits
+              ? 'Booking unavailable — you have used both included meetings'
+              : `Book a meetup with ${companion.firstName}`
+          }
         >
-          Book a meetup
+          {wallet !== null && !hasCredits ? 'No meetings left' : 'Book a meetup'}
         </Button>
       </motion.div>
 
-      {/* Escrow reassurance */}
+      {/* Reassurance — only claims that are actually true today */}
       <p
         className="font-sans text-xs text-center leading-relaxed"
         style={{ color: 'var(--color-ink-muted)' }}
       >
-        ₹ held in escrow until you meet · full refund in 7 days
+        Free to cancel any time before you meet · full refund in 7 days
       </p>
     </div>
   );

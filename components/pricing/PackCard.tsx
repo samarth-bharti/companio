@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { spring } from '@/lib/motion';
@@ -49,7 +50,7 @@ function PriceRoll({ amount }: { amount: number }) {
 }
 
 export function PackCard({ pack, selected, onSelect, recommended = false }: PackCardProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   // Entrance animation removed — Reveal in page.tsx handles staggered mount reveal.
   // whileHover / whileTap and the selection-state animations are preserved.

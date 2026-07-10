@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Users, BadgeCheck } from 'lucide-react';
 import { spring, stagger } from '@/lib/motion';
 import { Reveal } from '@/components/motion/Reveal';
@@ -27,7 +28,7 @@ const CARDS = [
 ] as const;
 
 export function StepRole({ role, onSelect }: StepRoleProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   return (
     <div>

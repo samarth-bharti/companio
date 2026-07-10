@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useId, useEffect, useState } from 'react';
-import { motion, useReducedMotion, useTransform } from 'framer-motion';
+import { motion, useTransform } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { CreditCard, Camera, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useJsScroll } from '@/lib/useJsScroll';
 import { Stamp } from '@/components/ui/Stamp';
@@ -31,7 +32,7 @@ interface Props {
 
 export function VerificationTimeline({ activeStep }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const rawId = useId();
   const gradId = `aurora-vt-${rawId.replace(/:/g, '')}`;
   const [svgHeight, setSvgHeight] = useState(360);

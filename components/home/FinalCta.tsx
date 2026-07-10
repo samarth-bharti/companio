@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import { useReducedMotion } from "framer-motion";
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { MagneticButton } from "@/components/motion/MagneticButton";
 import { Reveal } from "@/components/motion/Reveal";
 import { ParallaxLayer } from "@/components/motion/ParallaxLayer";
@@ -12,11 +12,11 @@ import { Seal } from "@/components/ui/Seal";
 const TRUST_LINES = [
   "Free to browse",
   "Pay only when you book",
-  "₹ held in escrow",
+  "Full refund in 7 days",
 ];
 
 export function FinalCta() {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const sealRef = useRef<HTMLDivElement>(null);
   const [sealInView, setSealInView] = useState(false);
 

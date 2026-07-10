@@ -1,14 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  motion,
-  useMotionValue,
-  useSpring,
-  useTransform,
-  useReducedMotion,
-  type MotionValue,
-} from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform, type MotionValue } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { BadgeCheck, MapPin } from 'lucide-react';
 import { AppMockup } from './AppMockup';
 
@@ -51,7 +45,7 @@ function FloatingChip({
  *  - will-change: transform on chips only
  */
 export function AppMockupVisual({ scrollY }: { scrollY: MotionValue<number> }) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const [fine, setFine] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const cachedRect = useRef<CachedRect | null>(null);

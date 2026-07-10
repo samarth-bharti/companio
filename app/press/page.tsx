@@ -19,7 +19,7 @@ export default function PressPage() {
         {
           heading: 'The numbers',
           body: [
-            'A growing community across India\'s major cities, every companion identity-verified and background-checked, every payment held in escrow until after the meetup.',
+            'A growing community across India\'s major cities, every companion identity-verified and background-checked, with a one-time ₹199 unlock that includes your first two meetings.',
           ],
         },
         {

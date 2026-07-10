@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { SEED_POSTS, type FeedPost } from './data';
 import { FilterChips, type FeedFilter } from './FilterChips';
 import { FeedComposer } from './FeedComposer';
@@ -23,7 +24,7 @@ const TRENDING_CHIPS = [
 export function FeedClient() {
   const [posts, setPosts]   = useState<FeedPost[]>(SEED_POSTS);
   const [filter, setFilter] = useState<FeedFilter>('all');
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   const filtered: FeedPost[] = filter === 'all'
     ? posts
