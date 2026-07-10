@@ -18,14 +18,26 @@
 > mailboxes are real, and `COMPANY_DISPLAY` stops raw `[[placeholders]]`
 > rendering. The **Grievance Officer name + phone are still placeholders.**
 >
-> **B3 is NOT fixed, and is worse than described.** `lib/auth.ts` drafts a real
-> Google provider, but `components/auth/LoginForm.tsx` never imports next-auth —
-> it fakes a session in `localStorage`. No `SessionProvider` is mounted.
+> **B3 is now FIXED (2026-07-10 evening).** `SessionProvider` is mounted and
+> `LoginForm` calls `signIn('google')` when Google is configured, simulating only
+> when it is not.
 >
-> **Still open:** the `dataClient` migration (§"THE BIG ENGINEERING TASK" below
-> remains exactly true), CSP `Report-Only`, and the Razorpay Route / RBI payment
-> aggregator point — which is why **v1 now sells the ₹199 unlock only**. See
-> [`STATUS.md`](STATUS.md) for the current picture.
+> **The audit missed the most severe bug in the codebase.** `payWithRazorpay()`
+> mapped a `401` to `'unconfigured'`, which both checkout sheets treated as
+> "demo mode" and answered by granting the paid benefit locally. Because sign-in
+> was fake, no visitor ever had a server session — so a **keyed production build
+> would have given every single visitor a free ₹199 unlock**. Fixed in `ad47df4`.
+>
+> It also missed that `suspended` / `bannedAt` / `messageBlocked` were written by
+> the admin panel and read by **no query at all**, and that `/admin` was
+> unreachable by anyone on a fresh database.
+>
+> **Still open:** the tail of the `dataClient` migration (the core components are
+> done; §"THE BIG ENGINEERING TASK" below is now only half true), CSP
+> `Report-Only`, and the Razorpay Route / RBI payment aggregator point — which is
+> why **v1 sells the ₹199 unlock only**, now enforced by
+> `MARKETPLACE_PAYMENTS_ENABLED`. See [`STATUS.md`](STATUS.md) for the current
+> picture.
 >
 > The cost table below is also outdated: **Neon Launch has no monthly minimum**
 > (not ₹1,650), and **Vercel Pro is billed per seat**. See [`GO-LIVE.md`](GO-LIVE.md).

@@ -8,7 +8,7 @@ protections built into the platform.
 
 Please report security issues privately — **do not open a public GitHub issue.**
 
-- Email **security@companio.app** with a description, steps to reproduce, and
+- Email **security@trycompanio.com** with a description, steps to reproduce, and
   the impact you observed.
 - Use GitHub's [private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability)
   ("Report a vulnerability" under the Security tab) if you prefer.
@@ -56,6 +56,27 @@ change on the server, never from the client:
 - **Open-redirect protection** on `next` parameters (`lib/safeRedirect.ts`).
 - **Privacy:** users can export and delete their data (`/api/user/export`,
   `/api/user/delete`), and analytics only fire after explicit consent (DPDP/GDPR).
+- **Identity documents are never stored.** `/api/application/upload` reads the
+  Aadhaar/PAN image and the selfie, checks their magic bytes, computes a SHA-256
+  for duplicate detection, persists **only** that hash plus a masked number
+  (`XXXX XXXX 2346`), and discards the bytes. Nothing is written to object
+  storage. Holding scans of identity documents is a DPDPA liability we decline.
+- **Moderation is enforced, not just recorded.** `suspended` / `bannedAt` /
+  `messageBlocked` are read by `lib/server/visibility.ts` on every public
+  companion read, every booking, every message send, and by the session resolver
+  — a banned account is rejected on its next request, not merely flagged.
+- **Marketplace payouts are gated off.** `MARKETPLACE_PAYMENTS_ENABLED` must be
+  explicitly set before any purchase kind that would leave Companio holding funds
+  owed to a companion can be charged (RBI Payment Aggregator rules).
+
+### Known posture gaps
+
+- CSP is `Content-Security-Policy-Report-Only` and permits `unsafe-inline` /
+  `unsafe-eval`. It observes rather than enforces.
+- Rate limiting falls back to an in-memory `Map` when Upstash is not configured.
+  On a multi-instance serverless deploy each instance keeps its own counter, so
+  the effective limit is multiplied by the number of warm instances. Configure
+  `UPSTASH_REDIS_REST_URL` / `_TOKEN` in production.
 
 ## Supported versions
 

@@ -3,11 +3,27 @@
 The backend is **fully implemented but dormant** — every route exists, is typed,
 and is tested.
 
-> **It is not one env flag away from being live.** `lib/dataClient.ts` has **zero
-> importers**: ~36 components read `localStorage` directly, so setting
-> `NEXT_PUBLIC_DATA_CLIENT=http` changes nothing. Sign-in is also fake —
-> `components/auth/LoginForm.tsx` never calls next-auth. See
-> [the remaining gap](#wiring-the-ui-to-the-backend-the-remaining-gap).
+> **Updated 2026-07-10 (evening).** The gap this section used to describe is
+> mostly closed:
+>
+> - `lib/dataClient.ts` now has real importers. `Nav`, `NavUser`, `TopUpMenu`,
+>   `LoginForm`, `StepDone`, `QuizClient`, `ExploreClient` and the four dashboard
+>   panels go through it. The rest of the tree still reads `localStorage`
+>   directly — finish that sweep before flipping the flag.
+> - **Sign-in is real when configured.** `SessionProvider` is mounted and
+>   `LoginForm` calls `signIn('google')` when Google is wired. It only simulates
+>   locally when `/api/auth/capability` reports `{configured:false}`.
+> - Every mutation now emits a change event (`lib/dataEvents.ts`) so the UI
+>   re-reads instead of going stale. This works identically in `http` mode.
+>
+> **Still true: `NEXT_PUBLIC_DATA_CLIENT=http` has never been run against a real
+> database.** It is unit-tested against a stubbed `fetch`, nothing more.
+>
+> **New gates you must know about** before setting any key:
+> `MARKETPLACE_PAYMENTS_ENABLED` (leave unset — RBI), `ADMIN_EMAILS` (without it
+> `/admin` is unreachable by anyone, forever), and the fact that setting
+> `NEXT_PUBLIC_RAZORPAY_KEY_ID` **disables the demo payment path by design**.
+> See [`GO-LIVE.md`](GO-LIVE.md#vars-added-2026-07-10--read-these-before-deploying).
 
 ## The data-access seam
 

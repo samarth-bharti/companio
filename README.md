@@ -29,19 +29,28 @@ No database or keys are needed until you wire the backend.
 
 ### What's real vs. mock
 
-The **frontend is fully built** and runs today on browser `localStorage` (per-device,
-no sign-in required). The **backend is complete and tested but dormant**: the full
-Prisma schema, every API route, server-authoritative payments, and a 150-test suite
-all exist behind the `lib/dataClient.ts` seam, but **no UI call site imports it yet**.
+The **frontend is fully built**. With no keys it runs on browser `localStorage`
+(per-device, no sign-in required) and says so. The **backend is complete and
+tested**: the full Prisma schema, every API route, server-authoritative payments,
+and a 200-test suite, all behind the `lib/dataClient.ts` seam.
 
-> **Flipping `NEXT_PUBLIC_DATA_CLIENT=http` does nothing on its own.** The
-> `httpDataClient` has zero importers — ~36 components read `localStorage`
-> directly. Going live is a repo-wide async migration, plus real auth. Today
-> **login is fake** (`LoginForm` never calls next-auth) and **payment is a demo
-> animation**. See [`docs/STATUS.md`](docs/STATUS.md#what-actually-blocks-launch)
-> for the honest picture, and
-> [`docs/BACKEND.md`](docs/BACKEND.md#wiring-the-ui-to-the-backend-the-remaining-gap)
-> for the migration recipe.
+Sign-in and payment are **real when configured** and **honestly simulated when
+not**. Supplying `GOOGLE_CLIENT_ID` + `NEXTAUTH_SECRET` + `DATABASE_URL` turns on
+real Google sign-in; supplying `NEXT_PUBLIC_RAZORPAY_KEY_ID` turns on real
+payment *and switches the demo path off entirely* — a keyed build will never
+grant a paid benefit without a verified payment.
+
+> **`NEXT_PUBLIC_DATA_CLIENT=http` has never been run against a real database.**
+> The core components (nav, auth, dashboard, explore) go through `dataClient`
+> now; the rest of the tree still reads `localStorage` directly. Finish that
+> sweep before flipping the flag. See [`docs/STATUS.md`](docs/STATUS.md) for the
+> honest picture and [`docs/BACKEND.md`](docs/BACKEND.md) for the recipe.
+>
+> **Three env vars gate real behaviour and cannot be guessed from the code:**
+> `ADMIN_EMAILS` (without it nobody can ever reach `/admin`),
+> `MARKETPLACE_PAYMENTS_ENABLED` (leave unset — RBI Payment Aggregator rules),
+> and `NEXT_PUBLIC_MAPTILER_KEY` (map tiles). See
+> [`docs/GO-LIVE.md`](docs/GO-LIVE.md#vars-added-2026-07-10--read-these-before-deploying).
 
 ## Scripts
 
