@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -139,15 +139,25 @@ export function CompanionProfileReviews({ reviews, rating, reviewCount }: Props)
   const prev = () => setCurrent((c) => clamp(c - 1));
   const next = () => setCurrent((c) => clamp(c + 1));
 
-  // Card width = 100% of the track (one card visible at a time on mobile),
-  // or up to 340px on wider viewports — calculated at paint time.
-  // We use percentages via translateX so no ResizeObserver needed.
   const CARD_GAP = 16; // px — gap between cards
-  // We scroll by 100% of the card width + gap.
-  // Because cards are 100% wide the percentage offset = index × (100% + gap).
-  // Since framer-motion `x` works in pixels we keep it simple:
-  // cardW ≈ trackRef.current?.offsetWidth or fall back to 300.
-  const cardW = trackRef.current?.offsetWidth ?? 300;
+
+  // Cards are 100% of the track wide, and framer's `x` is in pixels, so we need
+  // the track's measured width. Reading trackRef.current during render both
+  // breaks the rules of React and silently didn't work: the ref is null on the
+  // first render, so every card was laid out against a hardcoded 300px until
+  // something else happened to re-render — and it never responded to a resize
+  // or an orientation change at all. Measure after paint, and keep measuring.
+  const [cardW, setCardW] = useState(300);
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const measure = () => setCardW(el.offsetWidth || 300);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const offset = -(current * (cardW + CARD_GAP));
 
   return (

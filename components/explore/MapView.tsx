@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import type { Companion } from '@/lib/data/companions';
 import { getCity, CITIES } from '@/lib/data/cities';
+import { getAreaAnchor, cityHasRealAreas } from '@/lib/data/areas';
+import { getTileConfig } from '@/lib/map/tiles';
 import 'leaflet/dist/leaflet.css';
 
 interface MapViewProps {
@@ -28,13 +30,41 @@ interface MapViewProps {
 
 const FUZZ_RADIUS_M = 1500; // ~1.5 km privacy radius
 
-/** Deterministic per-companion offset (±~3-4 km) around the city centre. */
-function fuzzedLatLng(seed: string, lat: number, lng: number): [number, number] {
+/** FNV-1a. Stable across renders and reloads, so a companion never jumps. */
+function hash(seed: string): number {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619) >>> 0;
+  return h;
+}
+
+/**
+ * Where to draw a companion's privacy circle.
+ *
+ * Anchored on their NEIGHBOURHOOD when we have verified coordinates for it, and
+ * scattered only within it (±~0.5 km, comfortably inside the 1.5 km circle that
+ * is drawn around it). Previously every companion was scattered ±4 km around
+ * the city centre, so the area label and the pin disagreed.
+ *
+ * With no anchor — any city other than Mumbai, whose profiles are re-skinned
+ * demos anyway — we keep the old city-centre scatter rather than invent a
+ * coordinate that would look authoritative and be wrong.
+ */
+function placeCompanion(
+  companion: Companion,
+  cityId: string,
+  cityLat: number,
+  cityLng: number,
+): [number, number] {
+  const h = hash(companion.id + companion.area);
   const a = (h % 1000) / 1000;
   const b = ((h >>> 10) % 1000) / 1000;
-  return [lat + (a - 0.5) * 0.075, lng + (b - 0.5) * 0.085];
+
+  const anchor = getAreaAnchor(cityId, companion.area);
+  if (anchor) {
+    // ±0.005° ≈ ±550 m of latitude — inside the circle we draw around it.
+    return [anchor.lat + (a - 0.5) * 0.01, anchor.lng + (b - 0.5) * 0.01];
+  }
+  return [cityLat + (a - 0.5) * 0.075, cityLng + (b - 0.5) * 0.085];
 }
 
 export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, highlightId }: MapViewProps) {
@@ -70,11 +100,13 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
       });
       mapRef.current = map;
 
-      // CARTO Positron — clean, light, premium basemap (retina via {r}).
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19,
+      // Provider comes from the environment — see lib/map/tiles.ts for why the
+      // hardcoded CARTO basemap had to go (enterprise-only for commercial use).
+      const tiles = getTileConfig();
+      L.tileLayer(tiles.url, {
+        attribution: tiles.attribution,
+        ...(tiles.subdomains ? { subdomains: tiles.subdomains } : {}),
+        maxZoom: tiles.maxZoom,
       }).addTo(map);
 
       layerRef.current = L.layerGroup().addTo(map);
@@ -121,7 +153,7 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
     });
 
     companions.forEach((c) => {
-      const [lat, lng] = fuzzedLatLng(c.id + c.area, city.lat, city.lng);
+      const [lat, lng] = placeCompanion(c, cityId, city.lat, city.lng);
       const named = unlocked || c.topMatch;
       const isHi = c.id === highlightId;
       // Match weight 0..1 (only when the quiz is done) — drives size + opacity so
@@ -212,6 +244,24 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
         </div>
       </div>
 
+      {/* Only Mumbai has verified companions and mapped neighbourhoods. Saying
+          so beats letting someone in Chennai pay ₹199 to unlock a profile that
+          is really a Mumbai person wearing a local area name. */}
+      {!cityHasRealAreas(cityId) && (
+        <p
+          className="mt-3 text-xs leading-relaxed rounded-xl px-3.5 py-2.5"
+          style={{
+            background: 'rgba(255,178,62,0.10)',
+            border: '1.5px solid rgba(255,178,62,0.28)',
+            color: 'var(--color-ink-muted)',
+          }}
+          role="note"
+        >
+          Companio is fully live in <strong>Mumbai</strong>. We&rsquo;re onboarding verified companions in{' '}
+          {city.name} now, so these profiles and positions are illustrative.
+        </p>
+      )}
+
       {/* Area availability — keyboard/SR operable list; pressing a chip pans the map to that area. */}
       {areas.length > 0 && (
         <div className="mt-4">
@@ -232,7 +282,7 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
                     type="button"
                     onClick={() => {
                       if (!rep || !mapRef.current) return;
-                      const [lat, lng] = fuzzedLatLng(rep.id + rep.area, city.lat, city.lng);
+                      const [lat, lng] = placeCompanion(rep, cityId, city.lat, city.lng);
                       mapRef.current.flyTo([lat, lng], 13, { animate: true, duration: 0.8 });
                     }}
                     aria-label={`Pan map to ${area} — ${count} companion${count !== 1 ? 's' : ''}`}

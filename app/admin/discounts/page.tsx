@@ -11,8 +11,19 @@ const btnBlue = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-[var(--color-
 const btnRed = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-wait';
 const inp = 'h-9 px-2 text-sm rounded-lg border border-[var(--color-ink)]/15';
 
-export default async function AdminDiscounts() {
+/**
+ * Load the codes and stamp the instant they were judged against, together.
+ * Reading the clock inside the component body makes the render impure — every
+ * row would compare against a slightly different `now`, and the rule that
+ * catches it is the same one that catches genuinely unstable renders.
+ */
+async function loadCodes() {
   const codes = await prisma.discountCode.findMany({ orderBy: { createdAt: 'desc' }, take: 200 });
+  return { codes, now: Date.now() };
+}
+
+export default async function AdminDiscounts() {
+  const { codes, now } = await loadCodes();
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,7 +71,7 @@ export default async function AdminDiscounts() {
       <div className="flex flex-col gap-3">
         {codes.length === 0 && <p className="text-[var(--color-ink-muted)]">No codes yet.</p>}
         {codes.map((c) => {
-          const expired = c.expiresAt ? c.expiresAt.getTime() < Date.now() : false;
+          const expired = c.expiresAt ? c.expiresAt.getTime() < now : false;
           const label = c.type === 'percentage' ? `${c.value}% off` : `₹${(c.value / 100).toFixed(0)} off`;
           return (
             <div key={c.id} className="rounded-2xl bg-white border border-[var(--color-ink)]/10 p-4 flex items-center gap-3 flex-wrap">

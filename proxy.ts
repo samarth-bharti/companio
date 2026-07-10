@@ -26,7 +26,10 @@ const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.posthog.com https://*.spline.design https://checkout.razorpay.com https://va.vercel-scripts.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://images.unsplash.com https://*.googletagmanager.com https://*.google-analytics.com",
+  // Map tiles are <img> elements. Neither OpenStreetMap nor MapTiler was listed
+  // here, so the explore map would go blank the day CSP flips from Report-Only
+  // to enforcing. Keep this in step with lib/map/tiles.ts.
+  "img-src 'self' data: blob: https://images.unsplash.com https://*.googletagmanager.com https://*.google-analytics.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://api.maptiler.com",
   "font-src 'self' data:",
   "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://vitals.vercel-insights.com https://api.razorpay.com https://*.spline.design",
   "frame-src 'self' https://checkout.razorpay.com https://*.spline.design",
