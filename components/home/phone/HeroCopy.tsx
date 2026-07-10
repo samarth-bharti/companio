@@ -75,7 +75,7 @@ export function HeroCopyState1() {
         See who&apos;s actually<br />near you.
       </h2>
       <p className="text-lead max-w-xl mx-auto" style={{ color: 'var(--color-ink-muted)' }}>
-        Every profile ID-verified, rated by real members, in 38 cities.
+        Every profile ID-verified. Every meetup strictly platonic.
       </p>
     </div>
   );

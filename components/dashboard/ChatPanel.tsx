@@ -5,27 +5,14 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Shield, Send, Smile } from 'lucide-react';
-import { getThread, appendMessage, reactToMessage } from '@/lib/appState';
+import { reactToMessage } from '@/lib/appState';
+import { dataClient } from '@/lib/dataClient';
 import type { ChatMessage } from '@/lib/appState';
 import type { Companion } from '@/lib/data/companions';
 import { calm, spring } from '@/lib/motion';
-import { CONTACT_RE, randomReply, replyDelayMs } from './chatReplies';
+import { CONTACT_RE } from './chatReplies';
 import { EmojiStickerPicker } from './EmojiStickerPicker';
 import { MessageBubble } from './MessageBubble';
-
-// Three bouncing dots shown while the companion is "typing".
-function TypingIndicator() {
-  const reduced = useEffectiveReducedMotion();
-  return (
-    <div className="flex justify-start" aria-label="Typing…">
-      <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid rgba(46,107,255,0.1)' }}>
-        {[0, 1, 2].map((i) => (
-          <span key={i} className="block rounded-full" style={{ width: 6, height: 6, background: 'var(--color-ink-muted)', animation: reduced ? 'none' : `companio-typing-dot 0.7s ease-in-out ${i * 0.18}s infinite` }} />
-        ))}
-      </span>
-    </div>
-  );
-}
 
 interface ChatPanelProps {
   companion: Companion;
@@ -36,45 +23,58 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
   const [thread, setThread]     = useState<ChatMessage[]>([]);
   const [input, setInput]       = useState('');
   const [blocked, setBlocked]   = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
+  const [sendError, setSendError] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
   const logRef   = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const reduced  = useEffectiveReducedMotion();
 
-  useEffect(() => { setThread(getThread(companion.id)); }, [companion.id]);
+  useEffect(() => {
+    let cancelled = false;
+    dataClient.getThread(companion.id)
+      .then((t) => { if (!cancelled) setThread(t); })
+      .catch(() => { if (!cancelled) setThread([]); });
+    return () => { cancelled = true; };
+  }, [companion.id]);
 
-  // Scroll to bottom whenever thread or typing indicator changes.
+  // Scroll to bottom whenever the thread changes.
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [thread, isTyping]);
+  }, [thread]);
 
-  // Simulated companion reply after any of my messages (text or sticker).
-  const triggerReply = () => {
-    setIsTyping(true);
-    const reply = randomReply(companion.id);
-    setTimeout(() => {
-      setIsTyping(false);
-      appendMessage(companion.id, { from: 'them', text: reply });
-      setThread(getThread(companion.id));
-    }, replyDelayMs());
+  /**
+   * Send a message and stop. There is no `triggerReply()` any more: this panel
+   * used to answer on the companion's behalf from a two-line script, after a
+   * jittered delay and a typing indicator. The message is persisted; the
+   * companion replies when they read it, or they don't.
+   */
+  const post = async (text: string, kind?: 'sticker') => {
+    setSendError('');
+    const optimistic: ChatMessage = { id: `pending-${Date.now()}`, from: 'me', text, ts: Date.now(), ...(kind ? { kind } : {}) };
+    setThread((t) => [...t, optimistic]);
+    try {
+      await dataClient.appendMessage(companion.id, { from: 'me', text, ...(kind ? { kind } : {}) });
+      setThread(await dataClient.getThread(companion.id));
+    } catch {
+      // Roll the optimistic bubble back out: a message that failed to send must
+      // not sit in the log looking delivered.
+      setThread((t) => t.filter((m) => m.id !== optimistic.id));
+      setSendError("That message didn't send. Please try again.");
+    }
   };
 
   const send = () => {
     if (!input.trim()) return;
     if (CONTACT_RE.test(input)) { setBlocked(true); return; }
     setBlocked(false);
-    appendMessage(companion.id, { from: 'me', text: input.trim() });
+    const text = input.trim();
     setInput('');
-    setThread(getThread(companion.id));
-    triggerReply();
+    void post(text);
   };
 
   const sendSticker = (text: string) => {
     setPickerOpen(false);
-    appendMessage(companion.id, { from: 'me', text, kind: 'sticker' });
-    setThread(getThread(companion.id));
-    triggerReply();
+    void post(text, 'sticker');
   };
 
   const addEmoji = (emoji: string) => {
@@ -107,13 +107,11 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
           ))}
         </AnimatePresence>
 
-        <AnimatePresence>
-          {isTyping && (
-            <motion.div key="typing" initial={reduced ? { opacity: 0 } : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={calm.fast}>
-              <TypingIndicator />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {thread.length === 0 && (
+          <p className="font-sans text-xs text-center py-8" style={{ color: 'var(--color-ink-muted)' }}>
+            No messages yet. Say hello — {companion.firstName} will see this and reply when they&apos;re free.
+          </p>
+        )}
       </div>
 
       {/* Safety strip */}
@@ -127,6 +125,12 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
       {blocked && (
         <p className="font-sans text-xs mb-1 px-1" style={{ color: 'var(--color-ink-muted)' }}>
           Numbers and emails are hidden until you&apos;ve met, it keeps everyone safe.
+        </p>
+      )}
+
+      {sendError && (
+        <p role="alert" className="font-sans text-xs mb-1 px-1" style={{ color: '#C0392B' }}>
+          {sendError}
         </p>
       )}
 

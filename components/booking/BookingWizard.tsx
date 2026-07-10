@@ -6,8 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { calm } from '@/lib/motion';
-import { getWallet, decrementMeeting } from '@/lib/journeyState';
-import { addBooking, addNotification } from '@/lib/appState';
+import { dataClient } from '@/lib/dataClient';
 import { track } from '@/lib/analytics';
 import { getCompanion } from '@/lib/data/companions';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
@@ -55,9 +54,11 @@ export function BookingWizard() {
   const [confirmed, setConfirmed] = useState(false);
   const [booking, setBooking] = useState<Booking | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [bookingError, setBookingError] = useState('');
   const reduced = useEffectiveReducedMotion();
-  // Synchronous double-submit guard: setConfirmed is async, so a fast double-tap
-  // on "Confirm" would otherwise call addBooking()/decrementMeeting() twice.
+  // Synchronous double-submit guard: setSubmitting is async, so a fast double-tap
+  // on "Confirm" would otherwise create two bookings and spend two credits.
   const submittingRef = useRef(false);
 
   // Fire booking_start once the wizard knows which companion is being booked.
@@ -104,34 +105,53 @@ export function BookingWizard() {
     return false;
   }
 
-  function handleConfirm() {
+  /**
+   * Create the booking on the server.
+   *
+   * This used to call `decrementMeeting()` and `addBooking()` straight into
+   * localStorage. No request left the browser: the companion was never told,
+   * the booking existed only on that device, and clearing site data cancelled
+   * every meetup you had. The 18+ gate, the companion-availability check and
+   * the credit ledger all lived in `POST /api/bookings`, which nothing called.
+   *
+   * `dataClient.addBooking` calls it now. Its failures are real and are shown:
+   * a member with no credits, a suspended companion, an expired session.
+   */
+  async function handleConfirm() {
     if (!companion) return;
     if (submittingRef.current) return;
     submittingRef.current = true;
-    const wallet = getWallet();
-    // v1 is unlock-only — a meetup is always paid for with an included meeting.
-    // Without one there is nothing to charge, so never create a free booking.
-    if (wallet.credits <= 0) {
+    setSubmitting(true);
+    setBookingError('');
+
+    try {
+      // v1 is unlock-only: a meetup is always paid for with an included meeting.
+      const b = await dataClient.addBooking({
+        companionId: companion.id,
+        activity: form.activity,
+        dateISO: form.dateISO,
+        time: form.time,
+        place: form.place,
+        usedCredit: true,
+        pricePaid: 0,
+      });
+      track('booking_complete', { companionId: companion.id, bookingId: b.id });
+      setBooking(b);
+      setConfirmed(true);
+    } catch (err) {
       submittingRef.current = false;
-      return;
+      setSubmitting(false);
+      const message = err instanceof Error ? err.message : '';
+      if (message.includes('insufficient_credits') || message.includes('402')) {
+        setBookingError("You've used both included meetups. Additional paid meetups aren't available yet.");
+      } else if (message.includes('age_verification_required') || message.includes('403')) {
+        setBookingError('We need your date of birth before you can book. Add it from your dashboard.');
+      } else if (message.includes('401')) {
+        setBookingError('Your session has expired. Please sign in again.');
+      } else {
+        setBookingError("We couldn't confirm that booking. Nothing was charged — please try again.");
+      }
     }
-    decrementMeeting();
-    const b = addBooking({
-      companionId: companion.id,
-      activity: form.activity,
-      dateISO: form.dateISO,
-      time: form.time,
-      place: form.place,
-      usedCredit: true,
-      pricePaid: 0,
-    });
-    addNotification({
-      title: 'Meetup confirmed',
-      body: `You're meeting ${companion.firstName} on ${formatDate(form.dateISO)}. Free to cancel any time before you meet.`,
-    });
-    track('booking_complete', { companionId: companion.id, bookingId: b.id });
-    setBooking(b);
-    setConfirmed(true);
   }
 
   if (confirmed && booking) {
@@ -206,18 +226,34 @@ export function BookingWizard() {
                   state={form}
                   onConfirm={() => setSafetyOpen(true)}
                   onBack={goBack}
+                  submitting={submitting}
                 />
               )}
             </motion.div>
           </AnimatePresence>
         </div>
 
+        {bookingError && (
+          <p
+            role="alert"
+            aria-live="assertive"
+            className="mt-4 rounded-2xl px-4 py-3 font-sans text-sm"
+            style={{
+              background: 'rgba(192,57,43,0.06)',
+              border: '1.5px solid rgba(192,57,43,0.20)',
+              color: '#C0392B',
+            }}
+          >
+            {bookingError}
+          </p>
+        )}
+
         {/* Safety acknowledgement — gates the real confirm. */}
         <SafetyAckModal
           open={safetyOpen}
           companionFirstName={companion.firstName}
           onClose={() => setSafetyOpen(false)}
-          onConfirm={() => { setSafetyOpen(false); handleConfirm(); }}
+          onConfirm={() => { setSafetyOpen(false); void handleConfirm(); }}
         />
 
         {/* Navigation (steps 0–3) */}

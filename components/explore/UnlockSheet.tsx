@@ -15,19 +15,25 @@ type PayState = "idle" | "processing" | "success";
 const HEADLINE_ID = "unlock-sheet-headline";
 
 /**
- * How the unlock was obtained.
- *  'live' — a real payment settled server-side. The DB already holds the flag;
- *           the client must NOT write it, only re-read.
- *  'demo' — no gateway in this build. The client owns the flag in localStorage.
+ * THE UNLOCK IS GRANTED BY THE SERVER, OR NOT AT ALL.
+ *
+ * This sheet used to hold a `runDemoPay()` that waited 450 ms and then called
+ * onSuccess(), which wrote the unlock flag to localStorage. It was reachable
+ * whenever payWithRazorpay() returned 'unconfigured' — and a 401 from an
+ * unauthenticated visitor once mapped to exactly that. A keyed production build
+ * would have given every visitor a free ₹199 unlock.
+ *
+ * The lesson generalises: a fallback that grants a paid benefit must not exist.
+ * When there is no gateway we say there is no gateway. `onSuccess` now fires
+ * only after `payWithRazorpay` returns 'success', which means the server
+ * verified an HMAC signature and settled the purchase itself.
  */
-export type UnlockMode = 'live' | 'demo';
-
 export function UnlockSheet({
   open, seedName, city, count, isGuest = false, onRequireAccount, onClose, onSuccess,
 }: {
   open: boolean; seedName: string; city: string;
   count: number; isGuest?: boolean; onRequireAccount?: () => void;
-  onClose: () => void; onSuccess: (mode: UnlockMode) => void;
+  onClose: () => void; onSuccess: () => void;
 }) {
   const reduced = useEffectiveReducedMotion();
   const [sel, setSel] = useState<string | null>(null);
@@ -75,18 +81,6 @@ export function UnlockSheet({
   // Unmount-only safety: never let a scheduled onSuccess fire after teardown.
   useEffect(() => () => { payTimers.current.forEach(clearTimeout); }, []);
 
-  // Demo animation: the original local simulation. Reachable ONLY when this
-  // build has no publishable Razorpay key, i.e. there is no gateway to fail.
-  // It grants the unlock for free, so it must never run in a keyed build.
-  function runDemoPay() {
-    setPay("processing");
-    const t1 = setTimeout(() => {
-      setPay("success");
-      payTimers.current.push(setTimeout(() => onSuccess('demo'), 450));
-    }, reduced ? 0 : 900);
-    payTimers.current.push(t1);
-  }
-
   function fail(message: string) {
     payingRef.current = false;
     setPay("idle");
@@ -98,17 +92,15 @@ export function UnlockSheet({
     if (!sel) return; // a payment method must be chosen first
     payingRef.current = true;
     setPayError(null);
+    setPay("processing");
 
     const result = await payWithRazorpay({ kind: "unlock" });
 
     switch (result) {
-      case "unconfigured":
-        // No gateway in this build at all — the local preview is the product.
-        runDemoPay();
-        return;
       case "success":
+        // The server verified the signature and flipped User.unlocked. Only now.
         setPay("success");
-        payTimers.current.push(setTimeout(() => onSuccess('live'), 450));
+        payTimers.current.push(setTimeout(() => onSuccess(), 450));
         return;
       case "auth_required":
         // Live gateway, but the server has no session for this visitor. Send
@@ -120,6 +112,9 @@ export function UnlockSheet({
       case "dismissed":
         payingRef.current = false;
         setPay("idle");
+        return;
+      case "unconfigured":
+        fail("Payments are not enabled on this deployment yet, so the unlock cannot be purchased.");
         return;
       case "unavailable":
         fail("Payments are temporarily unavailable. Please try again shortly.");
@@ -228,16 +223,16 @@ export function UnlockSheet({
                   <Lock size={12} aria-hidden="true" /><span>Secured by Razorpay</span>
                 </div>
               </div>
+              {/* Only ever state what v1 actually sells. Additional paid meetups
+                  are not purchasable yet, so we do not quote a price for them. */}
               <p className="text-xs text-[var(--color-ink-muted)] text-center leading-relaxed">
-                After your 2 included meetings, each meetup is ₹499. We&rsquo;ll always show the price before you book.
+                One payment, no subscription. Your 2 included meetups never expire.
               </p>
               <div className="flex items-start gap-2 rounded-[var(--radius-md)] bg-black/[.03] p-3">
                 <BadgeCheck size={16} className="mt-0.5 shrink-0 text-[var(--color-azure)]" aria-hidden="true" />
                 <p className="text-sm text-[var(--color-ink-muted)]">
-                  <span style={{ fontFamily: "var(--font-serif)" }} className="italic">
-                    &ldquo;Verification meant my family was relaxed about it too.&rdquo;
-                  </span>
-                  {" "}, Meena T., Delhi
+                  Every companion completes government-ID verification before their profile goes
+                  live. Meetups are strictly platonic and happen in public places.
                 </p>
               </div>
             </motion.div>

@@ -16,18 +16,17 @@ export interface RegFormData {
   role: 'member' | 'companion' | '';
   firstName: string;
   email: string;
-  password: string;
   dob: string;
   gender: string;
   city: string;
-  phone: string;
+  /** True once the emailed code was exchanged for a real session. */
   otpVerified: boolean;
   termsAccepted: boolean;
 }
 
 const EMPTY: RegFormData = {
-  role: '', firstName: '', email: '', password: '',
-  dob: '', gender: '', city: '', phone: '',
+  role: '', firstName: '', email: '',
+  dob: '', gender: '', city: '',
   otpVerified: false, termsAccepted: false,
 };
 

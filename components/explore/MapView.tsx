@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import type { Companion } from '@/lib/data/companions';
+import { companionsInCity } from '@/lib/data/companions';
 import { getCity, CITIES } from '@/lib/data/cities';
-import { getAreaAnchor, cityHasRealAreas } from '@/lib/data/areas';
+import { getAreaAnchor } from '@/lib/data/areas';
 import { getTileConfig } from '@/lib/map/tiles';
 import 'leaflet/dist/leaflet.css';
 
@@ -131,22 +132,29 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
     layer.clearLayers();
 
     // Other cities — a presence marker each, so zooming out to India shows the
-    // whole network. Tapping one switches to that city.
+    // whole picture. Radius used to scale with an invented `members` count, and
+    // the popup quoted it. It now reflects the real roster, and a city with
+    // nobody in it draws a small hollow ring that says so.
     CITIES.forEach((ct) => {
       if (ct.id === cityId) return;
-      const r = 6 + Math.min(ct.members / 250, 12);
+      const count = companionsInCity(ct.name).length;
+      const live = count > 0;
       const m = L.circleMarker([ct.lat, ct.lng], {
-        radius: r,
-        color: '#7A4FE0',
+        radius: live ? 6 + Math.min(count, 12) : 5,
+        color: live ? '#7A4FE0' : '#9AA3B2',
         weight: 1.5,
-        opacity: 0.5,
+        opacity: live ? 0.5 : 0.35,
         fillColor: '#7A4FE0',
-        fillOpacity: 0.25,
+        fillOpacity: live ? 0.25 : 0,
       }).addTo(layer);
       m.bindPopup(
         `<div style="font-family:system-ui,sans-serif">
            <div style="font-weight:700;font-size:14px;color:#141A2E">${ct.name}</div>
-           <div style="font-size:12px;color:#5A6378">${ct.members}+ members · tap to explore</div>
+           <div style="font-size:12px;color:#5A6378">${
+             live
+               ? `${count} verified ${count === 1 ? 'companion' : 'companions'} · tap to explore`
+               : 'Not live yet · tap to see'
+           }</div>
          </div>`,
       );
       m.on('click', () => onCityChange?.(ct.id));
@@ -244,10 +252,11 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
         </div>
       </div>
 
-      {/* Only Mumbai has verified companions and mapped neighbourhoods. Saying
-          so beats letting someone in Chennai pay ₹199 to unlock a profile that
-          is really a Mumbai person wearing a local area name. */}
-      {!cityHasRealAreas(cityId) && (
+      {/* This note used to apologise that the profiles shown were illustrative,
+          because every city re-skinned the same Mumbai people. The grid no
+          longer does that, so the only thing left to say is that we are not
+          live here. Shown when the city has no companions at all. */}
+      {companionsInCity(city.name).length === 0 && (
         <p
           className="mt-3 text-xs leading-relaxed rounded-xl px-3.5 py-2.5"
           style={{
@@ -257,8 +266,8 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
           }}
           role="note"
         >
-          Companio is fully live in <strong>Mumbai</strong>. We&rsquo;re onboarding verified companions in{' '}
-          {city.name} now, so these profiles and positions are illustrative.
+          Companio is live in <strong>Mumbai</strong> and <strong>Indore</strong>. No companion lists
+          in {city.name} yet, so this map is empty rather than invented.
         </p>
       )}
 

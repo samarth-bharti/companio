@@ -4,14 +4,10 @@ import { CountUp } from '@/components/motion/CountUp';
 import { calm } from '@/lib/motion';
 import { useCompanionDashboard } from '@/lib/useCompanionDashboard';
 
-// Illustrative figures for the PUBLIC PREVIEW only — a signed-out visitor, or a
-// member who is not a companion. They are never shown to a real companion, and
-// never shown when a request fails. See the note in lib/useCompanionDashboard.
-const PREVIEW = [
-  { label: 'Owed to you', value: 1996 },
-  { label: 'Paid out', value: 7485 },
-  { label: 'Lifetime', value: 9481 },
-] as const;
+// There used to be a PREVIEW array here — ₹1,996 owed, ₹7,485 paid out, ₹9,481
+// lifetime — shown to any signed-out visitor. Money figures are not decoration.
+// A companion who signed in on a second device and hit a 403 for a moment saw
+// earnings they had not made. Every state but `live` now shows a dash.
 
 function Card({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -60,9 +56,7 @@ export function CompanionDashEarnings() {
           { label: 'Paid out', value: Math.round(state.data.earnings.paidPaise / 100) },
           { label: 'Lifetime', value: Math.round(state.data.earnings.totalPaise / 100) },
         ]
-      : state.status === 'preview'
-        ? PREVIEW.map((c) => ({ label: c.label, value: c.value }))
-        : null;
+      : null;
 
   return (
     <section aria-labelledby="earnings-heading">

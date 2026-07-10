@@ -21,7 +21,9 @@ function buildLines(answers: QuizAnswers): string[] {
     : 'your schedule';
 
   return [
-    `Scanning 2,300+ verified members in ${city}…`,
+    // Never quote a member count here. The old copy said "2,300+ verified
+    // members in {city}" for every city, including ones with no companions.
+    `Scanning verified companions in ${city}…`,
     `Matching your activities, ${topActivities}…`,
     `Checking who's free ${timePref}…`,
     answers.comfort.sameGender

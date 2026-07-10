@@ -9,16 +9,18 @@ import { BadgeCheck, Heart, Plus, Check, MapPin, Languages } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { durations } from '@/lib/motion';
 import type { Companion } from '@/lib/data/companions';
+import { RatingBadge } from '@/components/companion/RatingBadge';
 
 /*
  * Pulse-ring keyframe lives in app/globals.css (companio-pulse-ring) — this
  * component injects zero <style> tags.
  */
 
-/** "New this week" — reviews < 45 */
-function isNew(c: Companion) { return c.reviews < 45; }
-/** "Popular" — reviews > 100 */
-function isPopular(c: Companion) { return c.reviews > 100; }
+// A companion nobody has reviewed yet is new. The old thresholds — new below 45
+// reviews, popular above 100 — sorted a catalogue in which every single profile
+// was hardcoded to 124 reviews, so every profile was "Popular" and none was new.
+function isNew(c: Companion) { return c.reviews === 0; }
+function isPopular(c: Companion) { return c.reviews >= 25; }
 
 interface CompanionCardProps {
   companion: Companion;
@@ -114,7 +116,9 @@ export const CompanionCard = memo(function CompanionCard({
                 : { background: 'rgba(255,178,62,0.94)', color: '#141A2E', backdropFilter: 'blur(4px)' }
             }
           >
-            {isNew(companion) ? 'New this week' : 'Popular'}
+            {/* "New this week" claimed a join date we do not track. "New" is
+                simply what having no reviews means. */}
+            {isNew(companion) ? 'New' : 'Popular'}
           </div>
         ) : null}
 
@@ -167,10 +171,7 @@ export const CompanionCard = memo(function CompanionCard({
       <div className="p-3.5 flex flex-col gap-2.5">
         {/* Meta line: rating · distance · availability */}
         <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-          <span className="inline-flex items-center gap-0.5 text-sm font-bold text-ink" aria-label={`Rated ${rating} out of 5, ${reviews} reviews`}>
-            <span style={{ color: 'var(--color-gold)' }}>★</span> {rating}
-            <span className="text-xs font-normal" style={{ color: 'var(--color-ink-muted)' }}>({reviews})</span>
-          </span>
+          <RatingBadge rating={rating} reviews={reviews} />
           {isUnlockedGrid && (
             <>
               <span aria-hidden="true">·</span>

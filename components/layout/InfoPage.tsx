@@ -16,13 +16,14 @@ interface InfoPageProps {
   title: string;
   intro: string;
   sections: InfoSection[];
-  /** Replaces the default footnote. Pass a real "last updated" line on binding
-   *  legal pages so they don't carry the "illustrative" demo disclaimer. */
+  /** Replaces the default footnote — e.g. a page-specific "last updated" date. */
   footnote?: string;
+  /** Rendered after the sections. Used by /contact for its form. */
+  children?: React.ReactNode;
 }
 
 /** Shared layout for legal / policy / trust pages — calm, readable, real text. */
-export function InfoPage({ eyebrow, title, intro, sections, footnote }: InfoPageProps) {
+export function InfoPage({ eyebrow, title, intro, sections, footnote, children }: InfoPageProps) {
   // First character becomes a large faint ghost behind the title block.
   const ghost = title.charAt(0);
 
@@ -109,9 +110,17 @@ export function InfoPage({ eyebrow, title, intro, sections, footnote }: InfoPage
               </Reveal>
             ))}
           </div>
+
+          {children && <div className="mt-12">{children}</div>}
+
+          {/* The default footnote used to end with "This is a product
+              demonstration; policies shown are illustrative." It was printed at
+              the bottom of the Terms of Service and the Privacy Policy — the two
+              documents whose entire value is that they are not illustrative. A
+              policy that disclaims itself binds nobody, and tells a user their
+              DPDPA rights are a mock-up. */}
           <p className="font-sans text-xs mt-16 mb-8" style={{ color: 'rgba(20,26,46,0.4)' }}>
-            {footnote ??
-              'Last updated June 2026 · TRYCOMPANIOLABS LLP · This is a product demonstration; policies shown are illustrative.'}
+            {footnote ?? `Last updated July 2026 · ${'TRYCOMPANIOLABS LLP'}`}
           </p>
         </div>
       </main>

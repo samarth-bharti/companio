@@ -9,6 +9,8 @@
 //
 // Never throws. Callers can fire-and-forget or check the result — their choice.
 
+import { envValue } from '@/lib/env';
+
 const RESEND_URL = 'https://api.resend.com/emails';
 
 type SendResult =
@@ -21,14 +23,16 @@ export async function sendEmail(msg: {
   html: string;
   text?: string;
 }): Promise<SendResult> {
-  const apiKey = process.env.RESEND_API_KEY;
+  // envValue(), not process.env: a `[[paste yours]]` key must read as absent, or
+  // every send fails with a 401 that the caller reports as "email sent".
+  const apiKey = envValue('RESEND_API_KEY');
 
   if (!apiKey) {
     console.info('[email] RESEND_API_KEY not set — email dormant, skipping send');
     return { sent: false, reason: 'email_disabled' };
   }
 
-  const from = process.env.EMAIL_FROM ?? 'Companio <hello@companio.app>';
+  const from = envValue('EMAIL_FROM') ?? 'Companio <hello@trycompanio.com>';
 
   let res: Response;
   try {

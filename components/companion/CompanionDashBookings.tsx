@@ -1,26 +1,26 @@
 'use client';
 
-import { MapPin, CalendarDays } from 'lucide-react';
+import { useState } from 'react';
+import { CalendarDays, MapPin } from 'lucide-react';
 import { useCompanionDashboard, type CompanionMeetup } from '@/lib/useCompanionDashboard';
 
 /**
- * A companion's confirmed, upcoming meetups.
+ * A companion's confirmed, upcoming meetups — and, now, the ability to decline one.
  *
- * This used to be "Pending requests" with Accept and Decline buttons over two
- * invented members, Arjun M. and Meera K. There is no such flow: `BookingStatus`
- * is `pending_payment | upcoming | completed | cancelled | refunded`. A booking
- * becomes `upcoming` the moment payment settles — nobody accepts it, and nothing
- * in the schema could record a decline. The buttons wrote a local notification
- * and changed nothing.
+ * The history here is worth keeping. This panel originally showed "Pending
+ * requests" with Accept and Decline buttons over two invented members, Arjun M.
+ * and Meera K. No such flow existed: `BookingStatus` had no state for a decline,
+ * so the buttons wrote a local notification and changed nothing. They were
+ * removed, with a note saying the status had to exist first.
  *
- * If companions should be able to decline, that needs a status in the model
- * first. Until then, showing them what is actually booked is the honest version.
+ * It exists now. `BookingStatus.declined` is a real state, and
+ * `POST /api/companion/bookings/:id/decline` returns the member's credit inside
+ * the same transaction that sets it. So the button is back, and this time it
+ * does what it says.
+ *
+ * A booking is only declinable while `upcoming` and unpaid-by-card. The server
+ * enforces both; the UI merely reflects them.
  */
-
-const PREVIEW: CompanionMeetup[] = [
-  { id: 'p1', activity: 'City Walk', dateISO: '2026-08-15', time: 'Morning · 7–9 AM', place: 'Carter Road', status: 'upcoming', memberFirstName: 'Arjun' },
-  { id: 'p2', activity: 'Café Chat', dateISO: '2026-08-17', time: 'Afternoon · 3–5 PM', place: 'Prithvi Café', status: 'upcoming', memberFirstName: 'Meera' },
-];
 
 function formatDate(iso: string): string {
   const d = new Date(`${iso}T00:00:00`);
@@ -36,6 +36,117 @@ function Panel({ children }: { children: React.ReactNode }) {
       </h2>
       {children}
     </section>
+  );
+}
+
+function MeetupCard({
+  m,
+  onDeclined,
+}: {
+  m: CompanionMeetup;
+  onDeclined: () => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function decline() {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/companion/bookings/${m.id}/decline`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(
+          body.error === 'refund_not_supported'
+            ? 'This meetup was paid by card. Contact support to cancel it.'
+            : body.error === 'not_declinable'
+              ? 'This meetup can no longer be declined.'
+              : 'Something went wrong. Please try again.',
+        );
+        setBusy(false);
+        return;
+      }
+      onDeclined();
+    } catch {
+      setError('Network error. Please try again.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className="rounded-2xl p-5"
+      style={{
+        background: 'var(--color-surface)',
+        border: '1.5px solid rgba(46,107,255,0.1)',
+        boxShadow: 'var(--shadow-1)',
+      }}
+    >
+      <p className="font-sans font-bold text-sm mb-1" style={{ color: 'var(--color-ink)' }}>
+        {m.memberFirstName}
+        <span
+          className="ml-2 font-normal text-xs px-2 py-0.5 rounded-pill"
+          style={{ background: 'rgba(46,107,255,0.08)', color: 'var(--color-azure-deep)' }}
+        >
+          {m.activity}
+        </span>
+      </p>
+      <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+        {formatDate(m.dateISO)} · {m.time}
+      </p>
+      <p className="font-sans text-xs flex items-center gap-1 mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
+        <MapPin size={11} aria-hidden="true" />
+        {m.place}
+      </p>
+
+      {error && (
+        <p role="alert" className="mt-3 font-sans text-xs" style={{ color: '#C0392B' }}>
+          {error}
+        </p>
+      )}
+
+      {!confirming ? (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="mt-3 h-11 px-4 rounded-pill font-sans font-semibold text-xs"
+          style={{ color: 'var(--color-ink-muted)', border: '1.5px solid rgba(20,26,46,0.14)' }}
+        >
+          Can&apos;t make it
+        </button>
+      ) : (
+        <div className="mt-3">
+          <p className="font-sans text-xs mb-2" style={{ color: 'var(--color-ink-muted)' }}>
+            {m.memberFirstName} will be told, and their included meetup returned. This cannot be undone.
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={busy}
+              className="h-11 px-4 rounded-pill font-sans font-semibold text-xs disabled:opacity-60"
+              style={{ color: 'var(--color-ink-muted)', border: '1.5px solid rgba(20,26,46,0.14)' }}
+            >
+              Keep it
+            </button>
+            <button
+              type="button"
+              onClick={decline}
+              disabled={busy}
+              className="h-11 px-4 rounded-pill font-sans font-bold text-xs text-white disabled:opacity-60"
+              style={{ background: '#C0392B' }}
+            >
+              {busy ? 'Declining…' : 'Decline meetup'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -57,15 +168,40 @@ export function CompanionDashBookings() {
   if (state.status === 'error') {
     return (
       <Panel>
-        <p role="alert" className="font-sans text-sm rounded-2xl p-5"
-          style={{ background: 'rgba(192,57,43,0.06)', border: '1.5px solid rgba(192,57,43,0.2)', color: '#C0392B' }}>
+        <p
+          role="alert"
+          className="font-sans text-sm rounded-2xl p-5"
+          style={{ background: 'rgba(192,57,43,0.06)', border: '1.5px solid rgba(192,57,43,0.2)', color: '#C0392B' }}
+        >
           {state.message}
         </p>
       </Panel>
     );
   }
 
-  const meetups = state.status === 'live' ? state.data.upcoming : PREVIEW;
+  // Signed out, or not a companion. This used to render two invented meetups
+  // with real-looking member names. There is nothing to preview: a meetup list
+  // is by definition private to the companion it belongs to.
+  if (state.status === 'preview') {
+    return (
+      <Panel>
+        <div
+          className="rounded-2xl p-8 text-center"
+          style={{ background: 'var(--color-surface)', border: '1.5px solid rgba(46,107,255,0.1)' }}
+        >
+          <CalendarDays size={22} className="mx-auto mb-2" style={{ color: 'var(--color-ink-muted)' }} aria-hidden="true" />
+          <p className="font-sans text-sm font-semibold" style={{ color: 'var(--color-ink)' }}>
+            Sign in as a companion to see your meetups.
+          </p>
+          <p className="font-sans text-xs mt-1" style={{ color: 'var(--color-ink-muted)' }}>
+            Members&apos; bookings are private, so there is nothing to show here until you do.
+          </p>
+        </div>
+      </Panel>
+    );
+  }
+
+  const meetups = state.data.upcoming;
 
   if (meetups.length === 0) {
     return (
@@ -90,32 +226,7 @@ export function CompanionDashBookings() {
     <Panel>
       <div className="space-y-3">
         {meetups.map((m) => (
-          <div
-            key={m.id}
-            className="rounded-2xl p-5"
-            style={{
-              background: 'var(--color-surface)',
-              border: '1.5px solid rgba(46,107,255,0.1)',
-              boxShadow: 'var(--shadow-1)',
-            }}
-          >
-            <p className="font-sans font-bold text-sm mb-1" style={{ color: 'var(--color-ink)' }}>
-              {m.memberFirstName}
-              <span
-                className="ml-2 font-normal text-xs px-2 py-0.5 rounded-pill"
-                style={{ background: 'rgba(46,107,255,0.08)', color: 'var(--color-azure-deep)' }}
-              >
-                {m.activity}
-              </span>
-            </p>
-            <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-              {formatDate(m.dateISO)} · {m.time}
-            </p>
-            <p className="font-sans text-xs flex items-center gap-1 mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
-              <MapPin size={11} aria-hidden="true" />
-              {m.place}
-            </p>
-          </div>
+          <MeetupCard key={m.id} m={m} onDeclined={state.refresh} />
         ))}
       </div>
     </Panel>

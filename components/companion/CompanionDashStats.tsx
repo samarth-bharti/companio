@@ -64,14 +64,16 @@ const PLACEHOLDER = (
 export function CompanionDashStats() {
   const state = useCompanionDashboard();
 
-  // Illustrative, for the signed-out marketing preview only.
-  const preview = { upcoming: 2, completed: 34, rating: 4.9, reviewCount: 41 };
+  // The signed-out preview used to show `{ upcoming: 2, completed: 34, rating:
+  // 4.9, reviewCount: 41 }` — an "illustrative" companion doing rather well. It
+  // is a dashboard, not a brochure. Every state that is not `live` shows a dash,
+  // so a figure on this page always means somebody's real figure.
   const live = state.status === 'live' ? state.data : null;
 
-  const upcoming = live ? live.earnings.upcomingBookings : state.status === 'preview' ? preview.upcoming : null;
-  const completed = live ? live.earnings.completedBookings : state.status === 'preview' ? preview.completed : null;
-  const rating = live ? live.profile.rating : state.status === 'preview' ? preview.rating : null;
-  const reviews = live ? live.profile.reviewCount : state.status === 'preview' ? preview.reviewCount : null;
+  const upcoming = live ? live.earnings.upcomingBookings : null;
+  const completed = live ? live.earnings.completedBookings : null;
+  const rating = live ? live.profile.rating : null;
+  const reviews = live ? live.profile.reviewCount : null;
 
   return (
     <section aria-labelledby="stats-heading">

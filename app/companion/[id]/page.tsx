@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { type Metadata } from 'next';
-import { getCompanion } from '@/lib/data/companions';
+import { findVisibleCompanion } from '@/lib/server/catalogue';
 import { Nav } from '@/components/layout/Nav';
 import { BackBar } from '@/components/layout/BackBar';
 import { Footer } from '@/components/layout/Footer';
@@ -11,9 +11,12 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+// Read from the database, not from lib/data/companions. A profile an admin
+// suspended must 404, and a newly approved applicant must resolve — neither
+// happened while this page rendered a bundled array.
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const companion = getCompanion(id);
+  const companion = await findVisibleCompanion(id);
   if (!companion) return { title: 'Not found, Companio' };
   return {
     title: `${companion.name}, Companio`,
@@ -24,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CompanionPage({ params }: Props) {
   const { id } = await params;
-  const companion = getCompanion(id);
+  const companion = await findVisibleCompanion(id);
   if (!companion) notFound();
   return (
     <>

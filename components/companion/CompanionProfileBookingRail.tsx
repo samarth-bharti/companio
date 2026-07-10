@@ -53,7 +53,10 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
   }, []);
 
   const hasCredits = (wallet?.credits ?? 0) > 0;
-  const topReview  = companion.reviewsList.find((r) => r.stars === 5) ?? companion.reviewsList[0];
+  // May be undefined: an unreviewed companion has an empty reviewsList. This
+  // used to be indexed straight into (`topReview.text`), which crashed the whole
+  // profile page the moment the fabricated reviews were removed.
+  const topReview = companion.reviewsList.find((r) => r.stars === 5) ?? companion.reviewsList[0];
 
   function handleBook() {
     router.push(`/book?companion=${companion.id}`);
@@ -64,10 +67,10 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <p className="font-sans font-semibold text-sm truncate" style={{ color: 'var(--color-ink)' }}>
-            {hasCredits ? `1 of ${wallet?.credits} included meetings` : '₹499 per meetup'}
+            {hasCredits ? `1 of ${wallet?.credits} included meetings` : 'Both included meetings used'}
           </p>
           <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-            {hasCredits ? '₹0 today' : 'Public places only'}
+            {hasCredits ? '₹0 today' : 'Paid meetups coming soon'}
           </p>
         </div>
         <Button variant="cta" size="lg" onClick={handleBook} style={{ minHeight: 44, minWidth: 44 }}>
@@ -100,29 +103,44 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
         </p>
       </div>
 
-      {/* Trust snippet */}
+      {/* Trust snippet — a real review if one exists, otherwise the guarantee
+          that actually applies to an unreviewed companion. */}
       <div
         className="rounded-md p-3 space-y-1.5"
         style={{ background: 'var(--color-azure-tint)' }}
       >
-        <div className="flex items-center gap-2">
-          <StarMini rating={companion.rating} />
-          <span className="font-sans font-semibold text-sm" style={{ color: 'var(--color-ink)' }}>
-            {companion.rating.toFixed(1)}
-          </span>
-          <span className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-            ({companion.reviews})
-          </span>
-        </div>
-        <p
-          className="font-serif text-xs leading-relaxed"
-          style={{ fontFamily: 'var(--font-serif)', color: 'var(--color-ink)' }}
-        >
-          &ldquo;{topReview.text.slice(0, 90)}{topReview.text.length > 90 ? '…' : ''}&rdquo;
-        </p>
-        <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-, {topReview.name}
-        </p>
+        {topReview ? (
+          <>
+            <div className="flex items-center gap-2">
+              <StarMini rating={companion.rating} />
+              <span className="font-sans font-semibold text-sm" style={{ color: 'var(--color-ink)' }}>
+                {companion.rating.toFixed(1)}
+              </span>
+              <span className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+                ({companion.reviews})
+              </span>
+            </div>
+            <p
+              className="font-serif text-xs leading-relaxed"
+              style={{ fontFamily: 'var(--font-serif)', color: 'var(--color-ink)' }}
+            >
+              &ldquo;{topReview.text.slice(0, 90)}{topReview.text.length > 90 ? '…' : ''}&rdquo;
+            </p>
+            <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+              , {topReview.name}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-sans font-semibold text-sm" style={{ color: 'var(--color-ink)' }}>
+              No reviews yet
+            </p>
+            <p className="font-sans text-xs leading-relaxed" style={{ color: 'var(--color-ink-muted)' }}>
+              {companion.firstName}&rsquo;s government ID has been verified. If the meetup isn&rsquo;t right,
+              tell us within 7 days and we&rsquo;ll refund the unlock in full.
+            </p>
+          </>
+        )}
       </div>
 
       {/* Book CTA — one-time gentle nudge on mount, no loop, no urgency */}

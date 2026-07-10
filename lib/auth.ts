@@ -1,25 +1,27 @@
 // lib/auth.ts
 //
-// Auth.js (next-auth v4) configuration.
+// Auth.js (next-auth v4) configuration. Companio is passwordless. There are
+// exactly two ways to become a signed-in user, and both end at a real server
+// session:
 //
-// BOTH real providers are drafted here behind an env switch, so going live is a
-// matter of supplying credentials — no code change:
-//   • Google OAuth   — auto-enabled once GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET
-//                      are set.
-//   • Phone OTP      — the credentials form is always registered; authorize()
-//                      stays a no-op until an SMS gateway (SMS_API_KEY) is wired
-//                      and verifyOtp() is implemented.
-// Until either is configured, sign-in is inert (no session) and every protected
-// route returns 401 — exactly today's behaviour.
+//   • Google OAuth  — enabled once GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET exist.
+//   • Email code    — a six-digit code, minted and checked server-side by
+//                     lib/server/otp.ts. Always available where there is a
+//                     database and a session secret.
 //
-// We use the JWT session strategy (not the Prisma adapter) so we own the User
-// row — a better fit for phone-OTP onboarding. Every successful sign-in maps to
-// a User row via upsertUser(), and the rest of the app keys off `session.user.id`.
+// There is no password provider and there never was one that worked. There is
+// no phone provider yet: sending an SMS in India needs TRAI DLT registration,
+// which needs a registered business. Email needs neither.
+//
+// We use the JWT session strategy rather than the Prisma adapter so we own the
+// User row outright. Every successful sign-in maps to one, and the rest of the
+// app keys off `session.user.id`.
 
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { envValue } from '@/lib/env';
+import { normaliseEmail, verifySignInCode } from '@/lib/server/otp';
 
 /**
  * Find-or-create our own User row for an external identity, returning its id.
@@ -28,39 +30,32 @@ import { envValue } from '@/lib/env';
  */
 async function upsertUser(opts: {
   email?: string | null;
-  phone?: string | null;
   name?: string | null;
+  firstName?: string | null;
 }): Promise<{ id: string; firstName: string } | null> {
   if (!envValue('DATABASE_URL')) return null;
-  const where = opts.email
-    ? { email: opts.email }
-    : opts.phone
-      ? { phone: opts.phone }
-      : null;
-  if (!where) return null;
-  const firstName = opts.name?.trim().split(/\s+/)[0] || 'Friend';
+  if (!opts.email) return null;
+  const email = normaliseEmail(opts.email);
+
+  // Prefer an explicit firstName (the register wizard collects one) over the
+  // leading token of an OAuth display name. Never invent one from the local
+  // part of the address — "no.reply@" should not become a user called "No".
+  const firstName =
+    opts.firstName?.trim() || opts.name?.trim().split(/\s+/)[0] || 'Friend';
+
   const { prisma } = await import('@/lib/prisma');
   return prisma.user.upsert({
-    where,
+    where: { email },
     update: {},
-    create: { ...where, firstName },
+    create: { email, firstName },
     select: { id: true, firstName: true },
   });
-}
-
-/**
- * Verify a one-time code for a phone number. TODO(go-live): check `otp` against
- * the code sent to `phone` (store codes in Redis/DB with a short TTL via the SMS
- * gateway). Returns false until that is wired, so OTP sign-in stays inert.
- */
-async function verifyOtp(_phone: string, _otp: string): Promise<boolean> {
-  return false;
 }
 
 function buildProviders(): NextAuthOptions['providers'] {
   const providers: NextAuthOptions['providers'] = [];
 
-  // ── Option A — Google OAuth (auto-enabled once its env vars are present) ──
+  // ── Google OAuth (auto-enabled once its env vars are present) ──
   // envValue() treats `[[fill me in]]` as absent: registering a provider with a
   // placeholder client id gets you a Google error page instead of a sign-in
   // button that honestly says "not configured".
@@ -70,22 +65,33 @@ function buildProviders(): NextAuthOptions['providers'] {
     providers.push(GoogleProvider({ clientId: googleId, clientSecret: googleSecret }));
   }
 
-  // ── Option B — Phone OTP (form always present; inert until SMS is wired) ──
+  // ── Email code ──
+  // The code was already delivered by POST /api/auth/otp. authorize() only
+  // checks it. A wrong code returns null, which next-auth surfaces to the client
+  // as a failed sign-in — it never mints a session.
   providers.push(
     CredentialsProvider({
-      name: 'Phone OTP',
+      id: 'email-otp',
+      name: 'Email code',
       credentials: {
-        phone: { label: 'Phone', type: 'text' },
-        otp: { label: 'OTP', type: 'text' },
+        email: { label: 'Email', type: 'email' },
+        code: { label: 'Code', type: 'text' },
+        // Carried through registration so the new row gets the name the user
+        // typed. Ignored for an existing account: upsert's `update` is empty,
+        // so this can never overwrite someone else's profile.
+        firstName: { label: 'First name', type: 'text' },
       },
       async authorize(credentials) {
-        if (!envValue('SMS_API_KEY')) return null; // gateway not configured
-        const phone = credentials?.phone?.trim();
-        const otp = credentials?.otp?.trim();
-        if (!phone || !otp) return null;
-        if (!(await verifyOtp(phone, otp))) return null;
-        const user = await upsertUser({ phone });
-        return user ? { id: user.id, name: user.firstName } : null;
+        if (!envValue('DATABASE_URL')) return null;
+        const email = credentials?.email?.trim();
+        const code = credentials?.code?.trim();
+        if (!email || !code) return null;
+
+        const result = await verifySignInCode(email, code);
+        if (!result.ok) return null;
+
+        const user = await upsertUser({ email, firstName: credentials?.firstName });
+        return user ? { id: user.id, email: normaliseEmail(email), name: user.firstName } : null;
       },
     }),
   );
@@ -96,9 +102,10 @@ function buildProviders(): NextAuthOptions['providers'] {
 export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   providers: buildProviders(),
+  pages: { signIn: '/login' },
   callbacks: {
-    // Stamp our own User.id onto the token. Credentials sign-in already returns
-    // our id; OAuth sign-ins are upserted to a User row here (keyed by email).
+    // Stamp our own User.id onto the token. The credentials provider already
+    // returns our id; OAuth sign-ins are upserted to a User row here.
     async jwt({ token, user, account }) {
       if (user && account?.provider === 'google') {
         const row = await upsertUser({ email: user.email, name: user.name });

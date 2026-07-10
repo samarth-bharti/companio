@@ -10,7 +10,7 @@
 
 const BRAND_COLOR = '#6B46C1'; // purple — matches the UI
 const FOOTER_TEXT = `You're receiving this because you have a Companio account.
-To manage your notification preferences, visit companio.app/settings.`;
+To manage your notification preferences, visit trycompanio.com/dashboard.`;
 
 function layout(bodyHtml: string): string {
   return `<!DOCTYPE html>
@@ -161,7 +161,7 @@ export function receiptEmail(opts: {
       ${detail('Description', description)}
       ${detail('Amount paid', rupees)}
     </table>
-    ${p(`Questions about this charge? Contact us at <a href="mailto:support@companio.app" style="color:${BRAND_COLOR};">support@companio.app</a>.`)}
+    ${p(`Questions about this charge? Contact us at <a href="mailto:support@trycompanio.com" style="color:${BRAND_COLOR};">support@trycompanio.com</a>.`)}
     ${p(`Thank you for being part of Companio.<br><strong>The Companio Team</strong>`)}
   `;
 
@@ -173,7 +173,7 @@ export function receiptEmail(opts: {
     `Description : ${description}`,
     `Amount paid : ${rupees}`,
     ``,
-    `Questions? Email support@companio.app.`,
+    `Questions? Email support@trycompanio.com.`,
     ``,
     `— The Companio Team`,
   ].join('\n');

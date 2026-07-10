@@ -55,8 +55,8 @@ export function FinalCtaSection() {
 
           <Reveal delay={0.16}>
             <p className="text-lead mb-10" style={{ color: "rgba(255,255,255,0.75)" }}>
-              Join 28,000+ members across India who explore cities, stay active, and
-              make memories, with warm, verified company.
+              Explore your city, stay active, and make memories, with warm, ID-verified
+              company. Strictly platonic, always.
             </p>
           </Reveal>
 

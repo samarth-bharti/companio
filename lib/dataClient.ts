@@ -148,9 +148,32 @@ export function makeLocalStorageDataClient(): DataClient {
       const { getBookings } = await import('./appState');
       return getBookings();
     },
+    /**
+     * Creating a booking is one operation, not three.
+     *
+     * `POST /api/bookings` spends the credit, writes the ledger row, creates the
+     * booking and notifies — all inside one transaction. The local client used
+     * to do only the third of those, leaving BookingWizard to call
+     * decrementMeeting() and addNotification() itself. Which meant that in http
+     * mode the wizard decremented the wallet a second time, client-side, on top
+     * of the server's spend.
+     *
+     * Both clients now mean the same thing by `addBooking`, so no caller has to
+     * know which one it is talking to.
+     */
     async addBooking(b) {
-      const { addBooking } = await import('./appState');
-      return addBooking(b);
+      const { addBooking, addNotification } = await import('./appState');
+      const { getWallet, decrementMeeting } = await import('./journeyState');
+      if (b.usedCredit) {
+        if (getWallet().credits <= 0) throw new Error('insufficient_credits');
+        decrementMeeting();
+      }
+      const booking = addBooking(b);
+      addNotification({
+        title: 'Meetup confirmed',
+        body: `Your ${b.activity} on ${b.dateISO} is booked. Free to cancel any time before you meet.`,
+      });
+      return booking;
     },
     async updateBooking(id, patch) {
       const { updateBooking } = await import('./appState');

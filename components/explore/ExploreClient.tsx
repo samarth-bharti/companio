@@ -5,16 +5,15 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { getUnlocked, getUser } from '@/lib/journeyState';
-import { dataClient } from '@/lib/dataClient';
 import { emitDataChange } from '@/lib/dataEvents';
 import { track } from '@/lib/analytics';
-import { COMPANIONS, TOP_MATCH_ID, FREE_NOW_COUNT } from '@/lib/data/companions';
+import { topMatchIdFor, freeNowCountIn } from '@/lib/data/companions';
 import type { Companion } from '@/lib/data/companions';
 import { ExploreHeader } from './ExploreHeader';
 import { ExploreFilters } from './ExploreFilters';
 import type { ViewMode } from './ExploreFilters';
 import { CompanionGrid } from './CompanionGrid';
-import { UnlockSheet, type UnlockMode } from './UnlockSheet';
+import { UnlockSheet } from './UnlockSheet';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
 import { ParticleField } from '@/components/journey/ParticleField';
 import { ActivityToast } from '@/components/journey/ActivityToast';
@@ -24,13 +23,6 @@ import { CompareTray } from './CompareTray';
 import { MapView } from './MapView';
 import { ActivityTicker } from './ActivityTicker';
 
-// Top non-topMatch companions sorted by matchScore — used for "Surprise me".
-// Derived from a module-level constant so safe to define outside the component.
-const SURPRISE_CANDIDATES = COMPANIONS
-  .filter((c) => !c.topMatch)
-  .sort((a, b) => b.matchScore - a.matchScore)
-  .slice(0, 4)
-  .map((c) => c.id);
 
 /**
  * ExploreClient — full explore-page orchestrator (spec §4.1 + §4.4).
@@ -72,17 +64,6 @@ export function ExploreClient() {
   const surpriseIdxRef = useRef(0);
   const [highlightId, setHighlightId] = useState<string | null>(null);
 
-  const handleSurpriseMe = useCallback(() => {
-    // Locked users only have the top match clear — point them at it (drives
-    // unlock). Unlocked users cycle through strong non-top candidates.
-    const id = unlocked
-      ? SURPRISE_CANDIDATES[surpriseIdxRef.current % SURPRISE_CANDIDATES.length]
-      : TOP_MATCH_ID;
-    surpriseIdxRef.current += 1;
-    setHighlightId(null);
-    // small delay so CompanionGrid sees a fresh id even if it's the same one
-    setTimeout(() => setHighlightId(id), 40);
-  }, [unlocked]);
 
   // ── Filter / city / favorites state (via hook) ────────────────────────────
   const {
@@ -94,18 +75,45 @@ export function ExploreClient() {
     freeNowOnly, setFreeNowOnly,
     favorites, toggleFav,
     quizDone, quizName,
+    cityCompanions,
     filteredCompanions,
     isFiltered, clearFilters,
+    loading, loadError,
   } = useExploreFilters();
+
+  // The one profile a locked visitor sees unblurred, in THIS city. Undefined
+  // when the city has no companions — there is nothing to tease.
+  const teaserId = topMatchIdFor(selectedCity.name);
+
+  const handleSurpriseMe = useCallback(() => {
+    // Locked visitors only have the teaser clear — point them at it, which is
+    // what drives the unlock. Unlocked visitors cycle through strong candidates
+    // in the city they are actually looking at.
+    const candidates = unlocked
+      ? cityCompanions.filter((c) => c.id !== teaserId).sort((a, b) => b.matchScore - a.matchScore).slice(0, 4)
+      : [];
+    const id = candidates.length
+      ? candidates[surpriseIdxRef.current % candidates.length].id
+      : teaserId;
+    if (!id) return;
+    surpriseIdxRef.current += 1;
+    setHighlightId(null);
+    // small delay so CompanionGrid sees a fresh id even if it's the same one
+    setTimeout(() => setHighlightId(id), 40);
+  }, [unlocked, cityCompanions, teaserId]);
 
   // Hydrate unlock state from localStorage (SSR-safe; hook handles quiz/favorites).
   useEffect(() => {
     setSignedIn(getUser() !== null);
-    if (getUnlocked()) {
-      setUnlocked(true);
-      setUnlockedCount(COMPANIONS.length);
-    }
+    if (getUnlocked()) setUnlocked(true);
   }, []);
+
+  // The "N of M unlocked" chip counts the city actually on screen. It used to
+  // count COMPANIONS.length — every companion everywhere — which meant Jaipur
+  // proudly reported 14 unlocked profiles while showing none.
+  useEffect(() => {
+    setUnlockedCount(unlocked ? cityCompanions.length : Math.min(1, cityCompanions.length));
+  }, [unlocked, cityCompanions.length]);
 
   const openSheet = useCallback((c: Companion) => {
     setSeed(c);
@@ -123,25 +131,19 @@ export function ExploreClient() {
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  const onSheetSuccess = useCallback((mode: UnlockMode) => {
+  const onSheetSuccess = useCallback(() => {
     if (sequenceStartedRef.current) return; // sequence already ran
     sequenceStartedRef.current = true;
-    const tappedId = seed?.id ?? TOP_MATCH_ID;
+    const tappedId = seed?.id ?? teaserId;
     setSheetOpen(false);
     setUnlocked(true);
-    setUnlockedCount(COMPANIONS.length);
 
-    if (mode === 'demo') {
-      // No gateway in this build — the client owns the flag.
-      void dataClient.setUnlocked(true);
-    } else {
-      // A verified payment already flipped User.unlocked server-side. Writing it
-      // from here would be a payment bypass in disguise; just tell the rest of
-      // the app to re-read it (Nav's chip, the dashboard, the wallet).
-      emitDataChange('unlocked');
-    }
-    track('unlock_success', { method: mode });
-    setDeveloping({ tappedId });
+    // A verified payment already flipped User.unlocked server-side. Writing the
+    // flag from here would be a payment bypass in disguise; just tell the rest
+    // of the app to re-read it (Nav's chip, the dashboard, the wallet).
+    emitDataChange('unlocked');
+    track('unlock_success', { method: 'razorpay' });
+    if (tappedId) setDeveloping({ tappedId });
 
     const later = (fn: () => void, ms: number) =>
       timersRef.current.push(setTimeout(fn, ms));
@@ -183,7 +185,12 @@ export function ExploreClient() {
     });
   }, []);
 
-  const seedName = seed ? (unlocked ? seed.firstName : seed.maskedName) : 'Ananya';
+  // Falls back to this city's teaser rather than a hardcoded 'Ananya', who does
+  // not exist outside Mumbai.
+  const teaser = cityCompanions.find((c) => c.id === teaserId);
+  const seedName = seed
+    ? (unlocked ? seed.firstName : seed.maskedName)
+    : (teaser ? (unlocked ? teaser.firstName : teaser.maskedName) : 'them');
   const sealLabel = `You're in${quizName ? `, ${quizName}.` : '.'}`;
 
   return (
@@ -193,11 +200,11 @@ export function ExploreClient() {
         name={quizName}
         cityName={selectedCity.name}
         unlockedCount={unlockedCount}
-        members={selectedCity.members}
+        cityCount={cityCompanions.length}
         selectedCityId={cityId}
         onCityChange={setCityId}
         quizDone={quizDone}
-        freeNowCount={FREE_NOW_COUNT}
+        freeNowCount={freeNowCountIn(selectedCity.name)}
       />
 
       <ActivityTicker />
@@ -235,6 +242,10 @@ export function ExploreClient() {
             compareIds={compareIds}
             onToggleCompare={unlocked ? toggleCompare : undefined}
             highlightId={highlightId}
+            cityName={selectedCity.name}
+            cityIsEmpty={cityCompanions.length === 0}
+            loading={loading}
+            loadError={loadError}
           />
         ) : (
           <MapView companions={filteredCompanions} cityId={cityId} unlocked={unlocked} onCityChange={setCityId} quizDone={quizDone} highlightId={highlightId} />
@@ -272,7 +283,7 @@ export function ExploreClient() {
         open={sheetOpen}
         seedName={seedName}
         city={selectedCity.name}
-        count={COMPANIONS.length - 1}
+        count={Math.max(0, cityCompanions.length - 1)}
         isGuest={!signedIn}
         onRequireAccount={requireAccount}
         onClose={() => setSheetOpen(false)}

@@ -2,10 +2,8 @@
 
 import { useState, useId } from 'react';
 import type { ReactNode } from 'react';
-import { Eye, EyeOff, ChevronLeft } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ChevronLeft } from 'lucide-react';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
-import { spring } from '@/lib/motion';
 import { CITIES } from '@/lib/data/cities';
 import { Reveal } from '@/components/motion/Reveal';
 import { ageInYears, parseDateOfBirth, maxAdultDob, MIN_AGE } from '@/lib/age';
@@ -18,13 +16,6 @@ const GENDERS = [
   'Non-binary',
   'Prefer to self-describe',
   'Prefer not to say',
-];
-
-const PW_RULES = [
-  { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
-  { label: 'One uppercase letter',  test: (p: string) => /[A-Z]/.test(p) },
-  { label: 'One lowercase letter',  test: (p: string) => /[a-z]/.test(p) },
-  { label: 'One number',            test: (p: string) => /[0-9]/.test(p) },
 ];
 
 function isEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
@@ -102,7 +93,6 @@ interface Props {
 export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Props) {
   const id      = useId();
   const reduced = useEffectiveReducedMotion();
-  const [showPw, setShowPw] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const maxDob = getMaxDob();
 
@@ -116,7 +106,6 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
   // Derived validity
   const firstNameValid = form.firstName.trim().length > 0;
   const emailValid     = isEmail(form.email);
-  const pwValid        = PW_RULES.every(r => r.test(form.password));
   const dobValid       = !!form.dob && (age ?? -1) >= MIN_AGE;
   const genderValid    = !!form.gender;
   const cityValid      = !!form.city;
@@ -131,8 +120,6 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
       e.email = 'Please enter a valid email address.';
       setEmailShakeKey(k => k + 1);
     }
-    if (!PW_RULES.every(r => r.test(form.password)))
-      e.password = 'Password must meet all four requirements below.';
     if (!form.dob)
       e.dob = 'Please enter your date of birth.';
     else if (under18)
@@ -158,7 +145,8 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
               : 'About you'}
           </h1>
           <p className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
-            Your information stays private.
+            Your information stays private. We&apos;ll email a code to confirm your address, so
+            there is no password to choose.
           </p>
         </div>
       </Reveal>
@@ -211,73 +199,6 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
             />
           </Field>
         </ShakeWrapper>
-
-        {/* Password — emerald border when all rules pass; rules list handles detail */}
-        <Field label="Password" error={errors.password} id={`${id}-pw`}>
-          <div className="relative">
-            <input
-              id={`${id}-pw`}
-              type={showPw ? 'text' : 'password'}
-              autoComplete="new-password"
-              value={form.password}
-              onChange={e => patch({ password: e.target.value })}
-              placeholder="Choose a strong password"
-              className={`${FIELD_INPUT_BASE} pr-11`}
-              style={{ ...FIELD_INPUT_STYLE, border: `1.5px solid ${fieldBorder(pwValid, !!errors.password)}` }}
-              aria-describedby={`${id}-pw-rules`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPw(s => !s)}
-              aria-label={showPw ? 'Hide password' : 'Show password'}
-              className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center rounded"
-              style={{ color: 'var(--color-ink-muted)', width: 44, height: 44 }}
-            >
-              {showPw
-                ? <EyeOff size={16} aria-hidden="true" />
-                : <Eye    size={16} aria-hidden="true" />}
-            </button>
-          </div>
-          <ul id={`${id}-pw-rules`} className="mt-2 flex flex-col gap-1" aria-label="Password requirements">
-            {PW_RULES.map(r => {
-              const ok = r.test(form.password);
-              return (
-                <li
-                  key={r.label}
-                  className="flex items-center gap-1.5 font-sans text-xs"
-                  style={{ color: ok ? '#157A4A' : 'var(--color-ink-muted)' }}
-                >
-                  {/* Stamp pop when rule passes; empty circle when not */}
-                  {ok ? (
-                    <motion.span
-                      key="filled"
-                      aria-hidden="true"
-                      className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] shrink-0"
-                      initial={reduced ? false : { scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={reduced ? { duration: 0 } : spring.stamp}
-                      style={{ background: '#157A4A', color: '#fff', flexShrink: 0 }}
-                    >
-                      ✓
-                    </motion.span>
-                  ) : (
-                    <span
-                      aria-hidden="true"
-                      className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] shrink-0"
-                      style={{
-                        background: 'transparent',
-                        border: '1.5px solid rgba(20,26,46,0.2)',
-                        color: '#fff',
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
-                  {r.label}
-                </li>
-              );
-            })}
-          </ul>
-        </Field>
 
         {/* Date of birth — emerald border when valid age */}
         <Field label="Date of birth" error={errors.dob} id={`${id}-dob`}>

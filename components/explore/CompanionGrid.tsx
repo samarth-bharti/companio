@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import type { Companion } from '@/lib/data/companions';
 import { CompanionCard } from './CompanionCard';
@@ -21,6 +22,49 @@ export interface CompanionGridProps {
   onToggleCompare?: (id: string) => void;
   /** When set, scroll to + briefly highlight this companion id. */
   highlightId?: string | null;
+  /** The city on screen, for the "not live here yet" copy. */
+  cityName: string;
+  /** True when this city has no companions at all, before any filter applies. */
+  cityIsEmpty: boolean;
+  loading: boolean;
+  loadError: boolean;
+}
+
+function GridMessage({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) {
+  return (
+    <section style={{ background: 'var(--color-bg)' }} aria-label="Companion profiles">
+      <div className="max-w-xl mx-auto px-6 py-20 flex flex-col items-center gap-3 text-center">
+        <p className="text-lg font-semibold" style={{ color: 'var(--color-ink)', fontFamily: 'var(--font-display)' }}>
+          {title}
+        </p>
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-muted)' }}>
+          {body}
+        </p>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+/** Skeleton cards, so a slow database never looks like an empty city. */
+function GridSkeleton() {
+  return (
+    <section style={{ background: 'var(--color-bg)' }} aria-label="Loading companions">
+      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-7xl mx-auto px-6 py-12">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <li
+            key={i}
+            aria-hidden="true"
+            className="h-[340px] rounded-[var(--radius-lg)] animate-pulse"
+            style={{ background: 'rgba(20,26,46,0.05)' }}
+          />
+        ))}
+      </ul>
+      <span className="sr-only" role="status">
+        Loading companions…
+      </span>
+    </section>
+  );
 }
 
 /**
@@ -58,6 +102,7 @@ export function CompanionGrid({
   companions, unlocked, developing, onUnlockClick, onBook,
   favorites, onToggleFavorite,
   quizDone, compareIds, onToggleCompare, highlightId,
+  cityName, cityIsEmpty, loading, loadError,
 }: CompanionGridProps) {
   const reduced = useEffectiveReducedMotion();
   const cols = useColumnCount();
@@ -93,21 +138,43 @@ export function CompanionGrid({
     };
   }
 
+  // These four states used to be one. "No companions match these filters" was
+  // shown when the database was unreachable, when a city had nobody in it, and
+  // while the request was still in flight. They mean entirely different things.
+  if (loading) return <GridSkeleton />;
+
+  if (loadError) {
+    return (
+      <GridMessage
+        title="We couldn't load companions just now."
+        body="This is our problem, not yours. Please refresh in a moment — nothing has been lost."
+      />
+    );
+  }
+
+  if (cityIsEmpty) {
+    return (
+      <GridMessage
+        title={`Companio isn't live in ${cityName} yet.`}
+        body={`No companion lists in ${cityName} so far. We'd rather show you an empty page than someone who isn't there. If you know the city well, you could be the first.`}
+      >
+        <Link
+          href="/become-a-companion"
+          className="mt-3 inline-flex items-center justify-center h-12 px-6 rounded-pill font-sans font-bold text-sm text-white"
+          style={{ background: 'var(--grad-cta)', boxShadow: 'var(--glow-azure)' }}
+        >
+          Become a companion in {cityName} →
+        </Link>
+      </GridMessage>
+    );
+  }
+
   if (companions.length === 0) {
     return (
-      <section style={{ background: 'var(--color-bg)' }} aria-label="Companion profiles">
-        <div className="max-w-7xl mx-auto px-6 py-20 flex flex-col items-center gap-3 text-center">
-          <p
-            className="text-lg font-semibold"
-            style={{ color: 'var(--color-ink)', fontFamily: 'var(--font-display)' }}
-          >
-            No companions match these filters.
-          </p>
-          <p className="text-sm" style={{ color: 'var(--color-ink-muted)' }}>
-            Try broadening your search or clearing a filter.
-          </p>
-        </div>
-      </section>
+      <GridMessage
+        title="No companions match these filters."
+        body="Try broadening your search or clearing a filter."
+      />
     );
   }
 

@@ -42,8 +42,14 @@ export async function GET(req: Request) {
       data: { status: 'completed' },
     });
 
+    // Job 2: sweep sign-in codes. Consumed and long-expired rows have no value
+    // and every one is a salted hash of a code somebody typed. Keep 24 hours so
+    // an abuse investigation has something to look at, then delete.
+    const { pruneExpiredCodes } = await import('@/lib/server/otp');
+    const prunedCodes = await pruneExpiredCodes();
+
     // ── Add more maintenance tasks here ─────────────────────────────────────
 
-    return json({ ok: true, completed: completed.count });
+    return json({ ok: true, completed: completed.count, prunedCodes });
   });
 }

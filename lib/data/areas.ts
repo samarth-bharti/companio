@@ -13,11 +13,11 @@
 // as a 1.5 km privacy circle anchored here, never as a point, and never at
 // anyone's real address. Sub-kilometre accuracy would be false precision.
 //
-// COVERAGE: Mumbai only, deliberately. It is the one city with real companion
-// profiles (see lib/data/cities.ts — every other city re-skins the same people
-// via localizeArea()). Inventing coordinates for neighbourhoods with no real
-// companions in them would dress up fake data as real. Unmapped areas fall back
-// to a deterministic offset from the city centre, exactly as before.
+// COVERAGE: Mumbai and Indore — the two cities with companion profiles. Adding
+// coordinates for a city with nobody in it would dress an empty map up as a
+// served one. When a third city goes live, its anchors go here at the same time
+// as its companions, not before. Unmapped areas fall back to a deterministic
+// offset from the city centre.
 
 export interface AreaAnchor {
   lat: number;
@@ -43,8 +43,27 @@ const MUMBAI_AREAS: Record<string, AreaAnchor> = {
   khar:          { lat: 19.0700, lng: 72.8360 },
 };
 
+/** Indore neighbourhood centroids, same ~1 km precision as Mumbai's. */
+const INDORE_AREAS: Record<string, AreaAnchor> = {
+  'vijay nagar':   { lat: 22.7533, lng: 75.8937 },
+  rajwada:         { lat: 22.7177, lng: 75.8545 },
+  'new palasia':   { lat: 22.7247, lng: 75.8845 },
+  bhawarkuan:      { lat: 22.6899, lng: 75.8674 },
+  'saket nagar':   { lat: 22.7275, lng: 75.8930 },
+  'geeta bhawan':  { lat: 22.7157, lng: 75.8812 },
+  khajrana:        { lat: 22.7385, lng: 75.9060 },
+  nipania:         { lat: 22.7690, lng: 75.9240 },
+  annapurna:       { lat: 22.6930, lng: 75.8400 },
+  rau:             { lat: 22.6413, lng: 75.8098 },
+  'sudama nagar':  { lat: 22.6866, lng: 75.8306 },
+  'mhow naka':     { lat: 22.7050, lng: 75.8500 },
+  'scheme no. 54': { lat: 22.7477, lng: 75.8938 },
+  'silicon city':  { lat: 22.6700, lng: 75.8740 },
+};
+
 const CITY_AREAS: Record<string, Record<string, AreaAnchor>> = {
   mumbai: MUMBAI_AREAS,
+  indore: INDORE_AREAS,
 };
 
 /**

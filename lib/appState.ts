@@ -34,7 +34,10 @@ export interface Booking {
   dateISO: string; // meeting date, e.g. '2026-06-15'
   time: string; // display slot, e.g. 'Morning · 7–9 AM'
   place: string;
-  status: 'pending_payment' | 'upcoming' | 'completed' | 'cancelled' | 'refunded';
+  // Mirrors the BookingStatus enum in prisma/schema.prisma. `cancelled` is the
+  // member calling it off; `declined` is the companion refusing it, which
+  // returns the member's credit.
+  status: 'pending_payment' | 'upcoming' | 'completed' | 'cancelled' | 'declined' | 'refunded';
   usedCredit: boolean;
   pricePaid: number; // 0 when a credit was used
   review?: { stars: number; text: string };

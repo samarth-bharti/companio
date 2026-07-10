@@ -6,7 +6,8 @@ import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { BadgeCheck, MapPin, Clock, Calendar, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { getWallet, type Wallet } from '@/lib/journeyState';
+import { type Wallet } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
 import { type Companion } from '@/lib/data/companions';
 import { calm } from '@/lib/motion';
 
@@ -23,6 +24,8 @@ interface Props {
   state: BookingFormState;
   onConfirm: () => void;
   onBack: () => void;
+  /** True while the booking request is in flight. */
+  submitting?: boolean;
 }
 
 function Row({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
@@ -37,12 +40,17 @@ function Row({ icon: Icon, label, value }: { icon: LucideIcon; label: string; va
   );
 }
 
-export function BookingStepReview({ companion, state, onConfirm, onBack }: Props) {
+export function BookingStepReview({ companion, state, onConfirm, onBack, submitting = false }: Props) {
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const reduced = useEffectiveReducedMotion();
 
+  // Read the wallet through dataClient, not journeyState: in http mode the
+  // authoritative balance is a row in Postgres, and localStorage is a stale
+  // copy that a signed-in member on a new device has never written.
   useEffect(() => {
-    setWallet(getWallet());
+    let cancelled = false;
+    dataClient.getWallet().then((w) => { if (!cancelled) setWallet(w); }).catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   const hasCredits = (wallet?.credits ?? 0) > 0;
@@ -170,7 +178,7 @@ export function BookingStepReview({ companion, state, onConfirm, onBack }: Props
           type="button"
           className="flex-1"
           onClick={onConfirm}
-          disabled={!hasCredits}
+          disabled={!hasCredits || submitting}
           style={{ minHeight: 44 }}
           aria-label={
             hasCredits
@@ -178,7 +186,7 @@ export function BookingStepReview({ companion, state, onConfirm, onBack }: Props
               : 'Booking unavailable — you have used both included meetings'
           }
         >
-          {hasCredits ? 'Confirm meetup' : 'No meetings left'}
+          {submitting ? 'Confirming…' : hasCredits ? 'Confirm meetup' : 'No meetings left'}
         </Button>
       </div>
     </div>

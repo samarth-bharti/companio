@@ -22,6 +22,7 @@ function StatusPill({ status }: { status: Booking['status'] }) {
     upcoming:  { label: 'Upcoming',  bg: 'rgba(46,107,255,0.1)',  color: 'var(--color-azure-deep)' },
     completed: { label: 'Completed', bg: 'rgba(31,174,107,0.1)',  color: '#157A4A' },
     cancelled: { label: 'Cancelled', bg: 'rgba(90,99,120,0.1)',   color: 'var(--color-ink-muted)' },
+    declined:  { label: 'Declined, credit returned', bg: 'rgba(192,57,43,0.09)', color: '#A93226' },
     refunded:  { label: 'Refunded',  bg: 'rgba(214,158,46,0.12)', color: '#946200' },
   };
   const { label, bg, color } = map[status];

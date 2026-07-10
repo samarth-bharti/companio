@@ -20,7 +20,10 @@ const GATING_VARS = [
   'RAZORPAY_WEBHOOK_SECRET',
   'NEXTAUTH_SECRET',
   'CRON_SECRET',
-  'SMS_API_KEY',
+  // Gates whether an emailed sign-in code can be delivered at all. A
+  // `[[paste yours]]` here would make sendSignInCode() believe email works,
+  // report "check your inbox", and drop the code on the floor.
+  'RESEND_API_KEY',
   'ADMIN_EMAILS',
   'GOOGLE_CLIENT_ID',
   'GOOGLE_CLIENT_SECRET',

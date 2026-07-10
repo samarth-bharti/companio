@@ -25,7 +25,8 @@ enum BookingStatus {
   pending_payment // cash booking created, awaiting Razorpay settlement — NOT confirmed
   upcoming        // confirmed: paid by credit, or cash payment settled
   completed       // meetup date has passed (set by cron, never at payment time)
-  cancelled
+  cancelled       // called off by the member
+  declined        // the companion refused it; the member's credit is returned
   refunded        // admin reversed the charge (credits returned / Razorpay refund)
 }
 
@@ -162,6 +163,44 @@ model User {
   @@index([city])
   @@index([role])
   @@map("users")
+}
+
+// ── Email one-time codes ──────────────────────────────────────────────────────
+// Sign-in codes for the passwordless email flow. The code itself is never
+// stored: only a SHA-256 hash salted with NEXTAUTH_SECRET, so a database leak
+// cannot be replayed into sessions. Rows are consumed on first successful use
+// and swept by the cron job once expired.
+model EmailOtp {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  // Wrong guesses against this code. verifyOtp() refuses past MAX_OTP_ATTEMPTS,
+  // which stops a 10-minute window from being brute-forced across 1e6 codes.
+  attempts  Int      @default(0)
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email, expiresAt])
+  @@map("email_otps")
+}
+
+// ── Contact messages ──────────────────────────────────────────────────────────
+// Submissions from /contact. Persisted first, emailed second: if Resend is down
+// the message is still on record rather than lost to a failed fetch.
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  topic     String
+  message   String
+  // Set once the notification email actually left Resend.
+  emailedAt DateTime?
+  handledAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("contact_messages")
 }
 
 // ── Wallet + Credit Ledger ────────────────────────────────────────────────────

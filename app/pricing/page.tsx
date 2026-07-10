@@ -20,10 +20,10 @@ import { DigitRoll } from '@/components/journey/DigitRoll';
  * packs, no subscription, nothing to pay to meet.
  *
  * The meetup credit packs and the Plus membership are deliberately NOT sold
- * here yet: both imply paying a companion out of money we collected, which
- * makes Companio a payment aggregator under RBI rules. They return once
- * Razorpay Route (linked accounts) is wired, so `components/pricing/PackCard`,
- * `PlusCard` and `CheckoutSheet` are kept in the tree, unused, for that work.
+ * here: both imply paying a companion out of money we collected, which makes
+ * Companio a payment aggregator under RBI rules. Their cards and checkout sheet
+ * were deleted rather than left dormant — an unmounted component that offers to
+ * charge ₹299 is one careless import away from doing so.
  */
 
 const INCLUDED = [

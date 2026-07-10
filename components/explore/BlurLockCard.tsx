@@ -106,7 +106,8 @@ export function BlurLockCard({
 
           <div className="flex flex-wrap gap-1.5">
             <Chip>{companion.area} · {companion.city}</Chip>
-            <Chip>★ {companion.rating} ({companion.reviews})</Chip>
+            {/* A locked card must not promise a 4.9. Unreviewed reads as New. */}
+            <Chip>{companion.reviews > 0 ? `★ ${companion.rating.toFixed(1)} (${companion.reviews})` : 'New'}</Chip>
             {companion.activities.slice(0, 1).map((act) => (
               <Chip key={act}>{act}</Chip>
             ))}

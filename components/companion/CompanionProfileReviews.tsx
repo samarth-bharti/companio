@@ -160,6 +160,35 @@ export function CompanionProfileReviews({ reviews, rating, reviewCount }: Props)
 
   const offset = -(current * (cardW + CARD_GAP));
 
+  // An unreviewed companion. The carousel used to render three invented reviews
+  // here, from members who did not exist, under a 4.9 star row. Saying "no
+  // reviews yet" costs a little conversion and buys the only thing this product
+  // actually sells.
+  if (total === 0) {
+    return (
+      <section aria-label="Member reviews">
+        <h2
+          className="font-sans font-bold text-sm uppercase tracking-widest mb-4"
+          style={{ color: 'var(--color-ink-muted)' }}
+        >
+          Reviews
+        </h2>
+        <div
+          className="rounded-lg p-6"
+          style={{ background: 'var(--color-surface)', border: '1px solid rgba(20,26,46,0.08)' }}
+        >
+          <p className="font-sans font-semibold text-sm mb-1" style={{ color: 'var(--color-ink)' }}>
+            No reviews yet.
+          </p>
+          <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--color-ink-muted)' }}>
+            Reviews appear here after a meetup is completed, and only from the member who was there.
+            Nobody has met this companion through Companio so far.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section aria-label="Member reviews">
       <div className="flex items-center gap-3 mb-5">
@@ -178,7 +207,7 @@ export function CompanionProfileReviews({ reviews, rating, reviewCount }: Props)
             {rating.toFixed(1)}
           </span>
           <span className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
-            ({reviewCount} reviews)
+            ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
           </span>
         </span>
       </div>
