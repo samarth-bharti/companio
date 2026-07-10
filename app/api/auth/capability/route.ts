@@ -18,15 +18,18 @@
 // Only booleans leave this route. Never the values.
 
 import { NextResponse } from 'next/server';
+import { envValue } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
 export function GET() {
+  // envValue() treats a `[[fill me in]]` placeholder as absent. A half-filled
+  // .env must never make the client believe real sign-in is available.
   const configured = !!(
-    process.env.GOOGLE_CLIENT_ID &&
-    process.env.GOOGLE_CLIENT_SECRET &&
-    process.env.NEXTAUTH_SECRET &&
-    process.env.DATABASE_URL
+    envValue('GOOGLE_CLIENT_ID') &&
+    envValue('GOOGLE_CLIENT_SECRET') &&
+    envValue('NEXTAUTH_SECRET') &&
+    envValue('DATABASE_URL')
   );
   return NextResponse.json({ configured });
 }

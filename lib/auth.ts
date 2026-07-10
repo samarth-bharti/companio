@@ -19,6 +19,7 @@
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+import { envValue } from '@/lib/env';
 
 /**
  * Find-or-create our own User row for an external identity, returning its id.
@@ -60,13 +61,13 @@ function buildProviders(): NextAuthOptions['providers'] {
   const providers: NextAuthOptions['providers'] = [];
 
   // ── Option A — Google OAuth (auto-enabled once its env vars are present) ──
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    providers.push(
-      GoogleProvider({
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      }),
-    );
+  // envValue() treats `[[fill me in]]` as absent: registering a provider with a
+  // placeholder client id gets you a Google error page instead of a sign-in
+  // button that honestly says "not configured".
+  const googleId = envValue('GOOGLE_CLIENT_ID');
+  const googleSecret = envValue('GOOGLE_CLIENT_SECRET');
+  if (googleId && googleSecret) {
+    providers.push(GoogleProvider({ clientId: googleId, clientSecret: googleSecret }));
   }
 
   // ── Option B — Phone OTP (form always present; inert until SMS is wired) ──

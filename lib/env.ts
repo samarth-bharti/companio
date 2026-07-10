@@ -9,6 +9,42 @@
 import { z, ZodError } from 'zod';
 
 // ---------------------------------------------------------------------------
+// Placeholder detection
+// ---------------------------------------------------------------------------
+
+/**
+ * True for a value that is obviously a fill-me-in marker rather than a real
+ * setting: `[[paste your key]]`, `<your-key>`, `changeme`, or empty.
+ *
+ * WHY: `.env` values are strings, and a string is truthy. A `.env` where
+ * `GOOGLE_CLIENT_ID=[[from Google Cloud Console]]` makes every "is this
+ * configured?" check answer *yes* — so the app registers a Google provider with
+ * a fake client id, tells the client that real sign-in is available, and then
+ * dies at the OAuth redirect with a message that explains nothing.
+ *
+ * An unset variable is honest. A placeholder is a lie the code believes.
+ * `lib/company.ts` already guards its `[[...]]` placeholders this way; env vars
+ * deserve the same treatment.
+ */
+export function isPlaceholder(value: string | undefined | null): boolean {
+  if (!value) return true;
+  const v = value.trim();
+  if (v === '') return true;
+  if (v.startsWith('[[') || v.startsWith('<')) return true;
+  return /^(changeme|todo|your[-_]?\w+|xxx+)$/i.test(v);
+}
+
+/**
+ * Read an env var, treating placeholders as absent. Use this anywhere the answer
+ * gates behaviour (does auth work? is there a database?), rather than
+ * `process.env.X` directly.
+ */
+export function envValue(name: string): string | undefined {
+  const raw = process.env[name];
+  return isPlaceholder(raw) ? undefined : raw;
+}
+
+// ---------------------------------------------------------------------------
 // Schema — every var is optional; malformed values (e.g. bad URLs) still fail.
 // ---------------------------------------------------------------------------
 
@@ -58,26 +94,30 @@ export function getServerEnv(): Env {
 // Derived booleans — call getServerEnv() so they always use the cached parse.
 // ---------------------------------------------------------------------------
 
+// Each of these gates real behaviour, so each ignores placeholder values —
+// a `DATABASE_URL=[[paste yours]]` must read as "no database", not as a
+// connection string Prisma will then fail to open.
+
 /** True when DATABASE_URL is set (Prisma is usable). */
 export function hasDatabase(): boolean {
-  return !!getServerEnv().DATABASE_URL;
+  return !isPlaceholder(getServerEnv().DATABASE_URL);
 }
 
 /** True when both Razorpay key vars are set (payments are usable). */
 export function hasRazorpay(): boolean {
   const env = getServerEnv();
-  return !!(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET);
+  return !isPlaceholder(env.RAZORPAY_KEY_ID) && !isPlaceholder(env.RAZORPAY_KEY_SECRET);
 }
 
 /** True when NEXTAUTH_SECRET is set (NextAuth sessions can be signed). */
 export function hasAuthSecret(): boolean {
-  return !!getServerEnv().NEXTAUTH_SECRET;
+  return !isPlaceholder(getServerEnv().NEXTAUTH_SECRET);
 }
 
 /** True when both Upstash vars are set (Redis rate-limiting / caching usable). */
 export function hasUpstash(): boolean {
   const env = getServerEnv();
-  return !!(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN);
+  return !isPlaceholder(env.UPSTASH_REDIS_REST_URL) && !isPlaceholder(env.UPSTASH_REDIS_REST_TOKEN);
 }
 
 // ---------------------------------------------------------------------------
