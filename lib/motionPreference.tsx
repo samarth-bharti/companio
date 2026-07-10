@@ -7,12 +7,21 @@
  * "animation effects off") makes the whole site appear static. This lets the
  * user FORCE motion on regardless of the OS, via a visible toggle.
  *
- * - `forceMotion` defaults to ON so animations are visible out of the box.
- * - When ON: wraps the tree in <MotionConfig reducedMotion="never"> (all
- *   framer-motion animations ignore the OS) AND adds `.force-motion` to <html>
- *   (so the CSS reduced-motion override in globals.css is bypassed too).
- * - When OFF: falls back to the OS preference ("user").
+ * - `forceMotion` defaults to OFF: we respect the OS preference. Someone who has
+ *   asked their operating system to reduce motion has asked us too, and
+ *   journey-spec §0.4 calls that contract non-negotiable. It previously
+ *   defaulted ON, and `MotionToggle` was never rendered anywhere, so the site
+ *   overrode `prefers-reduced-motion` for every visitor with no way to opt out.
+ * - When ON (user opts in via MotionToggle): wraps the tree in
+ *   <MotionConfig reducedMotion="never"> (framer ignores the OS) AND adds
+ *   `.force-motion` to <html> (bypassing the CSS override in globals.css).
+ * - When OFF: framer gets "user" and the CSS override applies — the OS wins.
  * - Non-framer consumers (Lottie, Spline, Lenis) call useEffectiveReducedMotion().
+ *
+ * Nothing may branch *rendered markup* on framer's own useReducedMotion(): it
+ * returns false on the server and the OS value on the client's first render,
+ * which fails hydration. Use useEffectiveReducedMotion() — it returns false
+ * until mounted, so both sides agree.
  */
 
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
@@ -28,15 +37,17 @@ interface MotionPrefCtx {
 }
 
 const Ctx = createContext<MotionPrefCtx>({
-  forceMotion: true,
+  forceMotion: false,
   setForceMotion: () => {},
   toggle: () => {},
   mounted: false,
 });
 
 export function MotionPreferenceProvider({ children }: { children: React.ReactNode }) {
-  // Default ON — motion is visible by default.
-  const [forceMotion, setForceMotionState] = useState(true);
+  // Default OFF — respect the OS. Visitors who have not asked for reduced motion
+  // are unaffected (systemReduced is false for them), so this costs nothing
+  // visually and restores the accessibility contract for those who have.
+  const [forceMotion, setForceMotionState] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

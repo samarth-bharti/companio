@@ -87,8 +87,10 @@ export function ActivityScene({
 
   const inner = (
     <div className={cn('flex flex-col md:flex-row h-full', photoOnLeft && 'md:flex-row-reverse')}>
-      {/* Text column */}
-      <div className="flex flex-col justify-center px-8 md:px-16 py-10 flex-1 relative">
+      {/* Text column. overflow-hidden clips the ghost numeral's negative offset:
+          without it the numeral pushed ~6px past the viewport and gave the whole
+          page a horizontal scrollbar on phones. */}
+      <div className="flex flex-col justify-center px-8 md:px-16 py-10 flex-1 relative overflow-hidden">
         {/* Ghost numeral — Fraunces, 8% alpha, absolute behind text */}
         <span
           aria-hidden="true"
