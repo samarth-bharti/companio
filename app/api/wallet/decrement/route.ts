@@ -6,6 +6,7 @@
 
 import { getSessionUserId } from '@/lib/server/session';
 import { json, unauthorized } from '@/lib/server/http';
+import { TX } from '@/lib/server/tx';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +28,6 @@ export async function POST() {
     if (res.count === 0) return w; // nothing to spend — return unchanged
     await tx.creditLedger.create({ data: { walletId: w.id, delta: -1, kind: 'spend' } });
     return tx.wallet.findUniqueOrThrow({ where: { userId } });
-  });
+  }, TX);
   return json(toWallet(wallet));
 }

@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import { getCompanion } from '@/lib/data/companions';
 import { guard } from '@/lib/server/http';
+import { envValue } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  if (!process.env.DATABASE_URL) {
+  if (!envValue('DATABASE_URL')) {
     const c = getCompanion(id);
     return c ? NextResponse.json(c) : NextResponse.json(null, { status: 404 });
   }

@@ -14,6 +14,7 @@ import {
   type ActionState,
 } from '@/lib/server/adminAction';
 import { bookingAdminActionBody } from '@/lib/server/validation';
+import { TX } from '@/lib/server/tx';
 
 const PATH = '/admin/bookings';
 
@@ -42,7 +43,7 @@ export async function cancelBooking(_prev: ActionState, formData: FormData): Pro
           data: { walletId: wallet.id, delta: 1, kind: 'refund', note: `admin cancel ${id}` },
         });
       }
-    });
+    }, TX);
 
     await logAdminAction(
       adminId, 'cancelBooking', 'booking', id,

@@ -31,7 +31,7 @@ async function upsertUser(opts: {
   phone?: string | null;
   name?: string | null;
 }): Promise<{ id: string; firstName: string } | null> {
-  if (!process.env.DATABASE_URL) return null;
+  if (!envValue('DATABASE_URL')) return null;
   const where = opts.email
     ? { email: opts.email }
     : opts.phone
@@ -79,7 +79,7 @@ function buildProviders(): NextAuthOptions['providers'] {
         otp: { label: 'OTP', type: 'text' },
       },
       async authorize(credentials) {
-        if (!process.env.SMS_API_KEY) return null; // gateway not configured
+        if (!envValue('SMS_API_KEY')) return null; // gateway not configured
         const phone = credentials?.phone?.trim();
         const otp = credentials?.otp?.trim();
         if (!phone || !otp) return null;

@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { getSessionUserId } from '@/lib/server/session';
 import { json, unauthorized, badRequest, readJsonBody, guard } from '@/lib/server/http';
 import { rateLimit, clientKey } from '@/lib/server/rateLimit';
+import { envValue } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,9 @@ export async function POST(req: Request) {
     const rl = await rateLimit({ key: clientKey(req, 'rzp-verify'), limit: 30, windowMs: 60_000 });
     if (!rl.ok) return json({ error: 'rate_limited', retryAfter: rl.retryAfter }, 429);
 
-    const secret = process.env.RAZORPAY_KEY_SECRET;
+    // envValue(): a placeholder secret is a publicly-known secret, which would
+    // let anyone forge the order|payment signature this check exists to trust.
+    const secret = envValue('RAZORPAY_KEY_SECRET');
     if (!secret) return json({ error: 'razorpay_not_configured' }, 503);
 
     const parsed = verifyBody.safeParse(await readJsonBody(req));

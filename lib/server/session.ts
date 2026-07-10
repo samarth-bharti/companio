@@ -6,6 +6,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { isActiveUser } from '@/lib/server/visibility';
+import { envValue } from '@/lib/env';
 
 /**
  * The raw session id, with NO moderation check. Only for endpoints that must
@@ -34,7 +35,7 @@ export async function getRawSessionUserId(): Promise<string | null> {
 export async function getSessionUserId(): Promise<string | null> {
   const id = await getRawSessionUserId();
   if (!id) return null;
-  if (!process.env.DATABASE_URL) return id; // no DB to check against
+  if (!envValue('DATABASE_URL')) return id; // no DB to check against
 
   try {
     const { prisma } = await import('@/lib/prisma');

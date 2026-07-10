@@ -12,6 +12,7 @@
 import crypto from 'crypto';
 import type { PrismaClient } from '@prisma/client';
 import { gstComponent, type PurchaseKind } from './pricing';
+import { TX } from '@/lib/server/tx';
 
 /** Constant-time string compare that also tolerates length mismatch. */
 export function safeEqual(a: string, b: string): boolean {
@@ -112,5 +113,5 @@ export async function settlePurchase(
     }
 
     return { settled: true, kind: purchase.kind };
-  });
+  }, TX);
 }

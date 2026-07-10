@@ -17,6 +17,7 @@ import {
   nextSpinAt,
   SPIN_EXPIRY_MS,
 } from '@/lib/server/spin';
+import { TX } from '@/lib/server/tx';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,7 +79,7 @@ export async function POST(req: Request) {
         select: { prize: true, discountPct: true, expiresAt: true },
       });
       return { cooldown: false as const, spin };
-    });
+    }, TX);
 
     if (result.cooldown) {
       return json({ error: 'cooldown', nextSpinAt: result.nextSpinAt }, 429);

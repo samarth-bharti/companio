@@ -18,6 +18,7 @@
 
 import { PrismaClient, Prisma } from '@prisma/client';
 import { COMPANIONS } from '../lib/data/companions';
+import { envValue } from '../lib/env';
 
 const prisma = new PrismaClient();
 
@@ -39,7 +40,7 @@ async function seedCompanions() {
 }
 
 async function seedAdmins() {
-  const emails = (process.env.ADMIN_EMAILS ?? '')
+  const emails = (envValue('ADMIN_EMAILS') ?? '')
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);

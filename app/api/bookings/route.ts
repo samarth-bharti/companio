@@ -7,6 +7,7 @@ import { getSessionUserId } from '@/lib/server/session';
 import { json, unauthorized, badRequest, readJsonBody, guard, parsePagination } from '@/lib/server/http';
 import { rateLimit, clientKey } from '@/lib/server/rateLimit';
 import { bookingCreateBody } from '@/lib/server/validation';
+import { TX } from '@/lib/server/tx';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
         }
 
         return tx.booking.create({ data: bookingData });
-      });
+      }, TX);
 
       if (result === null) {
         return json({ error: 'insufficient_credits' }, 402);

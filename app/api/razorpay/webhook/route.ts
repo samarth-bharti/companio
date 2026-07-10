@@ -8,12 +8,17 @@
 // Returns 503 until RAZORPAY_WEBHOOK_SECRET is provided, 400 on a bad signature.
 
 import { json, badRequest, guard } from '@/lib/server/http';
+import { envValue } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   return guard(async () => {
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    // envValue(), not process.env: a placeholder like `[[paste secret]]` is a
+    // truthy string, so a half-filled .env would arm this endpoint with a
+    // secret that is public knowledge — letting anyone forge a signed
+    // payment.captured event and settle a purchase they never paid for.
+    const secret = envValue('RAZORPAY_WEBHOOK_SECRET');
     if (!secret) return json({ error: 'razorpay_not_configured' }, 503);
 
     const raw = await req.text();

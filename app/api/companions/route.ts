@@ -7,11 +7,12 @@
 import { NextResponse } from 'next/server';
 import { COMPANIONS } from '@/lib/data/companions';
 import { guard } from '@/lib/server/http';
+import { envValue } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  if (!process.env.DATABASE_URL) return NextResponse.json(COMPANIONS);
+  if (!envValue('DATABASE_URL')) return NextResponse.json(COMPANIONS);
 
   return guard(async () => {
     const { prisma } = await import('@/lib/prisma');

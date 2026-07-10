@@ -8,6 +8,7 @@
 import { getRawSessionUserId } from '@/lib/server/session';
 import { json, unauthorized, guard } from '@/lib/server/http';
 import { rateLimit, clientKey } from '@/lib/server/rateLimit';
+import { TX } from '@/lib/server/tx';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
 
       // 10. User — must be last
       await tx.user.delete({ where: { id: userId } });
-    });
+    }, TX);
 
     return json({ ok: true });
   });

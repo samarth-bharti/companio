@@ -20,6 +20,7 @@ import {
   PLUS_AMOUNT,
 } from '@/lib/server/pricing';
 import { quoteBooking } from '@/lib/server/booking';
+import { envValue } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,8 +34,10 @@ export async function POST(req: Request) {
     const rl = await rateLimit({ key: clientKey(req, 'create-order'), limit: 20, windowMs: 60_000 });
     if (!rl.ok) return json({ error: 'rate_limited', retryAfter: rl.retryAfter }, 429);
 
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    // envValue() so a placeholder key reads as unset and we answer an honest
+    // 503, rather than handing garbage credentials to Razorpay and throwing.
+    const keyId = envValue('RAZORPAY_KEY_ID');
+    const keySecret = envValue('RAZORPAY_KEY_SECRET');
     if (!keyId || !keySecret) return json({ error: 'razorpay_not_configured' }, 503);
 
     const parsed = orderCreateBody.safeParse(await readJsonBody(req));

@@ -6,12 +6,15 @@
 
 import { json, guard } from '@/lib/server/http';
 import { safeEqual } from '@/lib/server/payments';
+import { envValue } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   // ── Auth ────────────────────────────────────────────────────────────────────
-  const secret = process.env.CRON_SECRET;
+  // envValue() so a `[[paste secret]]` placeholder reads as unset. A truthy
+  // placeholder would arm this endpoint with a guessable bearer token.
+  const secret = envValue('CRON_SECRET');
   if (!secret) {
     return json({ error: 'cron_not_configured' }, 503);
   }

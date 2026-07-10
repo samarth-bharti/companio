@@ -12,6 +12,7 @@ import {
   field,
   type ActionState,
 } from '@/lib/server/adminAction';
+import { TX } from '@/lib/server/tx';
 
 const PATH = '/admin/applications';
 
@@ -75,7 +76,7 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
           verifiedAt: new Date(),
         },
       });
-    });
+    }, TX);
 
     await logAdminAction(adminId, 'approveApplication', 'application', id, companionId);
     revalidatePath(PATH);

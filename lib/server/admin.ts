@@ -8,6 +8,7 @@
 
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { envValue } from '@/lib/env';
 
 /**
  * Bootstrap allowlist. User.role defaults to 'user', and the only code that can
@@ -23,7 +24,7 @@ import { authOptions } from '@/lib/auth';
  * key. Case-insensitive.
  */
 function bootstrapAdminEmails(): string[] {
-  return (process.env.ADMIN_EMAILS ?? '')
+  return (envValue('ADMIN_EMAILS') ?? '')
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
@@ -34,7 +35,7 @@ export async function getAdminUserId(): Promise<string | null> {
     const session = await getServerSession(authOptions);
     const user = session?.user as { id?: string; email?: string | null } | undefined;
     const id = user?.id;
-    if (!id || !process.env.DATABASE_URL) return null;
+    if (!id || !envValue('DATABASE_URL')) return null;
 
     const { prisma } = await import('@/lib/prisma');
     const row = await prisma.user.findUnique({

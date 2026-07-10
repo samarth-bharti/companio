@@ -14,6 +14,7 @@
 // by the admin panel and the DPDPA erasure endpoint so the two can't drift.
 
 import type { PrismaClient } from '@prisma/client';
+import { TX } from '@/lib/server/tx';
 
 /**
  * Permanently delete a user and everything they own. Used by both
@@ -38,7 +39,7 @@ export async function eraseUser(prisma: PrismaClient, userId: string): Promise<v
     await tx.companionApplication.deleteMany({ where: { userId } });
 
     await tx.user.delete({ where: { id: userId } });
-  });
+  }, TX);
 }
 
 export type CompanionEraseResult =
@@ -71,7 +72,7 @@ export async function eraseCompanion(
     await tx.favorite.deleteMany({ where: { companionId } });
     await tx.companionPayout.deleteMany({ where: { companionId } });
     await tx.companion.delete({ where: { id: companionId } });
-  });
+  }, TX);
 
   return { ok: true };
 }
