@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
+import { signIn } from 'next-auth/react';
 import { Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
-import { setUser } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
+import { useAuthCapability } from '@/lib/authClient';
 import { track } from '@/lib/analytics';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
 import { Reveal } from '@/components/motion/Reveal';
@@ -45,6 +47,11 @@ function fieldBorder(valid: boolean, hasError: boolean) {
 export function LoginForm({ next }: { next: string }) {
   const router = useRouter();
   const reduced = useEffectiveReducedMotion();
+  // When Google is wired, sign-in is real: next-auth owns the redirect and the
+  // server gets a session. When it isn't, this build has no way to authenticate
+  // anyone and the email/password form is a local simulation — so say so rather
+  // than presenting a password box that accepts literally any password.
+  const auth = useAuthCapability();
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -108,9 +115,12 @@ export function LoginForm({ next }: { next: string }) {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
+    // Demo-only path. There is no email/password provider in lib/auth.ts, so
+    // this never runs in a build where Google is configured (the form is
+    // replaced by a notice below).
     await new Promise(r => setTimeout(r, 700));
     const raw = email.split('@')[0].split('.')[0];
-    setUser({ firstName: raw.charAt(0).toUpperCase() + raw.slice(1) });
+    await dataClient.setUser({ firstName: raw.charAt(0).toUpperCase() + raw.slice(1) });
     track('login', { method: 'email' });
     setLoading(false);
     startCelebration();
@@ -118,9 +128,21 @@ export function LoginForm({ next }: { next: string }) {
 
   async function handleSocial(provider: 'google') {
     setSocialLoading(provider);
-    await new Promise(r => setTimeout(r, 600));
-    setUser({ firstName: 'Friend' });
     track('login', { method: provider });
+
+    if (auth.configured) {
+      // Real OAuth. next-auth navigates away and comes back with a session, so
+      // there is no local celebration to run and no local user to write — the
+      // JWT is the source of truth and Nav re-reads it on return.
+      const dest = next || '/explore';
+      const sep = dest.includes('?') ? '&' : '?';
+      await signIn(provider, { callbackUrl: `${dest}${sep}welcome=1` });
+      return; // unreachable after the redirect; keeps the spinner up meanwhile
+    }
+
+    // Demo build: no gateway to Google, so simulate locally.
+    await new Promise(r => setTimeout(r, 600));
+    await dataClient.setUser({ firstName: 'Friend' });
     setSocialLoading(null);
     startCelebration();
   }
@@ -147,7 +169,9 @@ export function LoginForm({ next }: { next: string }) {
     );
   }
 
-  const busy = loading || !!socialLoading;
+  // Keep the buttons inert until we know which world we're in — a click that
+  // races the capability check could take the demo path in a live build.
+  const busy = loading || !!socialLoading || auth.loading;
   const emailValid = isEmail(email) && !emailErr;
   const pwValid    = !!password.trim() && !pwErr;
 
@@ -196,6 +220,22 @@ export function LoginForm({ next }: { next: string }) {
         </div>
       </Reveal>
 
+      {/* Companio has no email/password provider (see lib/auth.ts — Google OAuth
+          and phone OTP only). In a live build, showing a password box that
+          accepts any string is a lie, so it is replaced by the truth. */}
+      {auth.configured ? (
+        <p
+          className="rounded-2xl px-4 py-3 font-sans text-sm text-center"
+          style={{
+            background: 'rgba(46,107,255,0.07)',
+            border: '1.5px solid rgba(46,107,255,0.18)',
+            color: 'var(--color-azure-deep)',
+          }}
+        >
+          Companio has no passwords to forget, or leak. Sign in with Google above.
+        </p>
+      ) : (
+      <>
       <div className="flex items-center gap-3 mb-5" aria-hidden="true">
         <div className="flex-1 h-px" style={{ background: 'rgba(20,26,46,0.10)' }} />
         <span className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>or</span>
@@ -298,11 +338,14 @@ export function LoginForm({ next }: { next: string }) {
           </button>
         </form>
       </Reveal>
+      </>
+      )}
 
-      {/* 2FA hint row */}
-      <p className="mt-4 text-center font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-        Companions sign in with 2FA, demo skips this step.
-      </p>
+      {!auth.configured && !auth.loading && (
+        <p className="mt-4 text-center font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+          Preview mode, sign-in is simulated on this device.
+        </p>
+      )}
 
       <p className="mt-3 text-center font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
         New to Companio?{' '}

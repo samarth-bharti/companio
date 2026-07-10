@@ -14,12 +14,20 @@ import { payWithRazorpay } from "@/lib/razorpayClient";
 type PayState = "idle" | "processing" | "success";
 const HEADLINE_ID = "unlock-sheet-headline";
 
+/**
+ * How the unlock was obtained.
+ *  'live' — a real payment settled server-side. The DB already holds the flag;
+ *           the client must NOT write it, only re-read.
+ *  'demo' — no gateway in this build. The client owns the flag in localStorage.
+ */
+export type UnlockMode = 'live' | 'demo';
+
 export function UnlockSheet({
   open, seedName, city, count, isGuest = false, onRequireAccount, onClose, onSuccess,
 }: {
   open: boolean; seedName: string; city: string;
   count: number; isGuest?: boolean; onRequireAccount?: () => void;
-  onClose: () => void; onSuccess: () => void;
+  onClose: () => void; onSuccess: (mode: UnlockMode) => void;
 }) {
   const reduced = useEffectiveReducedMotion();
   const [sel, setSel] = useState<string | null>(null);
@@ -74,7 +82,7 @@ export function UnlockSheet({
     setPay("processing");
     const t1 = setTimeout(() => {
       setPay("success");
-      payTimers.current.push(setTimeout(onSuccess, 450));
+      payTimers.current.push(setTimeout(() => onSuccess('demo'), 450));
     }, reduced ? 0 : 900);
     payTimers.current.push(t1);
   }
@@ -100,7 +108,7 @@ export function UnlockSheet({
         return;
       case "success":
         setPay("success");
-        payTimers.current.push(setTimeout(onSuccess, 450));
+        payTimers.current.push(setTimeout(() => onSuccess('live'), 450));
         return;
       case "auth_required":
         // Live gateway, but the server has no session for this visitor. Send

@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Wallet } from 'lucide-react';
-import { getWallet } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
+import { useData } from '@/lib/useData';
 
 const PANEL_STYLE: React.CSSProperties = {
   background: 'var(--color-surface)',
@@ -20,11 +21,17 @@ const PANEL_STYLE: React.CSSProperties = {
  * Razorpay Route (see app/pricing/page.tsx for why).
  */
 export function TopUpMenu() {
-  const [credits, setCredits] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setCredits(getWallet().credits), []);
+  // Spending a credit anywhere in the app re-reads this chip. It used to be a
+  // one-shot mount read, so booking a meetup left the nav showing the old count
+  // until a hard reload.
+  const { data: wallet, loading } = useData('wallet', () => dataClient.getWallet(), {
+    credits: 0,
+    used: 0,
+  });
+  const credits = loading ? null : wallet.credits;
 
   const close = useCallback(() => setOpen(false), []);
   useEffect(() => {

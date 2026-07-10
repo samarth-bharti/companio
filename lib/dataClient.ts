@@ -14,6 +14,7 @@
 // Components import `dataClient` (the chosen singleton) and call await dc.getWallet().
 // Nothing in this file imports @prisma/client or next-auth — those live in API routes.
 
+import { emitDataChange } from './dataEvents';
 import type { Wallet, DemoUser, QuizResult } from './journeyState';
 import type {
   Booking,
@@ -356,6 +357,49 @@ export function makeHttpDataClient(): DataClient {
   };
 }
 
+// ── Change notification ───────────────────────────────────────────────────────
+// Every mutation announces which slice it touched, so useData() subscribers
+// re-read instead of showing a stale value until the next hard reload. Applied
+// as a decorator, once, rather than sprinkled through each method of each
+// client — otherwise the two implementations drift and one forgets to emit.
+//
+// Emission happens AFTER the underlying call resolves: in http mode that means
+// after the server confirmed the write, so a rejected mutation never triggers a
+// re-read that would just restore the old value.
+
+/** Which slices each mutation invalidates. */
+const MUTATION_EFFECTS = {
+  addCredits: ['wallet'],
+  decrementMeeting: ['wallet'],
+  setUnlocked: ['unlocked'],
+  setWelcomed: ['welcomed'],
+  setUser: ['user'],
+  // A booking may spend a credit, so the wallet is stale too.
+  addBooking: ['bookings', 'wallet'],
+  updateBooking: ['bookings'],
+  toggleFavorite: ['favorites'],
+  appendMessage: ['messages'],
+  addNotification: ['notifications'],
+  markNotificationsRead: ['notifications'],
+  setPlan: ['plan'],
+  saveApplication: ['application'],
+} as const satisfies Partial<Record<keyof DataClient, readonly DataKeyOf[]>>;
+
+type DataKeyOf = Parameters<typeof emitDataChange>[0];
+
+export function withChangeEvents(client: DataClient): DataClient {
+  const wrapped = { ...client } as Record<string, unknown>;
+  for (const [method, keys] of Object.entries(MUTATION_EFFECTS)) {
+    const original = client[method as keyof DataClient] as (...a: unknown[]) => Promise<unknown>;
+    wrapped[method] = async (...args: unknown[]) => {
+      const result = await original(...args);
+      for (const key of keys) emitDataChange(key);
+      return result;
+    };
+  }
+  return wrapped as unknown as DataClient;
+}
+
 // ── Singleton export ──────────────────────────────────────────────────────────
 // NEXT_PUBLIC_DATA_CLIENT is read at module-init time (build-time inlined by Next).
 // Default: 'local' so the app works with zero config today.
@@ -364,5 +408,6 @@ export function makeHttpDataClient(): DataClient {
 const clientMode =
   (process.env.NEXT_PUBLIC_DATA_CLIENT as 'local' | 'http' | undefined) ?? 'local';
 
-export const dataClient: DataClient =
-  clientMode === 'http' ? makeHttpDataClient() : makeLocalStorageDataClient();
+export const dataClient: DataClient = withChangeEvents(
+  clientMode === 'http' ? makeHttpDataClient() : makeLocalStorageDataClient(),
+);

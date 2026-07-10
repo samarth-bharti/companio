@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Plus_Jakarta_Sans, Lora } from "next/font/google";
 import { LenisProvider } from "@/components/motion/LenisProvider";
 import { MotionPreferenceProvider } from "@/lib/motionPreference";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { Suspense } from "react";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
@@ -92,9 +93,11 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <MotionPreferenceProvider>
-          <LenisProvider>{children}</LenisProvider>
-        </MotionPreferenceProvider>
+        <AuthProvider>
+          <MotionPreferenceProvider>
+            <LenisProvider>{children}</LenisProvider>
+          </MotionPreferenceProvider>
+        </AuthProvider>
         <Suspense fallback={null}>
           <AnalyticsProvider />
         </Suspense>

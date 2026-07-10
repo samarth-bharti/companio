@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { CheckCircle2 } from 'lucide-react';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
-import { setUser } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
 import { track } from '@/lib/analytics';
 import { spring, stagger } from '@/lib/motion';
 import type { RegFormData } from './RegisterWizard';
@@ -30,7 +30,7 @@ export function StepDone({ form, next }: Props) {
   // Persist demo user — runs only once on mount, client-side only.
   // City is carried so the companion application pre-fills it (one flow).
   useEffect(() => {
-    setUser({ firstName: name, city: form.city || undefined });
+    void dataClient.setUser({ firstName: name, city: form.city || undefined });
     track('signup', { role: form.role });
   }, [name, form.city, form.role]);
 

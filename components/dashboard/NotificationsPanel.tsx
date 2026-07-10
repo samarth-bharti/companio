@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
-import { getNotifications, markNotificationsRead } from '@/lib/appState';
+import { dataClient } from '@/lib/dataClient';
+import { useData } from '@/lib/useData';
 import type { AppNotification } from '@/lib/appState';
 import { calm, stagger, spring } from '@/lib/motion';
 
@@ -20,17 +20,17 @@ const itemVariant = {
   visible: { opacity: 1, y: 0, transition: calm.base },
 };
 
+const NO_NOTIFS: AppNotification[] = [];
+
 export function NotificationsPanel() {
-  const [notifs, setNotifs] = useState<AppNotification[]>([]);
   const reduced = useEffectiveReducedMotion();
 
-  useEffect(() => {
-    setNotifs(getNotifications());
-  }, []);
+  // A booking made on another tab pushes a notification; this list now shows it
+  // without a reload.
+  const { data: notifs } = useData('notifications', () => dataClient.getNotifications(), NO_NOTIFS);
 
   const markAllRead = () => {
-    markNotificationsRead();
-    setNotifs(getNotifications());
+    void dataClient.markNotificationsRead();
   };
 
   const unreadCount = notifs.filter((n) => !n.read).length;

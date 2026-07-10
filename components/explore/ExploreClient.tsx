@@ -4,7 +4,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
-import { getUnlocked, setUnlocked as persistUnlocked, getUser } from '@/lib/journeyState';
+import { getUnlocked, getUser } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
+import { emitDataChange } from '@/lib/dataEvents';
 import { track } from '@/lib/analytics';
 import { COMPANIONS, TOP_MATCH_ID, FREE_NOW_COUNT } from '@/lib/data/companions';
 import type { Companion } from '@/lib/data/companions';
@@ -12,7 +14,7 @@ import { ExploreHeader } from './ExploreHeader';
 import { ExploreFilters } from './ExploreFilters';
 import type { ViewMode } from './ExploreFilters';
 import { CompanionGrid } from './CompanionGrid';
-import { UnlockSheet } from './UnlockSheet';
+import { UnlockSheet, type UnlockMode } from './UnlockSheet';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
 import { ParticleField } from '@/components/journey/ParticleField';
 import { ActivityToast } from '@/components/journey/ActivityToast';
@@ -121,15 +123,24 @@ export function ExploreClient() {
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  const onSheetSuccess = useCallback(() => {
+  const onSheetSuccess = useCallback((mode: UnlockMode) => {
     if (sequenceStartedRef.current) return; // sequence already ran
     sequenceStartedRef.current = true;
     const tappedId = seed?.id ?? TOP_MATCH_ID;
     setSheetOpen(false);
     setUnlocked(true);
     setUnlockedCount(COMPANIONS.length);
-    persistUnlocked(true);
-    track('unlock_success', {});
+
+    if (mode === 'demo') {
+      // No gateway in this build — the client owns the flag.
+      void dataClient.setUnlocked(true);
+    } else {
+      // A verified payment already flipped User.unlocked server-side. Writing it
+      // from here would be a payment bypass in disguise; just tell the rest of
+      // the app to re-read it (Nav's chip, the dashboard, the wallet).
+      emitDataChange('unlocked');
+    }
+    track('unlock_success', { method: mode });
     setDeveloping({ tappedId });
 
     const later = (fn: () => void, ms: number) =>

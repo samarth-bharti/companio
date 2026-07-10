@@ -15,7 +15,8 @@ import {
   getEmpathyEcho, type QuizAnswers,
 } from './quizData';
 import { TOP_MATCH_ID } from '@/lib/data/companions';
-import { setQuiz, setUser } from '@/lib/journeyState';
+import { setQuiz } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
 
 type Phase = 'question' | 'echo' | 'illusion' | 'result';
 
@@ -117,7 +118,7 @@ export function QuizClient() {
   const handleNavigate = useCallback(() => {
     // All localStorage writes happen here — safe in event handler
     setQuiz({ name: answers.name, city: answers.city, matchedId: TOP_MATCH_ID });
-    setUser({ firstName: answers.name });
+    void dataClient.setUser({ firstName: answers.name });
     router.push('/explore?matched=1');
   }, [answers.name, answers.city, router]);
 

@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Heart, Star } from 'lucide-react';
-import { getFavorites, toggleFavorite } from '@/lib/appState';
-import { getCompanion } from '@/lib/data/companions';
+import { dataClient } from '@/lib/dataClient';
+import { useData } from '@/lib/useData';
 import type { Companion } from '@/lib/data/companions';
 import { calm, spring, stagger } from '@/lib/motion';
 
@@ -15,18 +15,24 @@ const cardVariant = {
   exit:    { opacity: 0, scale: 0.9, transition: calm.fast },
 };
 
+const NO_FAVOURITES: Companion[] = [];
+
 export function SavedPanel() {
-  const [favorites, setFavorites] = useState<Companion[]>([]);
   const reduced = useEffectiveReducedMotion();
 
-  useEffect(() => {
-    const ids = getFavorites();
-    setFavorites(ids.map((id) => getCompanion(id)).filter((c): c is Companion => !!c));
+  // Resolve ids to profiles inside the reader, so hearting a companion on
+  // /explore updates this list live rather than on the next reload. Once http
+  // mode is on, getCompanion goes to the API and drops suspended profiles.
+  const read = useCallback(async () => {
+    const ids = await dataClient.getFavorites();
+    const resolved = await Promise.all(ids.map((id) => dataClient.getCompanion(id)));
+    return resolved.filter((c): c is Companion => !!c);
   }, []);
 
+  const { data: favorites } = useData('favorites', read, NO_FAVOURITES);
+
   const unsave = (id: string) => {
-    toggleFavorite(id);
-    setFavorites((prev) => prev.filter((c) => c.id !== id));
+    void dataClient.toggleFavorite(id);
   };
 
   if (favorites.length === 0) {

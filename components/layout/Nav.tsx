@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import { Home, Compass, User, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { Seal } from "@/components/ui/Seal";
 import { NavUser } from "@/components/layout/NavUser";
-import { getUser } from "@/lib/journeyState";
+import { dataClient } from "@/lib/dataClient";
+import { useData } from "@/lib/useData";
 import { cn } from "@/lib/utils";
 
 interface NavProps {
@@ -31,12 +32,13 @@ const TABS = [
 export function Nav({ heroMode = false }: NavProps) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
-  const [signedIn, setSignedIn] = useState(false);
 
-  // Hydration-safe: localStorage read deferred to mount.
-  useEffect(() => {
-    setSignedIn(getUser() !== null);
-  }, [pathname]);
+  // Hydration-safe: the read is deferred to mount, so the server and the first
+  // client render agree. useData also re-reads when the user signs in or out in
+  // this tab or any other, which the old [pathname] effect only caught on a
+  // navigation.
+  const { data: user } = useData('user', () => dataClient.getUser(), null);
+  const signedIn = user !== null;
 
   useEffect(() => {
     if (!heroMode) return;

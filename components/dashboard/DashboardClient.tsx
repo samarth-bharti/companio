@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
-import { getUser } from '@/lib/journeyState';
-import { getBookings, updateBooking, getPlan } from '@/lib/appState';
+import { dataClient } from '@/lib/dataClient';
+import { useData } from '@/lib/useData';
+import type { Booking } from '@/lib/appState';
 import { ActivityToast } from '@/components/journey/ActivityToast';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
 import { Reveal } from '@/components/motion/Reveal';
@@ -18,6 +19,9 @@ import { calm } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 type Tab = 'overview' | 'bookings' | 'messages' | 'saved' | 'notifications';
+
+/** Stable identity — a fresh [] each render would re-run useData's effect. */
+const NO_BOOKINGS: Booking[] = [];
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'overview',      label: 'Overview' },
@@ -55,41 +59,56 @@ export function DashboardClient() {
   // router.replace (which is flaky on a statically-prerendered route).
   const [activeTab, setActiveTab]         = useState<Tab>('overview');
   const [companionParam, setCompanionParam] = useState<string | undefined>(undefined);
-  const [userName, setUserName]   = useState<string | null>(null);
   const [greeting, setGreeting]   = useState('');
   const [mounted, setMounted]     = useState(false);
-  const [journeyStep, setJourneyStep] = useState(0);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const reduced = useEffectiveReducedMotion();
+
+  // Live slices. The greeting, the journey stepper and the tab badges all used
+  // to be frozen at mount, so booking a meetup left the stepper on "Browsed".
+  const { data: user }     = useData('user', () => dataClient.getUser(), null);
+  const { data: bookings } = useData('bookings', () => dataClient.getBookings(), NO_BOOKINGS);
+  const { data: plan }     = useData('plan', () => dataClient.getPlan(), null);
+
+  const userName = user?.firstName ?? null;
+
+  // Steps: Browsed(0) → Booked(1) → Met(2) → Verified(3)
+  const journeyStep = plan === 'plus'
+    ? 3
+    : bookings.some((b) => b.status === 'completed')
+      ? 2
+      : bookings.length > 0
+        ? 1
+        : 0;
 
   useEffect(() => {
     // Seed tab + companion thread from the URL (deep-link from profile "Message").
     const rawTab = sp?.get('tab') as Tab | null;
     if (rawTab && TABS.some((t) => t.key === rawTab)) setActiveTab(rawTab);
     setCompanionParam(sp?.get('c') ?? undefined);
-
-    // Auto-mark past bookings once on mount
-    const today = new Date().toISOString().split('T')[0];
-    getBookings().forEach((b) => {
-      if (b.status === 'upcoming' && b.dateISO < today) {
-        updateBooking(b.id, { status: 'completed' });
-      }
-    });
-    // Derive member journey step from fresh state (post-auto-mark).
-    // Steps: Browsed(0) → Booked(1) → Met(2) → Verified(3)
-    const freshBookings = getBookings();
-    const hasMet    = freshBookings.some((b) => b.status === 'completed');
-    const hasBooked = freshBookings.length > 0;
-    const hasVerified = getPlan() === 'plus';
-    setJourneyStep(hasVerified ? 3 : hasMet ? 2 : hasBooked ? 1 : 0);
-
-    const u = getUser();
-    setUserName(u?.firstName ?? null);
-    setGreeting(greetText(u?.firstName ?? null));
     setMounted(true);
     // Seed from URL only on first mount — subsequent tab changes are local.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-complete meetups whose date has passed. In http mode the cron already
+  // does this server-side (app/api/cron), so this only ever fires in local demo
+  // mode; updateBooking is idempotent either way. Depends on `bookings` rather
+  // than running once at mount, so a tab left open overnight still catches up.
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    for (const b of bookings) {
+      if (b.status === 'upcoming' && b.dateISO < today) {
+        void dataClient.updateBooking(b.id, { status: 'completed' });
+      }
+    }
+  }, [bookings]);
+
+  // The greeting depends on the clock, so it must be computed after mount or
+  // the server would render "Good morning" into a page loaded at 9pm.
+  useEffect(() => {
+    setGreeting(greetText(userName));
+  }, [userName]);
 
   const setTab = useCallback(
     (tab: Tab) => {

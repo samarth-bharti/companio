@@ -3,15 +3,19 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { signOut } from 'next-auth/react';
 import { Bell, LayoutDashboard, Wallet, LogOut } from 'lucide-react';
-import { getUser, clearUser, type DemoUser } from '@/lib/journeyState';
-import {
-  getNotifications,
-  markNotificationsRead,
-  type AppNotification,
-} from '@/lib/appState';
+import { clearUser, type DemoUser } from '@/lib/journeyState';
+import { markNotificationsRead, type AppNotification } from '@/lib/appState';
+import { dataClient } from '@/lib/dataClient';
+import { useData } from '@/lib/useData';
+import { emitDataChange } from '@/lib/dataEvents';
+import { useAuthCapability } from '@/lib/authClient';
 import { TopUpMenu } from '@/components/layout/TopUpMenu';
 import { RollLink } from '@/components/motion/RollLink';
+
+/** Stable identity — a fresh [] each render would re-run useData's effect. */
+const NO_NOTIFS: AppNotification[] = [];
 
 function timeAgo(ts: number): string {
   const mins = Math.max(1, Math.round((Date.now() - ts) / 60000));
@@ -55,15 +59,20 @@ const PANEL_STYLE: React.CSSProperties = {
  */
 export function NavUser() {
   const router = useRouter();
+  const { configured: authConfigured } = useAuthCapability();
   const [user, setUser] = useState<DemoUser | null>(null);
   const [notifs, setNotifs] = useState<AppNotification[]>([]);
   const [openBell, setOpenBell] = useState(false);
   const [openMenu, setOpenMenu] = useState(false);
 
-  useEffect(() => {
-    setUser(getUser());
-    setNotifs(getNotifications());
-  }, []);
+  // Both slices re-read on change: signing in, signing out, or a new
+  // notification from a booking updates the avatar and the bell immediately,
+  // in this tab and any other. Previously frozen at mount.
+  const { data: liveUser } = useData('user', () => dataClient.getUser(), null);
+  const { data: liveNotifs, refresh: refreshNotifs } = useData('notifications', () => dataClient.getNotifications(), NO_NOTIFS);
+
+  useEffect(() => { setUser(liveUser); }, [liveUser]);
+  useEffect(() => { setNotifs(liveNotifs); }, [liveNotifs]);
 
   const closeBell = useCallback(() => setOpenBell(false), []);
   const closeMenu = useCallback(() => setOpenMenu(false), []);
@@ -99,7 +108,9 @@ export function NavUser() {
           onClick={() => {
             setOpenBell((v) => !v);
             setOpenMenu(false);
-            if (!openBell) setNotifs(getNotifications());
+            // The list is kept live by useData; this only covers the case where
+            // the server changed it while this tab was backgrounded.
+            if (!openBell) refreshNotifs();
           }}
           className="relative w-10 h-10 inline-flex items-center justify-center rounded-full transition-colors hover:bg-azure-tint focus-visible:outline-azure"
           style={{ color: 'var(--color-ink-muted)' }}
@@ -129,10 +140,7 @@ export function NavUser() {
                   type="button"
                   className="font-sans text-xs font-semibold focus-visible:outline-azure rounded-sm"
                   style={{ color: 'var(--color-azure)' }}
-                  onClick={() => {
-                    markNotificationsRead();
-                    setNotifs(getNotifications());
-                  }}
+                  onClick={() => { void dataClient.markNotificationsRead(); }}
                 >
                   Mark all read
                 </button>
@@ -209,10 +217,18 @@ export function NavUser() {
             <button
               type="button"
               role="menuitem"
-              onClick={() => {
-                clearUser();
-                setUser(null);
+              onClick={async () => {
                 closeMenu();
+                // Clear the local profile either way, and end the real session
+                // when there is one — otherwise "Sign out" left the JWT valid
+                // and the server still considered the visitor signed in.
+                clearUser();
+                emitDataChange('user');
+                setUser(null);
+                if (authConfigured) {
+                  await signOut({ callbackUrl: '/' });
+                  return;
+                }
                 router.push('/');
               }}
               className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl font-sans text-sm font-semibold hover:bg-black/[.03] focus-visible:outline-azure text-left"
