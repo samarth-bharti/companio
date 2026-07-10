@@ -8,6 +8,7 @@ import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import { CITIES } from '@/lib/data/cities';
 import { Reveal } from '@/components/motion/Reveal';
+import { ageInYears, parseDateOfBirth, maxAdultDob, MIN_AGE } from '@/lib/age';
 import { FieldStatus, ShakeWrapper } from './FieldStatus';
 import type { RegFormData } from './RegisterWizard';
 
@@ -28,22 +29,17 @@ const PW_RULES = [
 
 function isEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
+// Age rules come from lib/age.ts — the same module the server enforces with
+// (via lib/server/age.ts). This file used to carry its own private calcAge(),
+// which is exactly how a client check and a server check drift apart.
 function calcAge(dob: string): number | null {
-  if (!dob) return null;
-  const birth = new Date(dob);
-  if (isNaN(birth.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age;
+  const parsed = parseDateOfBirth(dob);
+  return parsed ? ageInYears(parsed) : null;
 }
 
 // Computed at render-time inside the component (avoids SSR/client mismatch via suppressHydrationWarning)
 function getMaxDob(): string {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 18);
-  return d.toISOString().split('T')[0];
+  return maxAdultDob();
 }
 
 const FIELD_INPUT_BASE = 'w-full h-12 px-4 rounded-xl font-sans text-sm';
@@ -115,13 +111,13 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
   const [emailShakeKey,     setEmailShakeKey]     = useState(0);
 
   const age     = calcAge(form.dob);
-  const under18 = age !== null && age < 18;
+  const under18 = age !== null && age < MIN_AGE;
 
   // Derived validity
   const firstNameValid = form.firstName.trim().length > 0;
   const emailValid     = isEmail(form.email);
   const pwValid        = PW_RULES.every(r => r.test(form.password));
-  const dobValid       = !!form.dob && (age ?? -1) >= 18;
+  const dobValid       = !!form.dob && (age ?? -1) >= MIN_AGE;
   const genderValid    = !!form.gender;
   const cityValid      = !!form.city;
 
@@ -140,7 +136,7 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
     if (!form.dob)
       e.dob = 'Please enter your date of birth.';
     else if (under18)
-      e.dob = 'You must be 18 or older to join Companio.';
+      e.dob = `You must be ${MIN_AGE} or older to join Companio.`;
     if (!form.gender)
       e.gender = 'Please select a gender identity.';
     if (!form.city)
@@ -298,7 +294,7 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
           />
           {under18 && !errors.dob && (
             <p className="mt-1 font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-              Companio is for adults aged 18 and over. We&apos;d love to welcome you when you&apos;re ready.
+              Companio is for adults aged {MIN_AGE} and over. We&apos;d love to welcome you when you&apos;re ready.
             </p>
           )}
         </Field>

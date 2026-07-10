@@ -1,127 +1,123 @@
 'use client';
 
-import { useState } from 'react';
-import { MapPin } from 'lucide-react';
-import { addNotification } from '@/lib/appState';
-import { Button } from '@/components/ui/Button';
-import { cn } from '@/lib/utils';
+import { MapPin, CalendarDays } from 'lucide-react';
+import { useCompanionDashboard, type CompanionMeetup } from '@/lib/useCompanionDashboard';
 
-type BookingStatus = 'pending' | 'accepted' | 'declined';
+/**
+ * A companion's confirmed, upcoming meetups.
+ *
+ * This used to be "Pending requests" with Accept and Decline buttons over two
+ * invented members, Arjun M. and Meera K. There is no such flow: `BookingStatus`
+ * is `pending_payment | upcoming | completed | cancelled | refunded`. A booking
+ * becomes `upcoming` the moment payment settles — nobody accepts it, and nothing
+ * in the schema could record a decline. The buttons wrote a local notification
+ * and changed nothing.
+ *
+ * If companions should be able to decline, that needs a status in the model
+ * first. Until then, showing them what is actually booked is the honest version.
+ */
 
-interface MockRequest {
-  id: string;
-  member: string;
-  activity: string;
-  date: string;
-  time: string;
-  area: string;
-  rate: number;
-}
-
-const MOCK: MockRequest[] = [
-  { id: 'req1', member: 'Arjun M.', activity: 'City Walk', date: 'Sat, 14 Jun', time: 'Morning · 7-9 AM', area: 'Bandra West', rate: 499 },
-  { id: 'req2', member: 'Meera K.', activity: 'Café Chat', date: 'Sun, 15 Jun', time: 'Afternoon · 3-5 PM', area: 'Juhu', rate: 499 },
+const PREVIEW: CompanionMeetup[] = [
+  { id: 'p1', activity: 'City Walk', dateISO: '2026-08-15', time: 'Morning · 7–9 AM', place: 'Carter Road', status: 'upcoming', memberFirstName: 'Arjun' },
+  { id: 'p2', activity: 'Café Chat', dateISO: '2026-08-17', time: 'Afternoon · 3–5 PM', place: 'Prithvi Café', status: 'upcoming', memberFirstName: 'Meera' },
 ];
 
-export function CompanionDashBookings() {
-  const [statuses, setStatuses] = useState<Record<string, BookingStatus>>({});
+function formatDate(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+}
 
-  const respond = (id: string, action: 'accepted' | 'declined') => {
-    setStatuses((s) => ({ ...s, [id]: action }));
-    const req = MOCK.find((r) => r.id === id);
-    if (!req) return;
-    addNotification({
-      title: action === 'accepted' ? 'Booking accepted' : 'Booking declined',
-      body:
-        action === 'accepted'
-          ? `You confirmed ${req.member}'s ${req.activity} on ${req.date}.`
-          : `You declined ${req.member}'s request.`,
-    });
-  };
-
+function Panel({ children }: { children: React.ReactNode }) {
   return (
     <section aria-labelledby="bookings-heading">
-      <h2
-        id="bookings-heading"
-        className="font-sans font-bold text-base mb-4"
-        style={{ color: 'var(--color-ink)' }}
-      >
-        Pending requests
+      <h2 id="bookings-heading" className="font-sans font-bold text-base mb-4" style={{ color: 'var(--color-ink)' }}>
+        Upcoming meetups
       </h2>
-
-      <div className="space-y-3">
-        {MOCK.map((req) => {
-          const status = statuses[req.id];
-          return (
-            <div
-              key={req.id}
-              className="rounded-2xl p-5"
-              style={{
-                background: 'var(--color-surface)',
-                border: '1.5px solid rgba(46,107,255,0.1)',
-                boxShadow: 'var(--shadow-1)',
-              }}
-            >
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div>
-                  <p className="font-sans font-bold text-sm mb-1" style={{ color: 'var(--color-ink)' }}>
-                    {req.member}
-                    <span
-                      className="ml-2 font-normal text-xs px-2 py-0.5 rounded-pill"
-                      style={{ background: 'rgba(46,107,255,0.08)', color: 'var(--color-azure-deep)' }}
-                    >
-                      {req.activity}
-                    </span>
-                  </p>
-                  <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-                    {req.date} · {req.time}
-                  </p>
-                  <p className="font-sans text-xs flex items-center gap-1 mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
-                    <MapPin size={11} aria-hidden="true" />
-                    {req.area} · ₹{req.rate}
-                  </p>
-                </div>
-
-                {status && status !== 'pending' ? (
-                  <StatusChip status={status} />
-                ) : (
-                  <div className="flex gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="cta"
-                      onClick={() => respond(req.id, 'accepted')}
-                    >
-                      Accept
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => respond(req.id, 'declined')}
-                    >
-                      Decline
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {children}
     </section>
   );
 }
 
-function StatusChip({ status }: { status: 'accepted' | 'declined' }) {
-  const isAccepted = status === 'accepted';
+export function CompanionDashBookings() {
+  const state = useCompanionDashboard();
+
+  if (state.status === 'loading') {
+    return (
+      <Panel>
+        <div
+          className="rounded-2xl p-5 h-24"
+          style={{ background: 'var(--color-surface)', border: '1.5px solid rgba(46,107,255,0.1)' }}
+          aria-hidden="true"
+        />
+      </Panel>
+    );
+  }
+
+  if (state.status === 'error') {
+    return (
+      <Panel>
+        <p role="alert" className="font-sans text-sm rounded-2xl p-5"
+          style={{ background: 'rgba(192,57,43,0.06)', border: '1.5px solid rgba(192,57,43,0.2)', color: '#C0392B' }}>
+          {state.message}
+        </p>
+      </Panel>
+    );
+  }
+
+  const meetups = state.status === 'live' ? state.data.upcoming : PREVIEW;
+
+  if (meetups.length === 0) {
+    return (
+      <Panel>
+        <div
+          className="rounded-2xl p-8 text-center"
+          style={{ background: 'var(--color-surface)', border: '1.5px solid rgba(46,107,255,0.1)' }}
+        >
+          <CalendarDays size={22} className="mx-auto mb-2" style={{ color: 'var(--color-ink-muted)' }} aria-hidden="true" />
+          <p className="font-sans text-sm font-semibold" style={{ color: 'var(--color-ink)' }}>
+            No meetups booked yet.
+          </p>
+          <p className="font-sans text-xs mt-1" style={{ color: 'var(--color-ink-muted)' }}>
+            Turn on &ldquo;Available now&rdquo; and keep your profile fresh — members see both.
+          </p>
+        </div>
+      </Panel>
+    );
+  }
+
   return (
-    <span
-      className="inline-flex items-center px-3 py-1.5 rounded-pill font-sans text-xs font-semibold shrink-0"
-      style={{
-        background: isAccepted ? 'rgba(31,174,107,0.1)' : 'rgba(90,99,120,0.08)',
-        color: isAccepted ? '#157A4A' : 'var(--color-ink-muted)',
-      }}
-    >
-      {isAccepted ? 'Accepted' : 'Declined'}
-    </span>
+    <Panel>
+      <div className="space-y-3">
+        {meetups.map((m) => (
+          <div
+            key={m.id}
+            className="rounded-2xl p-5"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1.5px solid rgba(46,107,255,0.1)',
+              boxShadow: 'var(--shadow-1)',
+            }}
+          >
+            <p className="font-sans font-bold text-sm mb-1" style={{ color: 'var(--color-ink)' }}>
+              {m.memberFirstName}
+              <span
+                className="ml-2 font-normal text-xs px-2 py-0.5 rounded-pill"
+                style={{ background: 'rgba(46,107,255,0.08)', color: 'var(--color-azure-deep)' }}
+              >
+                {m.activity}
+              </span>
+            </p>
+            <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+              {formatDate(m.dateISO)} · {m.time}
+            </p>
+            <p className="font-sans text-xs flex items-center gap-1 mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
+              <MapPin size={11} aria-hidden="true" />
+              {m.place}
+            </p>
+          </div>
+        ))}
+      </div>
+    </Panel>
   );
 }

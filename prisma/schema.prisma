@@ -225,6 +225,10 @@ model Companion {
   suspended      Boolean  @default(false)
   bannedAt       DateTime?
   banReason      String?
+  // Where this companion is paid. Collected in the companion dashboard; read by
+  // an admin when settling a CompanionPayout. Nullable: a companion with no
+  // payout method simply cannot be paid yet, and the admin payouts page says so.
+  payoutUpi      String?
   // Presence + smart-match fields
   availableNow   Boolean  @default(false)
   availability   String   @default("Available tomorrow")

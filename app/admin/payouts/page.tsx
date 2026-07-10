@@ -11,7 +11,8 @@ export default async function AdminPayouts() {
   const payouts = await prisma.companionPayout.findMany({
     orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
     take: 100,
-    include: { companion: { select: { name: true } } },
+    // The panel told an admin how much was owed but never where to send it.
+    include: { companion: { select: { name: true, payoutUpi: true } } },
   });
 
   return (
@@ -24,6 +25,13 @@ export default async function AdminPayouts() {
             <div className="flex-1 min-w-[160px]">
               <p className="text-sm font-semibold text-[var(--color-ink)]">{p.companion?.name ?? p.companionId}</p>
               <p className="text-xs text-[var(--color-ink-muted)]">Booking {p.bookingId.slice(-8)} · {p.createdAt.toLocaleDateString('en-IN')}</p>
+              {p.companion?.payoutUpi ? (
+                <p className="text-xs font-mono mt-0.5 text-[var(--color-ink)]">{p.companion.payoutUpi}</p>
+              ) : (
+                <p className="text-xs mt-0.5 font-semibold text-rose-700">
+                  No payout method — ask them to add a UPI id before you transfer.
+                </p>
+              )}
             </div>
             <p className="font-display font-black text-[var(--color-ink)]">{rupees(p.amountPaise)}</p>
             {p.status === 'paid' ? (

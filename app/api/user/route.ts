@@ -16,10 +16,17 @@ export async function GET() {
     const { prisma } = await import('@/lib/prisma');
     const u = await prisma.user.findUnique({
       where: { id: userId },
-      select: { firstName: true, city: true },
+      select: { firstName: true, city: true, dateOfBirth: true },
     });
     if (!u) return json(null);
-    return json({ firstName: u.firstName, city: u.city ?? undefined });
+    // dateOfBirth is returned so the client can tell "we have never asked" from
+    // "they told us". A Google sign-in never supplies one, and booking refuses
+    // without it — the UI has to know in order to ask.
+    return json({
+      firstName: u.firstName,
+      city: u.city ?? undefined,
+      dateOfBirth: u.dateOfBirth ? u.dateOfBirth.toISOString().slice(0, 10) : undefined,
+    });
   });
 }
 

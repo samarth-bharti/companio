@@ -183,11 +183,30 @@ The credit packs and the ₹299 Plus membership stay in the tree, unused, behind
 `MARKETPLACE_PAYMENTS_ENABLED`, for when **Razorpay Route** (linked accounts)
 lands — which is also what will make an "escrow" claim true.
 
+### Companion dashboard + 18+ gate (later on 2026-07-10)
+
+- **`/companion-dashboard` was 100% hardcoded and quietly dangerous.** It greeted
+  every visitor as "Priya S.", listed two invented booking requests with
+  Accept/Decline buttons for a flow the schema has no status for, showed a bank
+  account ending 4521 that belonged to nobody, promised "payouts every Monday"
+  that no code keeps, and — worst — **fell back to ₹7,485 of "earnings" whenever
+  the earnings fetch failed.** A real companion could read that as money owed.
+  Now backed by `GET /api/companion/dashboard` and `PATCH /api/companion/profile`,
+  with a four-state hook (`loading | preview | live | error`) that **never shows a
+  number it does not have**. Rate, bio, activities, availability and a payout UPI
+  id all persist. `Companion.payoutUpi` added; the admin payouts page shows it, or
+  says loudly that there isn't one.
+- **The 18+ gate now has a client path.** `AccountGate` renders `ConfirmAge` when
+  the signed-in user has no date of birth — which is every Google-OAuth user.
+  Age rules live in `lib/age.ts` and are enforced identically in the browser and
+  on the server (`lib/server/age.ts` re-exports them), instead of a private
+  `calcAge()` in `StepAboutYou` and four hardcoded `18`s.
+- **`public/hero.mp4`: 2422 KB → 1299 KB (46% smaller), SSIM 0.98794.** The source
+  carried a 139 kb/s AAC track and the `<video>` is `muted`. Reproducible via
+  `npm run encode:hero`, which **refuses to write** below an SSIM floor of 0.985.
+
 ## What is still NOT real
 
-- **`/companion-dashboard` is 100% hardcoded.** It renders "Welcome back,
-  Priya S." and a banner admitting no real data is stored. `CompanionDashPayout`
-  collects a UPI ID into `useState` and throws it away.
 - **`/contact` has no form** — just email addresses.
 - **Phone OTP is inert.** `verifyOtp()` in `lib/auth.ts` is `return false`.
 - **Forgot-password is a `setTimeout`.** No email is ever sent.
@@ -195,6 +214,9 @@ lands — which is also what will make an "escrow" claim true.
   sellable today is the ₹199 unlock.
 - Only **Mumbai** has real companions. Every other city re-skins the same 18
   people via `localizeArea()`. The map now says so; the explore grid does not.
+- Companions cannot decline a booking. There is no status for it in
+  `BookingStatus` — the old Accept/Decline buttons were fiction, and the honest
+  version shows confirmed meetups instead. Add a status before adding the UI.
 
 ## Known-stale / open
 
