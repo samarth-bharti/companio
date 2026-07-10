@@ -136,6 +136,39 @@ unchanged in `http` mode.
   300 px on first paint and never responded to a resize; `admin/discounts` called
   `Date.now()` in the render body.
 
+### Verification (added later on 2026-07-10)
+
+Two findings, both in the "the badge lies" family:
+
+- **`idVerifyStatus` was set to `verified` unconditionally** by
+  `/api/application/upload`, for every submission, regardless of any check. And
+  `ocrMatched` — the thing that looked like corroboration — is computed by
+  **tesseract.js in the applicant's own browser** and POSTed. An applicant could
+  upload a photo of a cat with `ocrMatched=true` and the admin queue would show
+  *"ID check: verified · OCR matched ✓"*. Nothing is ever marked `verified` now;
+  it lands `pending` and an admin approval stamps `manual`. The admin UI labels
+  the OCR result as self-reported.
+- **There was no 18+ check on the server at all.** `StepAboutYou` refuses under-18s
+  in the browser and then *discards the date of birth*; nothing persisted it, no
+  API asked for it, and Google OAuth does not supply one. `User.dateOfBirth` now
+  exists, is set-once, and `POST /api/bookings` and `POST /api/application` both
+  return `403 age_verification_required` without it. An admin can correct a
+  genuine mistake but **cannot** wave through anyone under 18.
+
+New upload checks: the selfie may not be byte-identical to the ID; the selfie may
+not be a PDF; **both** fingerprints (not just the ID) are checked for reuse across
+applicants; the endpoint is rate limited.
+
+**What none of this proves:** that a person owns the identity they submitted.
+Only a KYC vendor querying UIDAI / the Income Tax database can. Format checks,
+magic bytes and duplicate fingerprints are a filter in front of a human, not a
+substitute for one.
+
+**Still open on age:** a Google-OAuth user has no date of birth, so their first
+booking will 403. **A post-sign-in "confirm your date of birth" step is required
+before `http` mode goes live.** The register wizard already supplies it for the
+local path.
+
 ## v1 scope decision (locked 2026-07-10)
 
 **We sell the ₹199 unlock and nothing else.** First two meetings are included and

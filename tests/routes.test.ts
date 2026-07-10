@@ -62,7 +62,14 @@ beforeEach(() => {
   // sender isn't message-blocked before writing. Default both to "allowed", so
   // each test opts INTO the blocked case rather than every test having to opt out.
   prismaMock.companion = { findFirst: vi.fn().mockResolvedValue({ id: 'ananya' }) };
-  prismaMock.user = { findUnique: vi.fn().mockResolvedValue({ messageBlocked: false }) };
+  // Booking and companion applications also read dateOfBirth (18+ gate). Default
+  // to a comfortably adult DOB so each test opts INTO the underage case.
+  prismaMock.user = {
+    findUnique: vi.fn().mockResolvedValue({
+      messageBlocked: false,
+      dateOfBirth: new Date('1995-01-01'),
+    }),
+  };
 });
 
 afterEach(() => {
@@ -158,6 +165,32 @@ describe('bookings', () => {
       time: 'AM', place: 'Bandra', usedCredit: false,
     }));
     expect(res.status).toBe(400);
+    expect(prismaMock.booking.create).not.toHaveBeenCalled();
+  });
+
+  // Companio is 18+. The register wizard checks this in the browser and used to
+  // throw the date away; Google OAuth never supplies one. The server checks now.
+  it('POST refuses a booking when we have never asked for a date of birth (403)', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ dateOfBirth: null });
+    const res = await bookingsPost(jsonReq({
+      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      time: 'Morning', place: 'Cafe', usedCredit: true,
+    }));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ error: 'age_verification_required' });
+    expect(prismaMock.booking.create).not.toHaveBeenCalled();
+    expect(prismaMock.wallet.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('POST refuses a booking from someone under 18 (403)', async () => {
+    const sixteen = new Date();
+    sixteen.setFullYear(sixteen.getFullYear() - 16);
+    prismaMock.user.findUnique.mockResolvedValue({ dateOfBirth: sixteen });
+    const res = await bookingsPost(jsonReq({
+      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      time: 'Morning', place: 'Cafe', usedCredit: true,
+    }));
+    expect(res.status).toBe(403);
     expect(prismaMock.booking.create).not.toHaveBeenCalled();
   });
 

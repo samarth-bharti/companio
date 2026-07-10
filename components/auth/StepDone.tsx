@@ -30,9 +30,15 @@ export function StepDone({ form, next }: Props) {
   // Persist demo user — runs only once on mount, client-side only.
   // City is carried so the companion application pre-fills it (one flow).
   useEffect(() => {
-    void dataClient.setUser({ firstName: name, city: form.city || undefined });
+    // form.dob is already gated to 18+ by StepAboutYou; the server re-checks it
+    // and stores it set-once, because a browser check is not a check.
+    void dataClient.setUser({
+      firstName: name,
+      city: form.city || undefined,
+      dateOfBirth: form.dob || undefined,
+    });
     track('signup', { role: form.role });
-  }, [name, form.city, form.role]);
+  }, [name, form.city, form.dob, form.role]);
 
   function proceed() {
     if (form.role === 'companion') {

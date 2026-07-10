@@ -119,6 +119,10 @@ model User {
   lastName    String?
   gender      Gender?
   city        String?  // matches City.id from lib/data/cities
+  // Companio is 18+. Null means "we have never asked" — which is NOT an adult:
+  // booking and companion applications refuse until it is set (lib/server/age.ts).
+  // Google OAuth does not provide this, so it is collected once, after sign-in.
+  dateOfBirth DateTime?
   role        UserRole @default(user) // gates admin panel + companion dashboard
   // The Companion profile this login owns (set when an application is approved).
   // null for ordinary members; @unique so one profile maps to one account.

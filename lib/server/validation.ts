@@ -21,6 +21,8 @@ export const boolValueBody = z.object({ value: z.boolean() });
 export const userBody = z.object({
   firstName: z.string().min(1),
   city: z.string().optional(),
+  /** `YYYY-MM-DD`. Validated for adulthood in the route, not here. */
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD').optional(),
 });
 
 const reviewBody = z.object({ stars: z.number().int().min(1).max(5), text: z.string() });
@@ -130,6 +132,9 @@ export const adminEditUserBody = z.object({
   lastName: z.string().optional(),
   city: z.string().optional(),
   role: z.enum(['user', 'companion', 'admin']).optional(),
+  // Date of birth is set-once for the user themselves. An admin can correct a
+  // genuine mistake — otherwise "contact support" has no mechanism behind it.
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD').optional(),
 });
 
 export const discountCreateBody = z.object({

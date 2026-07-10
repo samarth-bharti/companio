@@ -2,6 +2,7 @@
 // messaging block, delete. All mutations are server-action forms.
 
 import { prisma } from '@/lib/prisma';
+import { ageInYears } from '@/lib/server/age';
 import { ActionForm } from '@/components/admin/ActionForm';
 import {
   suspendUser, unsuspendUser, banUser, unbanUser,
@@ -33,9 +34,12 @@ export default async function AdminUsers() {
     select: {
       id: true, firstName: true, lastName: true, email: true, phone: true,
       role: true, suspended: true, bannedAt: true, messageBlocked: true, createdAt: true,
+      dateOfBirth: true,
       wallet: { select: { credits: true } },
     },
   });
+  // One clock for the whole render (see the note in admin/discounts).
+  const now = new Date();
 
   return (
     <div className="flex flex-col gap-6">
@@ -63,6 +67,12 @@ export default async function AdminUsers() {
                   {u.suspended && <Badge label="suspended" variant="red" />}
                   {isBanned && <Badge label="banned" variant="red" />}
                   {u.messageBlocked && <Badge label="msg-blocked" variant="neutral" />}
+                  {/* No date of birth means this account cannot book or apply
+                      (lib/server/age.ts). Surface it — it looks like a bug to
+                      the user and an admin needs to know why. */}
+                  {u.dateOfBirth
+                    ? <Badge label={`${ageInYears(u.dateOfBirth, now)}y`} variant="neutral" />
+                    : <Badge label="no DOB" variant="red" />}
                   <Badge label={`${u.wallet?.credits ?? 0} cr`} variant="green" />
                 </div>
               </div>
@@ -110,11 +120,25 @@ export default async function AdminUsers() {
 
                 <ActionForm action={editUser} submitLabel="Set role" submitClassName={btn}>
                   <input type="hidden" name="id" value={u.id} />
+                  <input type="hidden" name="firstName" value={u.firstName} />
                   <select name="role" defaultValue={u.role} className={`${inp} pr-6`}>
                     <option value="user">user</option>
                     <option value="companion">companion</option>
                     <option value="admin">admin</option>
                   </select>
+                </ActionForm>
+
+                {/* Correct a genuine date-of-birth mistake. The action refuses
+                    anything under 18 — that is the one rule admin cannot override. */}
+                <ActionForm action={editUser} submitLabel="Set DOB" submitClassName={btn}>
+                  <input type="hidden" name="id" value={u.id} />
+                  <input type="hidden" name="firstName" value={u.firstName} />
+                  <input
+                    name="dateOfBirth"
+                    type="date"
+                    defaultValue={u.dateOfBirth ? u.dateOfBirth.toISOString().slice(0, 10) : ''}
+                    className={inp}
+                  />
                 </ActionForm>
 
                 <ActionForm

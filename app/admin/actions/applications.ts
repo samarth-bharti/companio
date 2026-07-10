@@ -63,9 +63,17 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
         where: { id: app.userId },
         data: { companionId, role: 'companion' },
       });
+      // 'manual' = a human looked at the documents and accepted them. It is the
+      // strongest status this system can honestly assert; 'verified' is reserved
+      // for a KYC vendor that has queried UIDAI / the Income Tax database.
       await tx.companionApplication.update({
         where: { id },
-        data: { status: 'approved' },
+        data: {
+          status: 'approved',
+          idVerifyStatus: 'manual',
+          photoVerifyStatus: 'manual',
+          verifiedAt: new Date(),
+        },
       });
     });
 
@@ -86,7 +94,7 @@ export async function rejectApplication(_prev: ActionState, formData: FormData):
     const { prisma } = await import('@/lib/prisma');
     await prisma.companionApplication.update({
       where: { id },
-      data: { status: 'rejected' },
+      data: { status: 'rejected', idVerifyStatus: 'failed', photoVerifyStatus: 'failed' },
     });
     await logAdminAction(adminId, 'rejectApplication', 'application', id, reason || undefined);
     revalidatePath(PATH);

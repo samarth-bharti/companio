@@ -32,10 +32,25 @@ export async function editUser(_prev: ActionState, formData: FormData): Promise<
       lastName: field(formData, 'lastName') || undefined,
       city: field(formData, 'city') || undefined,
       role: field(formData, 'role') || undefined,
+      dateOfBirth: field(formData, 'dateOfBirth') || undefined,
     });
     if (!parsed.success) return failed(describeZod(parsed.error));
+
+    const { dateOfBirth, ...rest } = parsed.data;
+    const data: Record<string, unknown> = { ...rest };
+
+    if (dateOfBirth) {
+      const { parseDateOfBirth, isAdult } = await import('@/lib/server/age');
+      const dob = parseDateOfBirth(dateOfBirth);
+      if (!dob) return failed('That date of birth is not a real date.');
+      // An admin may not wave someone under 18 through. That is the one rule
+      // the panel does not get to override.
+      if (!isAdult(dob)) return failed('That date of birth is under 18. Companio is 18+.');
+      data.dateOfBirth = dob;
+    }
+
     const { prisma } = await import('@/lib/prisma');
-    await prisma.user.update({ where: { id }, data: parsed.data });
+    await prisma.user.update({ where: { id }, data });
     await logAdminAction(adminId, 'editUser', 'user', id, JSON.stringify(parsed.data));
     revalidatePath(PATH);
     return succeeded('User updated.');

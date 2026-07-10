@@ -37,8 +37,9 @@ export default async function AdminApplications() {
         Pending applications ({apps.length})
       </h1>
       <p className="text-xs text-[var(--color-ink-muted)] -mt-3">
-        Document checks are automated sanity checks (format + file + OCR), not identity proof.
-        Always eyeball before approving.
+        Document checks are automated sanity checks (number format, file integrity, duplicate
+        fingerprint) — <strong>not identity proof</strong>. No authority has confirmed anyone here.
+        Approving stamps <em>manual</em>: it records that <em>you</em> looked. Always eyeball first.
       </p>
 
       <div className="flex flex-col gap-3">
@@ -55,7 +56,12 @@ export default async function AdminApplications() {
               </div>
             </div>
 
-            {/* Document-check results */}
+            {/* Document-check results.
+                These are format and integrity checks, not identity proof. The
+                pills used to read "verified" on every application because the
+                upload route stamped that status unconditionally — so the badge
+                an admin leaned on meant nothing. They now read "pending" until
+                you approve, which stamps "manual". */}
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="text-[var(--color-ink-muted)]">
                 ID: {a.idDocType ?? '—'} {a.idDocMasked ? `(${a.idDocMasked})` : ''}
@@ -63,12 +69,22 @@ export default async function AdminApplications() {
               <span className="text-[var(--color-ink-muted)]">ID check:</span> <StatusPill s={a.idVerifyStatus} />
               <span className="text-[var(--color-ink-muted)]">Photo:</span> <StatusPill s={a.photoVerifyStatus} />
               {a.ocrMatched != null && (
-                <span className={a.ocrMatched ? 'text-[var(--color-emerald)]' : 'text-amber-700'}>
-                  OCR {a.ocrMatched ? 'matched ✓' : 'no match'}
+                // Computed by tesseract.js in the APPLICANT'S browser and posted
+                // to us. Trivially forged. Never style it as a green tick.
+                <span
+                  className="text-[var(--color-ink-muted)]"
+                  title="Reported by the applicant's own browser. Not verified by us — treat as a hint only."
+                >
+                  self-reported OCR: {a.ocrMatched ? 'number found on image' : 'number not found'}
                 </span>
               )}
               {a.backgroundConsent && <span className="text-[var(--color-emerald)]">bg-consent ✓</span>}
             </div>
+
+            <p className="text-xs text-[var(--color-ink-muted)]">
+              Format + file-integrity checks passed, and this document has not been used by another
+              applicant. Nothing here proves the person owns the identity — open both images and look.
+            </p>
 
             <div className="flex flex-wrap items-start gap-2 pt-2 border-t border-[var(--color-ink)]/5">
               <ActionForm

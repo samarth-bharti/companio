@@ -40,6 +40,24 @@ export async function POST(req: Request) {
     const { prisma } = await import('@/lib/prisma');
     const { toBooking } = await import('@/lib/server/serialize');
     const { VISIBLE_COMPANION } = await import('@/lib/server/visibility');
+    const { isAdult } = await import('@/lib/server/age');
+
+    // Companio is 18+, and a booking is the moment two strangers agree to meet
+    // in person. A null date of birth is not an adult date of birth: refuse and
+    // make the client collect it. Checked before the credit is spent.
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { dateOfBirth: true },
+    });
+    if (!isAdult(me?.dateOfBirth)) {
+      return json(
+        {
+          error: 'age_verification_required',
+          detail: 'Confirm your date of birth before booking. Companio is for adults aged 18 and over.',
+        },
+        403,
+      );
+    }
 
     // A suspended companion must not take new bookings. Checked before the
     // credit is spent, so a rejected booking never costs the user anything.

@@ -20,6 +20,13 @@ export interface DemoUser {
   /** Carried from registration so the companion application can pre-fill it
    *  (the two flows are one continuous onboarding, not separate forms). */
   city?: string;
+  /**
+   * `YYYY-MM-DD`. Collected by the register wizard, which already refuses under
+   * 18s in the browser — but the value used to be discarded, so the server had
+   * no idea how old anyone was. Booking and companion applications now require
+   * it (see lib/server/age.ts). Set-once on the server.
+   */
+  dateOfBirth?: string;
 }
 
 // ── Keys ─────────────────────────────────────────────────────────────────────
