@@ -153,15 +153,32 @@ NEXTAUTH_URL=https://<url>
 NEXT_PUBLIC_SITE_URL=https://<url>
 ```
 
-**Essential for real E2E — 15:** DATABASE_URL, DIRECT_URL, NEXTAUTH_SECRET,
+**Essential for real E2E — 16:** DATABASE_URL, DIRECT_URL, NEXTAUTH_SECRET,
 NEXTAUTH_URL, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, RAZORPAY_KEY_ID,
 NEXT_PUBLIC_RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET,
 RESEND_API_KEY*, EMAIL_FROM*, NEXT_PUBLIC_DATA_CLIENT=http, NEXT_PUBLIC_SITE_URL,
-CRON_SECRET. (*Resend optional — skip for now.)
+CRON_SECRET, **ADMIN_EMAILS**. (*Resend optional — skip for now.)
 
-**Optional — 10:** UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN, GST_ACTIVE,
+**Optional — 12:** UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN, GST_ACTIVE,
 SENTRY_DSN, NEXT_PUBLIC_SENTRY_DSN, SENTRY_AUTH_TOKEN, NEXT_PUBLIC_GA_ID,
-NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST, SMS_API_KEY.
+NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST, SMS_API_KEY,
+NEXT_PUBLIC_MAPTILER_KEY, NEXT_PUBLIC_MAP_TILE_URL.
+
+### Vars added 2026-07-10 — read these before deploying
+
+| Var | Read by | Why it exists |
+|---|---|---|
+| `ADMIN_EMAILS` | `lib/server/admin.ts` | **Without it nobody can ever reach `/admin`.** `User.role` defaults to `user`, and only an existing admin could promote anyone — a closed loop on a fresh database. Comma-separated; any signed-in account with a listed email is promoted on first visit. It is a permanent root key: keep it to addresses you control. |
+| `MARKETPLACE_PAYMENTS_ENABLED` | `lib/server/pricing.ts` | **Leave it unset.** Set to the exact string `true` only when Razorpay Route (or a PA licence) is in place. It unlocks `kind=booking\|credits\|plus` in `create-order` — the flows where Companio collects a user's money and owes part of it to a companion. Doing that unlicensed is the RBI Payment Aggregator breach. v1 sells the ₹199 unlock only, and that needs no flag. |
+| `NEXT_PUBLIC_MAPTILER_KEY` | `lib/map/tiles.ts` | Basemap tiles. **Unset = OpenStreetMap's community servers**, which permit commercial use but forbid heavy traffic under the OSMF Tile Usage Policy. Set a key before real volume. (`NEXT_PUBLIC_MAP_TILE_URL` + `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION` accept any raster source you license instead.) The old hardcoded CARTO basemap was enterprise-only for commercial use and has been removed. |
+| `GST_ACTIVE` | `lib/server/payments.ts` | Was undocumented. `true` once GST registration is live; receipts show ₹0 tax until then. |
+
+**A note on `NEXT_PUBLIC_RAZORPAY_KEY_ID`.** The instant this is set, the demo
+payment path becomes unreachable by design — `lib/razorpayClient.ts` no longer
+degrades a 401 or 503 into "run the local simulation". Before this change, a
+keyed build handed every signed-out visitor a free ₹199 unlock. So set it only
+together with `DATABASE_URL`, `NEXTAUTH_SECRET` and the Google credentials, or
+users will hit a real "please sign in" wall with no way past it.
 
 - `GST_ACTIVE` is read at `lib/server/payments.ts:56` but is **not** in
   `.env.example` — add it there.
