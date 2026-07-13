@@ -25,19 +25,6 @@ export function WalletCard({ wallet }: WalletCardProps) {
         border: '1.5px solid rgba(46,107,255,0.1)',
       }}
     >
-      {/* Ghost numeral */}
-      <span
-        aria-hidden="true"
-        className="absolute right-5 top-3 font-display font-bold select-none pointer-events-none"
-        style={{
-          fontSize: 'clamp(3.5rem, 9vw, 6rem)',
-          letterSpacing: '-0.04em',
-          color: 'rgba(46,107,255,0.06)',
-          lineHeight: 1,
-        }}
-      >
-        {credits}
-      </span>
 
       <p
         className="font-sans text-xs font-semibold tracking-widest uppercase mb-3"

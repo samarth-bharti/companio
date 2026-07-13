@@ -30,7 +30,6 @@ export function QuizQuestion({
   onSingleAnswer, onMultiAnswer, onComfortAnswer, onNameAnswer, onEchoDone,
 }: QuizQuestionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const ghostNumeral = String(stepIndex + 1).padStart(2, '0');
 
   // Move focus to first interactive element on question mount
   useEffect(() => {
@@ -51,23 +50,6 @@ export function QuizQuestion({
         className="pointer-events-none absolute top-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl opacity-[0.07]"
         style={{ background: accent }}
       />
-      {/* Ghost numeral */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-6 left-2 select-none"
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(5rem, 14vw, 9rem)',
-          fontWeight: 700,
-          letterSpacing: '-0.04em',
-          color: accent,
-          opacity: 0.08,
-          lineHeight: 1,
-        }}
-      >
-        {ghostNumeral}
-      </div>
-
       {/* Split layout */}
       <div
         ref={containerRef}

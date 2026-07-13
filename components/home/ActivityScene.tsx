@@ -78,7 +78,6 @@ export function ActivityScene({
   const opacity = useTransform(motionSrc, [band0, band1], index === 0 ? [1, 1] : [0, 1]);
   const ty = useTransform(motionSrc, [band0, band1], index === 0 ? [0, 0] : [20, 0]);
 
-  const numeral = String(index + 1).padStart(2, '0');
   // Even indices: text left, photo right. Odd: photo left, text right.
   const photoOnLeft = index % 2 !== 0;
   const ink = dark ? 'var(--color-panel-text)' : 'var(--color-ink)';
@@ -87,29 +86,7 @@ export function ActivityScene({
 
   const inner = (
     <div className={cn('flex flex-col md:flex-row h-full', photoOnLeft && 'md:flex-row-reverse')}>
-      {/* Text column. overflow-hidden clips the ghost numeral's negative offset:
-          without it the numeral pushed ~6px past the viewport and gave the whole
-          page a horizontal scrollbar on phones. */}
       <div className="flex flex-col justify-center px-8 md:px-16 py-10 flex-1 relative overflow-hidden">
-        {/* Ghost numeral — Fraunces, 8% alpha, absolute behind text */}
-        <span
-          aria-hidden="true"
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(7rem,13vw,11rem)',
-            letterSpacing: '-0.04em',
-            lineHeight: 1,
-            position: 'absolute',
-            bottom: '4%',
-            right: '-0.05em',
-            color: dark ? 'rgba(244,242,255,0.07)' : 'rgba(46,107,255,0.08)',
-            userSelect: 'none',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        >
-          {numeral}
-        </span>
         <div style={{ position: 'relative', zIndex: 1 }}>
           {introNode}
           <p className="label-eyebrow mb-3" style={{ color: accent }}>{eyebrow}</p>

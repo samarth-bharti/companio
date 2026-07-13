@@ -56,21 +56,6 @@ export function BookingStepDate({ selected, onSelect }: Props) {
         When works for you?
       </legend>
 
-      <span
-        aria-hidden="true"
-        className="absolute right-4 top-0 font-display select-none pointer-events-none"
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(4rem, 12vw, 7rem)',
-          fontWeight: 900,
-          letterSpacing: '-0.04em',
-          color: 'rgba(46,107,255,0.07)',
-          lineHeight: 1,
-        }}
-      >
-        02
-      </span>
-
       {dates.length === 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {Array.from({ length: 7 }, (_, i) => (

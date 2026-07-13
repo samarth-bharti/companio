@@ -73,21 +73,6 @@ export function BookingStepReview({ companion, state, onConfirm, onBack, submitt
         </p>
       </div>
 
-      <span
-        aria-hidden="true"
-        className="absolute right-4 top-0 font-display select-none pointer-events-none"
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(4rem, 12vw, 7rem)',
-          fontWeight: 900,
-          letterSpacing: '-0.04em',
-          color: 'rgba(46,107,255,0.07)',
-          lineHeight: 1,
-        }}
-      >
-        05
-      </span>
-
       {/* Summary card — calm reveal on mount */}
       <motion.div
         className="rounded-lg overflow-hidden"

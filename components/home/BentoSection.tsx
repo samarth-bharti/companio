@@ -22,7 +22,6 @@ import { ClipReveal } from '@/components/journey/ClipReveal';
 const CARDS = [
   {
     id: 'city-guide',
-    num: '01',
     label: 'City Guide',
     tagline: 'Explore your city with a local who loves it.',
     icon: Map,
@@ -33,7 +32,6 @@ const CARDS = [
   },
   {
     id: 'gym-running',
-    num: '02',
     label: 'Gym & Running',
     tagline: 'A partner who shows up.',
     icon: Dumbbell,
@@ -44,7 +42,6 @@ const CARDS = [
   },
   {
     id: 'events',
-    num: '03',
     label: 'Events',
     tagline: 'Nobody goes alone.',
     icon: Calendar,
@@ -55,7 +52,6 @@ const CARDS = [
   },
   {
     id: 'cafe-chat',
-    num: '04',
     label: 'Café & Conversation',
     tagline: 'Great coffee, better company.',
     icon: Coffee,
@@ -66,7 +62,6 @@ const CARDS = [
   },
   {
     id: 'elder-company',
-    num: '05',
     label: 'Elder Company',
     tagline: 'Warm, patient presence for older adults.',
     icon: Heart,
@@ -77,7 +72,6 @@ const CARDS = [
   },
   {
     id: 'city-help',
-    num: '06',
     label: 'City Help',
     tagline: 'Navigate errands & new neighbourhoods.',
     icon: Users,
@@ -101,15 +95,6 @@ function BentoCard({ card, delay = 0 }: { card: Card; delay?: number }) {
         className="relative rounded-2xl p-5 flex flex-col justify-between overflow-hidden h-full"
         style={{ background: card.bg, minHeight: 164 }}
       >
-        {/* Ghost number watermark */}
-        <span
-          aria-hidden="true"
-          className="absolute bottom-2 right-3 font-display font-bold leading-none select-none pointer-events-none"
-          style={{ fontSize: '4.5rem', color: `${card.accent}12`, letterSpacing: '-0.04em' }}
-        >
-          {card.num}
-        </span>
-
         <span
           className="flex items-center justify-center w-10 h-10 rounded-xl mb-3 shrink-0"
           style={{ background: `${card.accent}20` }}

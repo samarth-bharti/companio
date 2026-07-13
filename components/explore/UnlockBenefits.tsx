@@ -67,20 +67,6 @@ export function UnlockBenefits({
       {/* Item 2: Price anchor + benefit rows */}
       <div className="flex flex-col gap-3">
         <div className="relative flex items-end gap-3">
-          {/* Ghost numeral */}
-          <span
-            aria-hidden="true"
-            className="absolute -left-1 -top-3 select-none pointer-events-none leading-none"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "5rem",
-              color: "var(--color-azure)",
-              opacity: 0.08,
-              letterSpacing: "-0.04em",
-            }}
-          >
-            199
-          </span>
           {/* Big price — struck through when a spin win is being applied. */}
           {hasDiscount && (
             <span

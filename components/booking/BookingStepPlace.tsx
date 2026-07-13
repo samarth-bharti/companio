@@ -78,21 +78,6 @@ export function BookingStepPlace({ area, selected, onSelect }: Props) {
         Public places only, for everyone&apos;s comfort.
       </p>
 
-      <span
-        aria-hidden="true"
-        className="absolute right-4 top-0 font-display select-none pointer-events-none"
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(4rem, 12vw, 7rem)',
-          fontWeight: 900,
-          letterSpacing: '-0.04em',
-          color: 'rgba(46,107,255,0.07)',
-          lineHeight: 1,
-        }}
-      >
-        04
-      </span>
-
       {/* Stagger container — calm entrance for transactional flow */}
       <motion.div
         className="space-y-3"

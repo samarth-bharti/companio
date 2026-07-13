@@ -33,21 +33,6 @@ export function BookingStepTime({ selected, onSelect }: Props) {
         What time suits you?
       </legend>
 
-      <span
-        aria-hidden="true"
-        className="absolute right-4 top-0 font-display select-none pointer-events-none"
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(4rem, 12vw, 7rem)',
-          fontWeight: 900,
-          letterSpacing: '-0.04em',
-          color: 'rgba(46,107,255,0.07)',
-          lineHeight: 1,
-        }}
-      >
-        03
-      </span>
-
       {/* Stagger container — calm entrance for transactional flow */}
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-3 gap-4"

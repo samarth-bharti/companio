@@ -89,20 +89,6 @@ export default function PricingPage() {
               className="relative rounded-[var(--radius-lg)] border-2 border-[var(--color-azure)] bg-[var(--color-surface)] p-6 overflow-hidden"
               style={{ boxShadow: 'var(--shadow-2)' }}
             >
-              {/* Ghost numeral — the editorial motif used across the journey */}
-              <span
-                aria-hidden="true"
-                className="absolute -right-2 -top-6 select-none pointer-events-none font-black leading-none"
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '8rem',
-                  letterSpacing: '-0.04em',
-                  color: 'rgba(46,107,255,0.07)',
-                }}
-              >
-                199
-              </span>
-
               <p className="label-eyebrow mb-2" style={{ color: 'var(--color-azure)' }}>
                 Unlock everything
               </p>
