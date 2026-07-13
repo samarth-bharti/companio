@@ -166,7 +166,7 @@ export function PeopleSection() {
           <Reveal delay={0.16}>
             <p className="text-lead max-w-xl" style={{ color: "rgba(244,242,255,0.65)" }}>
               From a dawn city walk to a weekend hike, every activity is better with
-              someone warm beside you. Companio connects you with verified companions
+              someone warm beside you. Companio connects you with ID-checked companions
               who share your city and your energy.
             </p>
           </Reveal>

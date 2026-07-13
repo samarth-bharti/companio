@@ -165,6 +165,19 @@ describe('bookings', () => {
     );
   });
 
+  // /verify tells members to compare a 4-digit code with their companion when
+  // they meet. It has to exist, and it has to be exactly 4 digits, or the
+  // instruction cannot be followed.
+  it('POST mints a 4-digit meetup code', async () => {
+    prismaMock.booking.create.mockResolvedValue(pBooking);
+    await bookingsPost(jsonReq({
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
+      time: 'AM', place: 'Bandra', usedCredit: false,
+    }));
+    const { data } = prismaMock.booking.create.mock.calls[0][0];
+    expect(data.meetupCode).toMatch(/^\d{4}$/);
+  });
+
   it('POST rejects a malformed dateISO with 400', async () => {
     const res = await bookingsPost(jsonReq({
       companionId: 'ananya', activity: 'Walk', dateISO: '15/06/2026',

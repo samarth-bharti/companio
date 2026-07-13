@@ -15,7 +15,7 @@ import { DigitRoll } from '@/components/journey/DigitRoll';
 /**
  * Pricing — v1 is unlock-only.
  *
- * Companio charges exactly one price: ₹199, once. It unlocks every verified
+ * Companio charges exactly one price: ₹199, once. It unlocks every
  * profile in the member's city and includes their first two meetings. No credit
  * packs, no subscription, nothing to pay to meet.
  *
@@ -27,7 +27,7 @@ import { DigitRoll } from '@/components/journey/DigitRoll';
  */
 
 const INCLUDED = [
-  'Every verified profile in your city, unblurred',
+  'Every profile in your city, unblurred',
   'Your first 2 meetings, included, no expiry',
   'Chat with any companion before you meet',
   'In-app SOS and live location sharing',

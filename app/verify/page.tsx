@@ -11,15 +11,21 @@ export default function VerifyPage() {
       intro="Meeting someone from Companio? Here's how to confirm you're meeting exactly who you booked."
       sections={[
         {
-          heading: 'Check the badge',
+          // "Every active companion profile carries a blue verified tick. If a
+          // profile has no tick, it is not active, report it immediately." No
+          // profile carries a tick — the `verified` column is false for all of
+          // them — so this told every member that every real companion was a
+          // fraud. A safety page that cries wolf teaches people to ignore it.
+          heading: 'Match the meetup code',
           body: [
-            'Every active companion profile carries a blue verified tick. If a profile has no tick, it is not active, report it to us immediately.',
+            'Your booking confirmation shows a 4-digit meetup code. Your companion sees the same four digits in their app. Ask them to read it out when you meet, before you go anywhere.',
+            'If the digits do not match, or they cannot produce them, you are not meeting the person you booked. Do not continue, and report it to us.',
           ],
         },
         {
-          heading: 'Match the meetup code',
+          heading: 'Match the face to the profile',
           body: [
-            'Your booking confirmation includes a 4-digit meetup code. Your companion has the same code in their app, compare codes when you meet. They will expect you to ask.',
+            'The photo on the profile is the photo we reviewed. If the person in front of you is not the person in the picture, that is the end of the meetup, and we want to hear about it the same day.',
           ],
         },
         {

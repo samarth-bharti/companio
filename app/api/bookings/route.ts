@@ -3,6 +3,7 @@
 // GET  /api/bookings → Booking[]  (the signed-in user's bookings, newest first)
 // POST /api/bookings → create a booking, returns the created Booking
 
+import { randomInt } from 'node:crypto';
 import { getSessionUserId } from '@/lib/server/session';
 import { json, unauthorized, badRequest, readJsonBody, guard, parsePagination } from '@/lib/server/http';
 import { rateLimit, clientKey } from '@/lib/server/rateLimit';
@@ -71,7 +72,11 @@ export async function POST(req: Request) {
     // pricePaid is always 0 at create time — the server stamps it later:
     //   credit path  → stays 0 (no cash changes hands)
     //   Razorpay path → set by create-order once the payment quote is computed
-    const bookingData = { userId, ...fields, usedCredit, pricePaid: 0 };
+    // The code both people read out when they meet. Generated server-side with a
+    // CSPRNG — a guessable code is an impostor's way in, and Math.random() is
+    // guessable.
+    const meetupCode = String(randomInt(0, 10_000)).padStart(4, '0');
+    const bookingData = { userId, ...fields, usedCredit, pricePaid: 0, meetupCode };
 
     let booking: Awaited<ReturnType<typeof prisma.booking.create>>;
 

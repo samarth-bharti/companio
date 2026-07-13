@@ -4,7 +4,7 @@ import { BadgeCheck, HeartHandshake, ShieldAlert, Undo2 } from 'lucide-react';
 import { Reveal } from '@/components/motion/Reveal';
 
 /**
- * This component used to animate four counters: 28,000+ verified members,
+ * This component used to animate four counters: 28,000+ ID-checked members,
  * 94,000+ meetups, 38 cities, 4.9★ average rating. Not one of those numbers was
  * measured. They were typed. Elsewhere on the same site the figures were 12,000
  * members and 12 cities, which is how you can tell.

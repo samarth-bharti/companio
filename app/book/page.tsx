@@ -5,7 +5,7 @@ import { AccountGate } from '@/components/auth/AccountGate';
 
 export const metadata: Metadata = {
   title: 'Book a meetup, Companio',
-  description: 'Choose your activity, date, time and place. ID-verified companions. Your first two meetings are included.',
+  description: 'Choose your activity, date, time and place. ID-checked companions. Your first two meetings are included.',
 };
 
 function BookingLoading() {

@@ -32,6 +32,7 @@ export function toBooking(b: PBooking): Booking {
     status: b.status,
     usedCredit: b.usedCredit,
     pricePaid: b.pricePaid,
+    meetupCode: b.meetupCode || undefined,
     review: (b.review as { stars: number; text: string } | null) ?? undefined,
     createdAt: b.createdAt.getTime(),
   };

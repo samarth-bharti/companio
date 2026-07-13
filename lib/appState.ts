@@ -40,6 +40,12 @@ export interface Booking {
   status: 'pending_payment' | 'upcoming' | 'completed' | 'cancelled' | 'declined' | 'refunded';
   usedCredit: boolean;
   pricePaid: number; // 0 when a credit was used
+  /**
+   * The 4-digit code both people read out when they meet, so each knows the
+   * other is the person from the app. Optional only for bookings created before
+   * the column existed.
+   */
+  meetupCode?: string;
   review?: { stars: number; text: string };
   createdAt: number; // epoch ms
 }

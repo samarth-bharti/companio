@@ -15,7 +15,7 @@ export default function TermsPage() {
         {
           heading: '1. What Companio is',
           body: [
-            'Companio connects members with ID-verified companions for shared activities, city walks, gym sessions, café conversations, live events, elder company, and everyday help.',
+            'Companio connects members with ID-checked companions for shared activities, city walks, gym sessions, café conversations, live events, elder company, and everyday help.',
             'Companio is a neutral intermediary that hosts companion profiles; it is not the employer of companions and is not a party to the meetup itself. Companio is not a dating, romance, or intimacy service of any kind. Any solicitation of romantic or sexual services results in an immediate permanent ban and, where applicable, a report to authorities.',
           ],
         },
@@ -28,7 +28,7 @@ export default function TermsPage() {
         {
           heading: '3. Bookings, payments & fees',
           body: [
-            'Companio currently charges a single one-time fee of ₹199, which unlocks every verified companion profile in your city and includes your first two meetings. You are not charged to book or attend those meetings. If you have not found anyone you would like to meet, you may request a full refund of the ₹199 within 7 days of payment.',
+            'Companio currently charges a single one-time fee of ₹199, which unlocks every ID-checked companion profile in your city and includes your first two meetings. You are not charged to book or attend those meetings. If you have not found anyone you would like to meet, you may request a full refund of the ₹199 within 7 days of payment.',
             'Payments are processed by Razorpay. Companio does not currently collect, hold, or settle any payment between you and a companion. Companions are compensated by Companio directly. Paying or accepting payment off-platform breaks these terms and removes every protection we offer.',
             'Paid meetups beyond your two included meetings are not yet available. When they launch, the price will always be shown before you book, and these terms will be updated before any such charge is made. Applicable taxes (including GST, once we are registered) will be shown at checkout. Included meetings never expire.',
           ],

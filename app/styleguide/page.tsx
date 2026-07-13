@@ -117,7 +117,7 @@ export default function Styleguide() {
             <div>
               <p className="label-eyebrow text-ink-muted mb-1">Lead, Plus Jakarta</p>
               <p className="font-sans text-lead text-ink-muted">
-                Book ID-verified companions for any activity, strictly platonic.
+                Book ID-checked companions for any activity, strictly platonic.
               </p>
             </div>
             <div>

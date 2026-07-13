@@ -102,7 +102,7 @@ export function CompanionProfilePortrait({ companion }: Props) {
             {companion.name}
           </h1>
           {/* ID badge — stamp in on mount. Only for someone who actually cleared
-              the ID check; "ID-verified" is a claim, not decoration. */}
+              the ID check; "ID-checked" is a claim, not decoration. */}
           {companion.verified && (
             <motion.div
               className="flex items-center gap-1.5"
@@ -115,7 +115,7 @@ export function CompanionProfilePortrait({ companion }: Props) {
                 className="font-sans text-xs font-semibold"
                 style={{ color: 'var(--color-azure-deep)' }}
               >
-                ID-verified
+                ID-checked
               </span>
             </motion.div>
           )}

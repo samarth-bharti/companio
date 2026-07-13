@@ -29,6 +29,8 @@ export interface CompanionMeetup {
   time: string;
   place: string;
   status: string;
+  /** The 4 digits the member is also holding. Absent on pre-existing bookings. */
+  meetupCode?: string;
   memberFirstName: string;
 }
 

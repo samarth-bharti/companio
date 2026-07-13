@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!(await viewerMaySee(id))) {
     return {
       title: `${companion.maskedName}, Companio`,
-      description: `A verified companion in ${companion.area}, ${companion.city}. Unlock to see their full profile.`,
+      description: `A ID-checked companion in ${companion.area}, ${companion.city}. Unlock to see their full profile.`,
     };
   }
 

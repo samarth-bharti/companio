@@ -107,7 +107,7 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
         <p className="font-sans text-sm mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
           {hasCredits
             ? 'Yours anytime · no expiry · no subscription'
-            : 'ID-verified · paid meetups coming soon'}
+            : 'ID-checked · paid meetups coming soon'}
         </p>
       </div>
 

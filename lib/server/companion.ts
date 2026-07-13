@@ -30,6 +30,8 @@ export interface CompanionMeetup {
   time: string;
   place: string;
   status: string;
+  /** The 4 digits the member is also holding. Absent on pre-existing bookings. */
+  meetupCode?: string;
   /** First name only — a companion never needs the member's full identity. */
   memberFirstName: string;
 }
@@ -92,6 +94,7 @@ export async function getCompanionDashboard(
       take: 20,
       select: {
         id: true, activity: true, dateISO: true, time: true, place: true, status: true,
+        meetupCode: true,
         user: { select: { firstName: true } },
       },
     }),
@@ -107,6 +110,9 @@ export async function getCompanionDashboard(
       time: b.time,
       place: b.place,
       status: b.status,
+      // The companion needs the same four digits the member is holding, or the
+      // check is one-sided and proves nothing.
+      meetupCode: b.meetupCode || undefined,
       memberFirstName: b.user.firstName,
     })),
   };

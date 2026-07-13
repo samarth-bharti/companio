@@ -30,9 +30,14 @@ const lora = Lora({
 
 // Say the concrete thing first: someone arriving cold from search or a shared
 // link must know what they can actually do here before they read any poetry.
-const TITLE = "Companio, book a verified companion. Strictly platonic.";
+//
+// This used to read "book a verified companion". The `verified` column is
+// operator-owned and false for every companion on the platform, and this is the
+// <title> and the search-result snippet — the very first promise Companio makes
+// to a stranger, made before they have read a single line of the site.
+const TITLE = "Companio, book a companion for the things you'd rather not do alone.";
 const DESCRIPTION =
-  "Book an ID-verified companion for a city walk, café chat or gym session. Strictly platonic. ₹199 unlocks every profile in your city, first 2 meetings included.";
+  "Book an ID-checked companion for a city walk, café chat or gym session. Strictly platonic. ₹199 unlocks every profile in your city, first 2 meetings included.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

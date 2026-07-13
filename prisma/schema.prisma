@@ -325,6 +325,12 @@ model Booking {
   time        String        // display slot e.g. 'Morning · 7–9 AM'
   place       String
   status      BookingStatus @default(upcoming)
+  // The 4-digit code both people read out when they meet, so each knows the other
+  // is the person from the app. /verify has always told members to compare it —
+  // it just never existed, which made the instruction worse than useless: a member
+  // who could not find a code would assume the real companion was an impostor.
+  // Every Indian already knows this ritual from a ride app's OTP.
+  meetupCode  String        @default("")
   usedCredit  Boolean       @default(false)
   hours       Int           @default(1) // session length — total = hourlyRate × hours
   pricePaid   Int           @default(0) // paise the user actually paid (after discount/surge)

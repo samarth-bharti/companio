@@ -16,7 +16,7 @@ const CARDS = [
   {
     value:  'member'    as const,
     label:  'I want to find a companion',
-    sub:    'Browse verified companions for walks, chai, events, and more in your city.',
+    sub:    'Browse ID-checked companions for walks, chai, events, and more in your city.',
     Icon:   Users,
   },
   {
@@ -114,7 +114,7 @@ export function StepRole({ role, onSelect }: StepRoleProps) {
       </motion.div>
 
       <p className="mt-6 text-center font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-        Strictly platonic · ID-verified for safety
+        Strictly platonic · ID-checked for safety
       </p>
     </div>
   );

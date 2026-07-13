@@ -17,8 +17,8 @@ interface Props {
 
 const PERKS = [
   'Your 2 included meetups are waiting, yours anytime, no expiry.',
-  'Browse every verified companion in your city.',
-  'Every booking is ID-verified and safety-checked.',
+  'Browse every ID-checked companion in your city.',
+  'Every booking is ID-checked and safety-checked.',
 ] as const;
 
 /**

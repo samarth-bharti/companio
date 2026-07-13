@@ -18,7 +18,7 @@ export default function TrustPage() {
         {
           heading: 'Money protection',
           body: [
-            'One ₹199 fee unlocks every verified profile in your city and includes your first two meetings. You are never charged to meet. If nobody feels like the right fit, ask for a full refund within 7 days.',
+            'One ₹199 fee unlocks every profile in your city and includes your first two meetings. You are never charged to meet. If nobody feels like the right fit, ask for a full refund within 7 days.',
           ],
         },
         {

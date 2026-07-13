@@ -23,7 +23,7 @@ function buildLines(answers: QuizAnswers): string[] {
   return [
     // Never quote a member count here. The old copy said "2,300+ verified
     // members in {city}" for every city, including ones with no companions.
-    `Scanning verified companions in ${city}…`,
+    `Scanning ID-checked companions in ${city}…`,
     `Matching your activities, ${topActivities}…`,
     `Checking who's free ${timePref}…`,
     answers.comfort.sameGender

@@ -37,8 +37,12 @@ const PILLARS: Pillar[] = [
     body: 'Flag any concern during or after a session. Our trust team reviews within 24 hours.' },
 ];
 
+// "100% Aadhaar-verified companions" was the headline number on the safety page,
+// and it was false in both halves: no companion is Aadhaar-verified, and none is
+// verified at all. What IS true of every companion is that they submitted a
+// government ID and that a human approved them by hand — so that is the number.
 const STATS = [
-  { value: 100, suffix: '%', prefix: '',  label: 'Aadhaar-verified companions' },
+  { value: 100, suffix: '%', prefix: '',  label: 'Companions ID-checked and reviewed by a person' },
   { value: 24,  suffix: 'h', prefix: '',  label: 'Trust-team review window' },
   { value: 0,   suffix: '',  prefix: '',  label: 'Tolerance for non-platonic conduct' },
 ];

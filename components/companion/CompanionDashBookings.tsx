@@ -104,6 +104,27 @@ function MeetupCard({
         {m.place}
       </p>
 
+      {/* The same four digits the member is holding. They will ask; you answer. */}
+      {m.meetupCode && (
+        <div
+          className="mt-2.5 rounded-md px-2.5 py-2"
+          style={{ background: 'rgba(31,174,107,0.08)', border: '1px solid rgba(31,174,107,0.25)' }}
+        >
+          <p className="font-sans text-[10px] uppercase tracking-widest font-bold" style={{ color: '#157A4A' }}>
+            Meetup code
+          </p>
+          <p
+            className="font-display font-bold tabular-nums leading-none mt-0.5"
+            style={{ fontSize: '1.25rem', letterSpacing: '0.14em', color: 'var(--color-ink)' }}
+          >
+            {m.meetupCode}
+          </p>
+          <p className="font-sans text-[11px] mt-1" style={{ color: 'var(--color-ink-muted)' }}>
+            {m.memberFirstName} will ask for this when you meet.
+          </p>
+        </div>
+      )}
+
       {error && (
         <p role="alert" className="mt-3 font-sans text-xs" style={{ color: '#C0392B' }}>
           {error}

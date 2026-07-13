@@ -7,7 +7,7 @@ import { AccountGate } from '@/components/auth/AccountGate';
 export const metadata: Metadata = {
   title: 'Apply to become a companion, Companio',
   description:
-    'Apply to join Companio as a verified companion. Set your own schedule, choose your activities, and earn fairly.',
+    'Apply to join Companio as a ID-checked companion. Set your own schedule, choose your activities, and earn fairly.',
 };
 
 export default function ApplyPage() {

@@ -275,7 +275,7 @@ function QuestionBody({ question, answers, accent, knownGender, onSingleAnswer, 
         <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm"
           style={{ background: 'rgba(31,174,107,0.08)', border: '1px solid rgba(31,174,107,0.22)', color: '#157A4A' }}>
           <span aria-hidden="true">✓</span>
-          <span>ID-verified companions, always on</span>
+          <span>ID-checked companions, always on</span>
         </div>
         <Button
           variant="cta" size="md"

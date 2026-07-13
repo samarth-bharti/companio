@@ -55,7 +55,7 @@ export function FinalCtaSection() {
 
           <Reveal delay={0.16}>
             <p className="text-lead mb-10" style={{ color: "rgba(255,255,255,0.75)" }}>
-              Explore your city, stay active, and make memories, with warm, ID-verified
+              Explore your city, stay active, and make memories, with warm, ID-checked
               company. Strictly platonic, always.
             </p>
           </Reveal>
