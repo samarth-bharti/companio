@@ -136,9 +136,10 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
           <p className="font-sans text-xs text-center py-8" style={{ color: 'var(--color-ink-muted)' }}>
             {/* The space after the name must be explicit: JSX dropped the one
                 that was written here, and the empty state read "Rohanwill see
-                this". */}
+                this". This sentence was also a lie until the companion inbox
+                existed: there was no screen on which they could see it. */}
             No messages yet. Say hello — {companion.firstName}{' '}
-            will see this and reply when they&apos;re free.
+            will see this in their inbox and reply when they&apos;re free.
           </p>
         )}
       </div>

@@ -88,6 +88,12 @@ export const messageAppendBody = z.object({
   kind: z.enum(['text', 'sticker']).optional(),
 });
 
+/** A companion's reply, from their inbox. Same shape as a member's message. */
+export const companionReplyBody = z.object({
+  text: z.string().min(1).max(2000),
+  kind: z.enum(['text', 'sticker']).optional(),
+});
+
 /**
  * A reaction is one emoji. The cap is generous in code points but tight in
  * length: it must not become a second message channel that bypasses the

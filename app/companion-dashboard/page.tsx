@@ -8,6 +8,7 @@ import { CompanionDashAvailability } from '@/components/companion/CompanionDashA
 import { CompanionDashProfile } from '@/components/companion/CompanionDashProfile';
 import { CompanionDashPayout } from '@/components/companion/CompanionDashPayout';
 import { CompanionDashStats } from '@/components/companion/CompanionDashStats';
+import { CompanionDashMessages } from '@/components/companion/CompanionDashMessages';
 
 export const metadata: Metadata = {
   title: 'Companion Dashboard, Companio',
@@ -34,6 +35,13 @@ export default function CompanionDashboardPage() {
 
           <div className="mb-7">
             <CompanionDashEarnings />
+          </div>
+
+          {/* Messages sit directly under earnings, above availability: a member
+              waiting on a reply is the most time-sensitive thing on this page,
+              and until now there was no way to answer them at all. */}
+          <div className="mb-7">
+            <CompanionDashMessages />
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6 mb-7">
