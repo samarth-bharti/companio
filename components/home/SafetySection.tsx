@@ -10,7 +10,7 @@ const TRUST_PILLARS = [
   {
     icon: Fingerprint,
     title: "KYC verified",
-    body: "Every companion's identity is verified via ID before activation. No exceptions.",
+    body: "Every companion's identity is verified via Aadhaar ID before activation. No exceptions.",
     color: "#2E6BFF",
   },
   {

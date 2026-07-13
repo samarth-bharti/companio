@@ -30,7 +30,7 @@ export function HeroCopyState0() {
       </p>
       <h1 id="hero-heading" style={HEADLINE_STYLE} className="mb-7">
         <span className="block" style={{ color: 'var(--color-ink)' }}>Never go</span>
-        <SpotlightText className="block">alone.</SpotlightText>
+        <SpotlightText className="block">alone</SpotlightText>
       </h1>
       <p className="text-lead mb-10 max-w-xl mx-auto" style={{ color: 'var(--color-ink-muted)' }}>
         Verified companions for city walks, gym sessions, café chats, live events, and more, strictly platonic.
@@ -50,7 +50,7 @@ export function HeroCopyState0() {
             hero video. Own background + border keeps it legible over the footage. */}
         <Link
           href="/how-it-works"
-          className="inline-flex items-center h-13 px-6 rounded-xl font-sans font-semibold text-base transition-colors hover:bg-white focus-visible:outline-azure"
+          className="group inline-flex items-center gap-1.5 h-13 px-6 rounded-xl font-sans font-semibold text-base transition-all duration-200 hover:bg-white hover:-translate-y-0.5 focus-visible:outline-azure"
           style={{
             color: 'var(--color-ink)',
             background: 'rgba(255,255,255,0.78)',
@@ -60,7 +60,8 @@ export function HeroCopyState0() {
             textShadow: 'none',
           }}
         >
-          How it works →
+          How it works
+          <span aria-hidden="true" className="inline-block transition-transform duration-200 group-hover:translate-x-1">→</span>
         </Link>
       </div>
     </div>

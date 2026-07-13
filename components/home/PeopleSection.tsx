@@ -35,93 +35,88 @@ function PhotoCard({ src, alt, label, offset }: { src: string; alt: string; labe
 /* Unsplash placeholder photos — platonic activity moments only */
 const PHOTOS = [
   {
-    src: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=480&q=80",
-    alt: "Group of friends laughing together on a city street",
+    src: "/city-walk.jpg",
+    alt: "A couple walking together down a busy neon-lit city street at dusk",
     label: "City Walk",
   },
   {
-    src: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=480&q=80",
-    alt: "Two people working out together at a gym",
+    src: "/gym-buddy.jpg",
+    alt: "A couple smiling and assisting each other during a workout in the gym",
     label: "Gym Buddy",
   },
   {
-    src: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=480&q=80",
-    alt: "Two friends having an animated conversation at a café",
+    src: "/cafe-chat.jpg",
+    alt: "A couple looking at each other warmly and chatting at a café window table",
     label: "Café Chat",
   },
   {
-    src: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=480&q=80",
-    alt: "Friends enjoying a live music concert together",
+    src: "/live-concert.jpg",
+    alt: "A couple dancing and enjoying a live concert under vibrant stage lights",
     label: "Live Concert",
   },
   {
-    src: "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=480&q=80",
-    alt: "Group of people hiking a trail together",
+    src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=480&q=80",
+    alt: "A happy duo looking out at mountain peaks on a hiking trail",
     label: "Hiking Trail",
   },
   {
-    src: "https://images.unsplash.com/photo-1523301343968-6a6ebf63c672?w=480&q=80",
-    alt: "Friends socialising at a rooftop gathering",
+    src: "/rooftop-social.jpg",
+    alt: "A couple smiling and conversing on a balcony with city skyline background",
     label: "Rooftop Social",
   },
   {
-    src: "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=480&q=80",
-    alt: "A gallery wall of classical paintings at an art museum",
+    src: "/museum-tour.webp",
+    alt: "A couple walking hand-in-hand through a museum's classical sculpture gallery",
     label: "Museum Tour",
   },
   {
     src: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=480&q=80",
-    alt: "Two friends cooking a meal together in a home kitchen",
+    alt: "A couple laughing and cooking a meal together in the kitchen",
     label: "Cooking Together",
   },
   {
-    src: "https://images.unsplash.com/photo-1471478331149-c72f17e33c73?w=480&q=80",
-    alt: "Person playing an acoustic guitar",
+    src: "/jam-session.jpg",
+    alt: "A couple smiling and playing acoustic guitar together during a jam session",
     label: "Jam Session",
   },
   {
-    src: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=480&q=80",
-    alt: "A full cinema audience watching a film together",
+    src: "/movie-night.jpg",
+    alt: "A couple eating popcorn and enjoying a movie night together in a cinema",
     label: "Movie Night",
   },
   {
-    src: "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=480&q=80",
-    alt: "A board game mid-play on a table",
-    label: "Game Night",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1571188654248-7a89213915f7?w=480&q=80",
-    alt: "A cyclist riding a scenic mountain road",
+    src: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=480&q=80",
+    alt: "A couple smiling while cycling side-by-side on a scenic road",
     label: "Cycling",
   },
   {
-    src: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=480&q=80",
-    alt: "A swimmer doing laps in a pool",
+    src: "/swim-sport.jpg",
+    alt: "A couple swimming and snorkeling together underwater in clear blue water",
     label: "Swim & Sport",
   },
   {
-    src: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=480&q=80",
-    alt: "A basketball dropping through the hoop at a game",
+    src: "/game-day.jpg",
+    alt: "Two friends playing console video games together with controllers",
     label: "Game Day",
   },
   {
-    src: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=480&q=80",
-    alt: "Paintbrushes and colours on a canvas at an art session",
+    src: "/arts-crafts.jpg",
+    alt: "A couple smiling and shaping clay pottery together at a table",
     label: "Art & Crafts",
   },
   {
-    src: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=480&q=80",
-    alt: "A weekend campsite tent looking out onto a forest",
+    src: "/weekend-camping.jpg",
+    alt: "A couple making coffee together inside their camping tent",
     label: "Weekend Camping",
   },
   {
-    src: "https://images.unsplash.com/photo-1543807535-eceef0bc6599?w=480&q=80",
-    alt: "Three friends laughing together on a city street",
+    src: "/city-hangout.jpg",
+    alt: "A couple walking arm-in-arm down a city sidewalk",
     label: "City Hangout",
   },
   {
     src: "https://images.unsplash.com/photo-1506869640319-fe1a24fd76dc?w=480&q=80",
-    alt: "A group of friends celebrating on a hilltop at sunset",
+    alt: "A couple celebrating together on a peak at sunset",
     label: "Sunset Trek",
   },
 ] as const;
@@ -140,6 +135,15 @@ export function PeopleSection() {
       <div aria-hidden="true" className="pointer-events-none absolute top-8 right-8 opacity-15 select-none hidden md:block">
         <LottiePlayer src="/lottie/birdies.json" width={180} height={120} loop />
       </div>
+
+      {/* Bottom fade to the WaveBridge colour (#0F1120). The section bg is a
+          diagonal gradient, so its bottom edge is uneven (purple on one side);
+          this evens it out so the section meets the wave with no two-tone seam. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-48"
+        style={{ background: "linear-gradient(to bottom, rgba(15,17,32,0) 0%, #0F1120 100%)" }}
+      />
 
       <div className="max-w-7xl mx-auto px-6 mb-16">
         <RevealGroup>
