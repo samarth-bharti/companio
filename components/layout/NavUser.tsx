@@ -182,7 +182,7 @@ export function NavUser() {
       <div className="relative" ref={menuRef}>
         <button
           type="button"
-          aria-label={`Account menu, ${user.firstName}`}
+          aria-label={user.firstName ? `Account menu, ${user.firstName}` : 'Account menu'}
           aria-expanded={openMenu}
           onClick={() => {
             setOpenMenu((v) => !v);
@@ -191,7 +191,7 @@ export function NavUser() {
           className="w-9 h-9 rounded-full inline-flex items-center justify-center font-sans font-bold text-sm text-white focus-visible:outline-azure"
           style={{ background: 'var(--grad-cta)' }}
         >
-          {user.firstName[0]?.toUpperCase() ?? 'C'}
+          {user.firstName?.[0]?.toUpperCase() ?? 'C'}
         </button>
         {openMenu && (
           <div role="menu" className="absolute right-0 top-12 w-56 rounded-2xl p-2 z-50" style={PANEL_STYLE}>

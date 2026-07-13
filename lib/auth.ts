@@ -28,6 +28,21 @@ import { normaliseEmail, verifySignInCode } from '@/lib/server/otp';
  * Lazy-imports Prisma so nothing is constructed in no-database mode; returns
  * null when no DB is configured (sign-in then fails gracefully).
  */
+/**
+ * A credentials provider receives its fields as form-encoded strings, so a
+ * JavaScript `undefined` arrives as the four-letter word "undefined" — which is
+ * truthy, and sailed straight past a `|| 'Friend'` fallback. Signing in from
+ * /login (which has no name field) created an account literally called
+ * "undefined", and the dashboard greeted them with "Good afternoon, undefined".
+ *
+ * Trust no string a form can forge into existence.
+ */
+export function credentialString(v?: string | null): string | undefined {
+  const s = v?.trim();
+  if (!s || s === 'undefined' || s === 'null') return undefined;
+  return s;
+}
+
 async function upsertUser(opts: {
   email?: string | null;
   name?: string | null;
@@ -41,7 +56,9 @@ async function upsertUser(opts: {
   // leading token of an OAuth display name. Never invent one from the local
   // part of the address — "no.reply@" should not become a user called "No".
   const firstName =
-    opts.firstName?.trim() || opts.name?.trim().split(/\s+/)[0] || 'Friend';
+    credentialString(opts.firstName) ||
+    credentialString(opts.name)?.split(/\s+/)[0] ||
+    'Friend';
 
   const { prisma } = await import('@/lib/prisma');
   return prisma.user.upsert({

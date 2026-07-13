@@ -41,6 +41,8 @@ export const toMessage = (m: PMessage): ChatMessage => ({
   id: m.id,
   from: m.from,
   text: m.text,
+  kind: m.kind,
+  reactions: m.reactions,
   ts: Number(m.ts),
 });
 

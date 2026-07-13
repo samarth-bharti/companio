@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Shield, Send, Smile } from 'lucide-react';
-import { reactToMessage } from '@/lib/appState';
 import { dataClient } from '@/lib/dataClient';
 import type { ChatMessage } from '@/lib/appState';
 import type { Companion } from '@/lib/data/companions';
@@ -82,8 +81,34 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
     inputRef.current?.focus();
   };
 
-  const handleReact = (id: string, emoji: string) => {
-    setThread(reactToMessage(companion.id, id, emoji));
+  /**
+   * Reactions go through dataClient like everything else. This used to call
+   * reactToMessage() from lib/appState and hand its return value straight to
+   * setThread() — so in http mode a single tap replaced the thread on screen
+   * with localStorage's copy of it, which is empty. The conversation appeared
+   * to be deleted.
+   */
+  const handleReact = async (id: string, emoji: string) => {
+    // Optimistic toggle, so the emoji lands under the thumb immediately.
+    setThread((t) =>
+      t.map((m) => {
+        if (m.id !== id) return m;
+        const had = m.reactions?.includes(emoji);
+        return {
+          ...m,
+          reactions: had
+            ? m.reactions!.filter((e) => e !== emoji)
+            : [...(m.reactions ?? []), emoji],
+        };
+      }),
+    );
+    try {
+      setThread(await dataClient.reactToMessage(companion.id, id, emoji));
+    } catch {
+      // Re-read rather than un-toggle by hand: the server is the truth about
+      // which reactions survived.
+      setThread(await dataClient.getThread(companion.id).catch(() => []));
+    }
   };
 
   return (
@@ -98,7 +123,7 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
       </div>
 
       {/* Chat log */}
-      <div ref={logRef} aria-live="polite" aria-label="Chat messages" className="flex-1 overflow-y-auto flex flex-col gap-2 pb-2 pr-1" style={{ maxHeight: 320 }}>
+      <div ref={logRef} data-chat-log aria-live="polite" aria-label="Chat messages" className="flex-1 overflow-y-auto flex flex-col gap-2 pb-2 pr-1" style={{ maxHeight: 320 }}>
         <AnimatePresence initial={false}>
           {thread.map((msg) => (
             <motion.div key={msg.id} initial={reduced ? { opacity: 0 } : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={calm.fast}>
@@ -109,7 +134,11 @@ export function ChatPanel({ companion, onBack }: ChatPanelProps) {
 
         {thread.length === 0 && (
           <p className="font-sans text-xs text-center py-8" style={{ color: 'var(--color-ink-muted)' }}>
-            No messages yet. Say hello — {companion.firstName} will see this and reply when they&apos;re free.
+            {/* The space after the name must be explicit: JSX dropped the one
+                that was written here, and the empty state read "Rohanwill see
+                this". */}
+            No messages yet. Say hello — {companion.firstName}{' '}
+            will see this and reply when they&apos;re free.
           </p>
         )}
       </div>

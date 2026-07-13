@@ -85,6 +85,17 @@ export const favoriteToggleBody = z.object({ companionId: z.string().min(1) });
 export const messageAppendBody = z.object({
   from: z.enum(['me', 'them']),
   text: z.string().min(1),
+  kind: z.enum(['text', 'sticker']).optional(),
+});
+
+/**
+ * A reaction is one emoji. The cap is generous in code points but tight in
+ * length: it must not become a second message channel that bypasses the
+ * contact-sharing filter on `text`.
+ */
+export const messageReactBody = z.object({
+  messageId: z.string().min(1),
+  emoji: z.string().min(1).max(8),
 });
 
 export const notificationBody = z.object({

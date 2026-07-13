@@ -43,10 +43,25 @@ describe('toBooking', () => {
 });
 
 describe('toMessage', () => {
+  const base = { id: 'm1', from: 'me', text: 'hi', kind: 'text', reactions: [] };
+
   it('converts BigInt ts to a number', () => {
-    const m = toMessage({ id: 'm1', from: 'me', text: 'hi', ts: BigInt(1700000000000) } as any);
-    expect(m).toEqual({ id: 'm1', from: 'me', text: 'hi', ts: 1700000000000 });
+    const m = toMessage({ ...base, ts: BigInt(1700000000000) } as any);
+    expect(m).toEqual({ ...base, ts: 1700000000000 });
     expect(typeof m.ts).toBe('number');
+  });
+
+  // A sticker that comes back as 'text' renders as a small text bubble instead
+  // of a large emoji — which is exactly what happened while the column was
+  // missing and the POST route dropped `kind` on the floor.
+  it('carries the sticker kind through', () => {
+    const m = toMessage({ ...base, kind: 'sticker', text: '🎉', ts: BigInt(1) } as any);
+    expect(m.kind).toBe('sticker');
+  });
+
+  it('carries reactions through', () => {
+    const m = toMessage({ ...base, reactions: ['❤️', '😂'], ts: BigInt(1) } as any);
+    expect(m.reactions).toEqual(['❤️', '😂']);
   });
 });
 

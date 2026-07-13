@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Wallet, Check } from 'lucide-react';
-import { getWallet } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
 import { WhatsIncludedAccordion } from '@/components/pricing/WhatsIncludedAccordion';
 import { Button } from '@/components/ui/Button';
 import { Nav } from '@/components/layout/Nav';
@@ -40,7 +40,11 @@ export default function PricingPage() {
   const [credits, setCredits] = useState<number | null>(null);
 
   useEffect(() => {
-    setCredits(getWallet().credits);
+    let cancelled = false;
+    dataClient.getWallet()
+      .then((w) => { if (!cancelled) setCredits(w.credits); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   return (

@@ -71,6 +71,7 @@ export async function POST(
         companionId,
         from: parsed.data.from,
         text: parsed.data.text,
+        kind: parsed.data.kind ?? 'text',
         ts: BigInt(Date.now()),
       },
     });

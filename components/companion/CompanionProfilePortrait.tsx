@@ -7,19 +7,12 @@ import { BadgeCheck, Heart, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { TiltCard } from '@/components/motion/TiltCard';
-import { getFavorites, toggleFavorite } from '@/lib/appState';
+import { dataClient } from '@/lib/dataClient';
 import { type Companion } from '@/lib/data/companions';
 import { spring, stagger } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 /** Deterministic response-rate derived from companion id */
-function responseStats(id: string) {
-  const h = id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const rates = [94, 95, 96, 97, 98, 99];
-  const times = ['~30 min', '~45 min', '~1 hr', '~1 hr', '~2 hrs', '~2 hrs'];
-  return { rate: rates[h % rates.length], time: times[h % times.length] };
-}
-
 const chipBase: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -54,16 +47,27 @@ export function CompanionProfilePortrait({ companion }: Props) {
   const [isFav, setIsFav] = useState(false);
   const reduced = useEffectiveReducedMotion();
 
+  // Favourites live on the server. Reading them straight out of localStorage
+  // meant a heart tapped here never reached /api/favorites, so the companion
+  // never appeared in the dashboard's Saved panel — which does read the server.
   useEffect(() => {
-    setIsFav(getFavorites().includes(companion.id));
+    let cancelled = false;
+    dataClient.getFavorites()
+      .then((ids) => { if (!cancelled) setIsFav(ids.includes(companion.id)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [companion.id]);
 
-  function handleFav() {
-    const next = toggleFavorite(companion.id);
-    setIsFav(next.includes(companion.id));
+  async function handleFav() {
+    const optimistic = !isFav;
+    setIsFav(optimistic);
+    try {
+      const next = await dataClient.toggleFavorite(companion.id);
+      setIsFav(next.includes(companion.id));
+    } catch {
+      setIsFav(!optimistic);
+    }
   }
-
-  const { rate, time } = responseStats(companion.id);
 
   return (
     <section aria-label={`${companion.firstName}'s profile`}>
@@ -164,10 +168,10 @@ export function CompanionProfilePortrait({ companion }: Props) {
         {companion.bio}
       </p>
 
-      {/* Response rate */}
-      <p className="font-sans text-xs mb-5" style={{ color: 'var(--color-ink-muted)' }}>
-        Replies within {time} · {rate}% response rate
-      </p>
+      {/* There used to be a "Replies within ~45 min · 97% response rate" line
+          here. Both numbers were a hash of the companion's id: nobody had ever
+          sent them a message, let alone been replied to. A response rate has to
+          be measured before it can be shown, so it is gone until it is. */}
 
       {/* Message CTA */}
       <Link

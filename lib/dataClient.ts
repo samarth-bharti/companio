@@ -63,6 +63,12 @@ export interface DataClient {
   // ── Messages ──────────────────────────────────────────────────────────────
   getThread(companionId: string): Promise<ChatMessage[]>;
   getThreads(): Promise<Record<string, ChatMessage[]>>;
+  /** Toggle one emoji reaction on one message. Returns the updated thread. */
+  reactToMessage(
+    companionId: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<ChatMessage[]>;
   appendMessage(
     companionId: string,
     msg: Omit<ChatMessage, 'id' | 'ts'>,
@@ -209,6 +215,10 @@ export function makeLocalStorageDataClient(): DataClient {
     async appendMessage(companionId, msg) {
       const { appendMessage } = await import('./appState');
       return appendMessage(companionId, msg);
+    },
+    async reactToMessage(companionId, messageId, emoji) {
+      const { reactToMessage } = await import('./appState');
+      return reactToMessage(companionId, messageId, emoji);
     },
 
     // notifications
@@ -367,6 +377,9 @@ export function makeHttpDataClient(): DataClient {
     async appendMessage(companionId, msg) {
       return post<ChatMessage>(`/api/messages/${companionId}`, msg);
     },
+    async reactToMessage(companionId, messageId, emoji) {
+      return post<ChatMessage[]>(`/api/messages/${companionId}/react`, { messageId, emoji });
+    },
 
     async getNotifications() {
       return getOr<AppNotification[]>('/api/notifications', []);
@@ -416,6 +429,7 @@ const MUTATION_EFFECTS = {
   updateBooking: ['bookings'],
   toggleFavorite: ['favorites'],
   appendMessage: ['messages'],
+  reactToMessage: ['messages'],
   addNotification: ['notifications'],
   markNotificationsRead: ['notifications'],
   setPlan: ['plan'],

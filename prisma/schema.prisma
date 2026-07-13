@@ -56,6 +56,11 @@ enum MessageFrom {
   them
 }
 
+enum MessageKind {
+  text
+  sticker
+}
+
 // Only the first three are a category we can MATCH on. `self_described` carries
 // its text in User.genderSelfDescribed; `prefer_not_to_say` carries nothing.
 // The same-gender filter needs a shared category on both sides, so those two
@@ -402,6 +407,14 @@ model Message {
   companionId String
   from        MessageFrom // 'me' | 'them'
   text        String
+  // A sticker is a single emoji rendered large. Without this column the POST
+  // route dropped `kind` and a sticker came back from the server as a small
+  // text bubble on the next load.
+  kind        MessageKind @default(text)
+  // Emoji reactions on this message. Held on the message itself rather than in
+  // a join table: they are a short, unordered set owned by the one member who
+  // can see the thread, and nothing queries across them.
+  reactions   String[]    @default([])
   ts          BigInt      // epoch ms — matches the number in ChatMessage
   createdAt   DateTime    @default(now())
 

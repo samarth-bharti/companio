@@ -18,6 +18,7 @@ import { POST as bookingPatch } from '@/app/api/bookings/[id]/route';
 import { POST as favToggle } from '@/app/api/favorites/toggle/route';
 import { POST as subPost } from '@/app/api/subscription/route';
 import { POST as msgPost } from '@/app/api/messages/[companionId]/route';
+import { POST as msgReact } from '@/app/api/messages/[companionId]/react/route';
 import { GET as messagesGet } from '@/app/api/messages/route';
 import { POST as notifsRead } from '@/app/api/notifications/read/route';
 import { POST as applicationPost } from '@/app/api/application/route';
@@ -59,7 +60,7 @@ beforeEach(() => {
   prismaMock.booking = { findMany: vi.fn(), create: vi.fn(), updateMany: vi.fn(), findFirst: vi.fn() };
   prismaMock.favorite = { findUnique: vi.fn(), delete: vi.fn(), create: vi.fn(), findMany: vi.fn() };
   prismaMock.subscription = { upsert: vi.fn(), deleteMany: vi.fn() };
-  prismaMock.message = { create: vi.fn(), findMany: vi.fn() };
+  prismaMock.message = { create: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn() };
   prismaMock.notification = { updateMany: vi.fn() };
   prismaMock.purchase = { findFirst: vi.fn(), create: vi.fn() };
   prismaMock.companionApplication = { upsert: vi.fn(), findUnique: vi.fn() };
@@ -381,6 +382,69 @@ describe('messages', () => {
   it('GET /api/messages is 401 without a session', async () => {
     sessionMock.mockResolvedValue(null);
     expect((await messagesGet()).status).toBe(401);
+  });
+
+  it('POST stores the sticker kind', async () => {
+    prismaMock.message.create.mockResolvedValue({ id: 'm1', from: 'me', text: '🎉', kind: 'sticker', reactions: [], ts: BigInt(1) });
+    await msgPost(jsonReq({ from: 'me', text: '🎉', kind: 'sticker' }), { params: Promise.resolve({ companionId: 'ananya' }) });
+    expect(prismaMock.message.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ kind: 'sticker' }) }),
+    );
+  });
+
+  it('POST defaults kind to text when it is omitted', async () => {
+    prismaMock.message.create.mockResolvedValue({ id: 'm1', from: 'me', text: 'hi', kind: 'text', reactions: [], ts: BigInt(1) });
+    await msgPost(jsonReq({ from: 'me', text: 'hi' }), { params: Promise.resolve({ companionId: 'ananya' }) });
+    expect(prismaMock.message.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ kind: 'text' }) }),
+    );
+  });
+});
+
+describe('message reactions', () => {
+  const params = { params: Promise.resolve({ companionId: 'ananya' }) };
+
+  it('is 401 without a session', async () => {
+    sessionMock.mockResolvedValue(null);
+    expect((await msgReact(jsonReq({ messageId: 'm1', emoji: '❤️' }), params)).status).toBe(401);
+  });
+
+  it('adds a reaction that is not there', async () => {
+    prismaMock.message.findFirst.mockResolvedValue({ id: 'm1', reactions: [] });
+    prismaMock.message.findMany.mockResolvedValue([]);
+    await msgReact(jsonReq({ messageId: 'm1', emoji: '❤️' }), params);
+    expect(prismaMock.message.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { reactions: ['❤️'] } }),
+    );
+  });
+
+  it('removes a reaction that is already there — the same tap toggles', async () => {
+    prismaMock.message.findFirst.mockResolvedValue({ id: 'm1', reactions: ['❤️', '😂'] });
+    prismaMock.message.findMany.mockResolvedValue([]);
+    await msgReact(jsonReq({ messageId: 'm1', emoji: '❤️' }), params);
+    expect(prismaMock.message.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { reactions: ['😂'] } }),
+    );
+  });
+
+  // The lookup is scoped by userId AND companionId, so a guessed message id from
+  // someone else's thread finds nothing — it neither writes nor confirms it exists.
+  it("cannot react to a message in someone else's thread", async () => {
+    prismaMock.message.findFirst.mockResolvedValue(null);
+    const res = await msgReact(jsonReq({ messageId: 'not-mine', emoji: '❤️' }), params);
+    expect(res.status).toBe(404);
+    expect(prismaMock.message.update).not.toHaveBeenCalled();
+  });
+
+  it('returns the whole thread, not just the changed message', async () => {
+    prismaMock.message.findFirst.mockResolvedValue({ id: 'm1', reactions: [] });
+    prismaMock.message.findMany.mockResolvedValue([
+      { id: 'm1', from: 'me', text: 'hi', kind: 'text', reactions: ['❤️'], ts: BigInt(1) },
+      { id: 'm2', from: 'them', text: 'yo', kind: 'text', reactions: [], ts: BigInt(2) },
+    ]);
+    const body = await (await msgReact(jsonReq({ messageId: 'm1', emoji: '❤️' }), params)).json();
+    expect(body).toHaveLength(2);
+    expect(body[0].reactions).toEqual(['❤️']);
   });
 });
 

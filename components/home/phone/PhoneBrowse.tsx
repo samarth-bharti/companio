@@ -1,13 +1,15 @@
-import { BadgeCheck, MapPin, Star, Search, SlidersHorizontal } from 'lucide-react';
+import { BadgeCheck, MapPin, Search, SlidersHorizontal } from 'lucide-react';
 
+// A mock of the browse screen. It carried `rating: 4.9, reviews: 124` — the
+// same fabricated social proof that was stripped out of the real cards, still
+// being advertised on the home page. The mock now shows what a new profile
+// actually shows: a rate, and no score.
 const COMPANIONS = [
   {
     name: 'Priya S.',
     city: 'Mumbai',
     activities: ['City Walk', 'Museum', 'Café'] as string[],
     rate: '₹800/hr',
-    rating: 4.9,
-    reviews: 124,
     initials: 'PS',
     accent: '#2E6BFF',
     bg: '#EBF1FF',
@@ -17,8 +19,6 @@ const COMPANIONS = [
     city: 'Bengaluru',
     activities: ['Gym', 'Hiking', 'Events'] as string[],
     rate: '₹700/hr',
-    rating: 4.8,
-    reviews: 87,
     initials: 'AK',
     accent: '#7A4FE0',
     bg: '#F0EBFF',
@@ -51,11 +51,6 @@ function BrowseCard({ c }: { c: Companion }) {
         </div>
         <div className="text-right shrink-0">
           <p className="font-sans font-bold text-xs" style={{ color: 'var(--color-azure)' }}>{c.rate}</p>
-          <p className="font-sans text-xs flex items-center gap-0.5 justify-end mt-0.5" style={{ color: 'var(--color-gold)' }}>
-            <Star size={9} fill="currentColor" strokeWidth={0} aria-hidden="true" />
-            {c.rating}
-            <span style={{ color: 'var(--color-ink-muted)' }}>({c.reviews})</span>
-          </p>
         </div>
       </div>
       <div className="flex gap-1.5 mt-2.5 flex-wrap">
@@ -65,12 +60,15 @@ function BrowseCard({ c }: { c: Companion }) {
           </span>
         ))}
       </div>
+      {/* "Book a session" — the one thing this button could not do. Paid meetups
+          are switched off until the payment-aggregator licence lands, so the
+          home page must not open with a promise the product declines to keep. */}
       <button
-        aria-label={`Book session with ${c.name}`}
+        aria-label={`View ${c.name}'s profile`}
         className="mt-3 w-full py-1.5 rounded-xl font-sans font-bold text-xs text-white"
         style={{ background: 'var(--grad-cta)' }}
       >
-        Book a session
+        View profile
       </button>
     </div>
   );

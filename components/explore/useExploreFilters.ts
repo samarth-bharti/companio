@@ -5,7 +5,6 @@ import { CITIES, DEFAULT_CITY_ID, getCity } from '@/lib/data/cities';
 import type { City } from '@/lib/data/cities';
 import { useCompanions } from '@/lib/useCompanions';
 import { dataClient } from '@/lib/dataClient';
-import { getFavorites, toggleFavorite as persistToggle } from '@/lib/appState';
 import { getQuiz, isMatchableGender } from '@/lib/journeyState';
 import { scoreCompanion } from '@/lib/matching';
 
@@ -116,7 +115,9 @@ export function useExploreFilters(): ExploreFiltersState {
 
   // Hydrate from storage after mount — SSR-safe (no localStorage on server).
   useEffect(() => {
-    setFavorites(getFavorites());
+    // Favourites come from the account, not this tab: the same hearts have to
+    // be lit on the member's phone and in the dashboard's Saved panel.
+    void dataClient.getFavorites().then(setFavorites).catch(() => {});
     const quiz = getQuiz();
     if (quiz) {
       setQuizDone(true);
@@ -186,7 +187,13 @@ export function useExploreFilters(): ExploreFiltersState {
   }, []);
 
   const toggleFav = useCallback((id: string) => {
-    setFavorites(persistToggle(id));
+    // Optimistic: the heart fills under the finger, then the server's list wins.
+    setFavorites((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
+    void dataClient.toggleFavorite(id)
+      .then(setFavorites)
+      .catch(() => {
+        void dataClient.getFavorites().then(setFavorites).catch(() => {});
+      });
   }, []);
 
   const clearFilters = useCallback(() => {

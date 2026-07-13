@@ -3,7 +3,8 @@
 import { useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
-import { Heart, Star } from 'lucide-react';
+import { Heart } from 'lucide-react';
+import { RatingBadge } from '@/components/companion/RatingBadge';
 import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
 import type { Companion } from '@/lib/data/companions';
@@ -116,10 +117,14 @@ export function SavedPanel() {
                 <p className="font-sans font-semibold text-sm mb-0.5" style={{ color: 'var(--color-ink)' }}>
                   {c.firstName}
                 </p>
-                <div className="flex items-center gap-1 mb-3">
-                  <Star size={11} fill="currentColor" aria-hidden="true" style={{ color: 'var(--color-gold)' }} />
+                {/* The sixth place that formatted a star row by hand, and the one
+                    that got missed: an unreviewed companion rendered as "★ 0 ·
+                    Vijay Nagar". RatingBadge exists so a companion with no
+                    reviews reads as New, everywhere, at once. */}
+                <div className="flex items-center gap-1.5 mb-3">
+                  <RatingBadge rating={c.rating} reviews={c.reviews} />
                   <span className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-                    {c.rating} · {c.area}
+                    {c.area}
                   </span>
                 </div>
                 <motion.a

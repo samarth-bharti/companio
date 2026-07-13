@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Button } from '@/components/ui/Button';
-import { getWallet, type Wallet } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
+import { type Wallet } from '@/lib/journeyState';
 import { type Companion } from '@/lib/data/companions';
 import { spring, stagger } from '@/lib/motion';
 
@@ -48,8 +49,15 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
   const reduced = useEffectiveReducedMotion();
   const [wallet, setWallet] = useState<Wallet | null>(null);
 
+  // The wallet decides what this rail's primary CTA says and what it charges,
+  // so it has to be the server's wallet. Reading localStorage here meant the
+  // profile could offer "₹0 today" against credits the server had already spent.
   useEffect(() => {
-    setWallet(getWallet());
+    let cancelled = false;
+    dataClient.getWallet()
+      .then((w) => { if (!cancelled) setWallet(w); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   const hasCredits = (wallet?.credits ?? 0) > 0;

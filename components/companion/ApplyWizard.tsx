@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
 import { Button } from '@/components/ui/Button';
-import { addNotification } from '@/lib/appState';
 import { dataClient } from '@/lib/dataClient';
 import type { GenderId } from '@/lib/journeyState';
 import { validateIdNumber, type IdDocType } from '@/lib/idFormat';
@@ -173,10 +172,13 @@ export function ApplyWizard() {
       }
     }
 
-    addNotification({
+    // Through dataClient, so the notification lands in the account and the
+    // dashboard bell shows it. Written straight to localStorage, it existed
+    // only in the tab that submitted the form.
+    await dataClient.addNotification({
       title: 'Application submitted',
       body: 'Your companion application is under review. Usually 2-3 days.',
-    });
+    }).catch(() => {});
     setSubmitted(true);
   };
 

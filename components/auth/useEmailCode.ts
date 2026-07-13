@@ -75,7 +75,15 @@ export function useEmailCode() {
       setVerifying(true);
       setError('');
       try {
-        const res = await signIn('email-otp', { email, code, firstName, redirect: false });
+        // Only send firstName when there is one. next-auth form-encodes these
+        // fields, so passing `firstName: undefined` transmits the string
+        // "undefined" and the server would store it as the member's name.
+        const res = await signIn('email-otp', {
+          email,
+          code,
+          ...(firstName?.trim() ? { firstName: firstName.trim() } : {}),
+          redirect: false,
+        });
         if (!res?.ok) {
           setError('That code is not right, or it has expired. Request a new one.');
           return false;
