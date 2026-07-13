@@ -14,8 +14,8 @@ const ITEMS = [
   },
   {
     Icon: BadgeCheck,
-    title: 'ID-verified companions',
-    body: 'Every companion is government ID-verified and background-checked before they can list.',
+    title: 'ID-checked companions',
+    body: 'Every companion submits a government ID, and a person on our team reviews it before they can list.',
   },
   {
     Icon: Headphones,

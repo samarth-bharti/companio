@@ -9,8 +9,8 @@ import { ClipReveal } from "@/components/journey/ClipReveal";
 const TRUST_PILLARS = [
   {
     icon: Fingerprint,
-    title: "KYC verified",
-    body: "Every companion's identity is verified via ID before activation. No exceptions.",
+    title: "ID checked, human-reviewed",
+    body: "No one lists without a government ID, and a person reviews every application before a profile goes live.",
     color: "#2E6BFF",
   },
   {

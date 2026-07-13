@@ -16,11 +16,16 @@ export interface Credential
   icon: LucideIcon;
 }
 
+// These are credentials the product hands out, so each one has to be a thing it
+// actually does. "Selfie-matched" and "Background-checked" were not: there is no
+// biometric match and no background-check vendor. "₹-protected payout" was not
+// either — nothing is escrowed, and paid meetups are switched off entirely until
+// the payment-aggregator licence lands.
 const DEFAULT_CREDENTIALS: Credential[] = [
-  { icon: ShieldCheck, label: "ID-matched", tone: "trust", angle: -2 },
-  { icon: Camera, label: "Selfie-matched", tone: "trust", angle: 1 },
-  { icon: ClipboardCheck, label: "Background-checked", tone: "trust", angle: -3 },
-  { icon: Wallet, label: "₹-protected payout", tone: "trust", angle: 2 },
+  { icon: ShieldCheck, label: "Government ID on file", tone: "trust", angle: -2 },
+  { icon: Camera, label: "Photo reviewed by a person", tone: "trust", angle: 1 },
+  { icon: ClipboardCheck, label: "Approved by hand", tone: "trust", angle: -3 },
+  { icon: Wallet, label: "Refund within 7 days", tone: "trust", angle: 2 },
   // Platonic Promise is the signature credential — brass tone, seal-item styling
   { icon: Heart, label: "Platonic Promise", tone: "brass", angle: -1 },
 ];

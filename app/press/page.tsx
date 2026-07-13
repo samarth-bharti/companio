@@ -17,9 +17,13 @@ export default function PressPage() {
           ],
         },
         {
-          heading: 'The numbers',
+          heading: 'The model',
           body: [
-            'A growing community across India\'s major cities, every companion identity-verified and background-checked, with a one-time ₹199 unlock that includes your first two meetings.',
+            // "A growing community across India's major cities" — Companio has
+            // not launched. A press page is the one page a journalist will quote
+            // back at you, so it states the model, not a community that does not
+            // exist yet and a background check nobody runs.
+            'A one-time ₹199 unlock opens every companion profile in your city and includes your first two meetings. Every companion submits a government ID that our team reviews by hand before their profile goes live.',
           ],
         },
         {

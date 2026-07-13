@@ -20,8 +20,24 @@
  * derivative (or an image proxy) before a locked profile can be trusted with a
  * face. Until then this is only as strong as the host.
  */
+/**
+ * Two things have to be true at once, and the old parameters only managed one.
+ *
+ * `w=64&blur=1000` reduced the portrait to a 64px smear and then blurred that
+ * into a single flat colour. It was certainly unrecognisable — and it was also
+ * a grey slab, which is a terrible thing to ask someone to pay ₹199 to see
+ * behind. A locked card has to withhold the person's identity while still
+ * promising that a person is there: warm skin tones, a silhouette, a café behind
+ * them. That is the difference between a paywall and a broken image.
+ *
+ * 220px wide with a heavy Gaussian is the balance: at that radius no facial
+ * geometry survives (there is nothing to sharpen back), but the shape, the
+ * colour and the setting do.
+ */
+const LOCKED = { w: 220, q: 45, blur: 400 } as const;
+
 export function blurredPhoto(url: string): string {
   if (!url.includes('images.unsplash.com')) return url;
   const [base] = url.split('?');
-  return `${base}?w=64&q=30&blur=1000`;
+  return `${base}?w=${LOCKED.w}&q=${LOCKED.q}&blur=${LOCKED.blur}`;
 }

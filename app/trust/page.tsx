@@ -1,27 +1,20 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
+import { VERIFICATION_STEPS } from '@/lib/trust';
 
-export const metadata: Metadata = { title: 'Trust & KYC, Companio' };
+export const metadata: Metadata = { title: 'Trust & verification, Companio' };
 
 export default function TrustPage() {
   return (
     <InfoPage
       eyebrow="Safety"
-      title="Trust & KYC."
-      intro="Every layer of Companio is built so two strangers can meet with total confidence. Here's exactly what stands behind every profile."
+      title="Trust & verification."
+      intro="Exactly what stands behind every profile — including what does not, yet."
       sections={[
-        {
-          heading: 'Aadhaar & KYC verification',
-          body: [
-            "Every companion's identity is verified against Aadhaar before activation, name, age, and a live selfie match. No exceptions, no grandfathered accounts.",
-          ],
-        },
-        {
-          heading: 'Background checks',
-          body: [
-            'Companions consent to a third-party background check before their profile goes live. Profiles are also reviewed by our team, photos, bio, and services.',
-          ],
-        },
+        // The three headings this page used to carry ("Aadhaar & KYC
+        // verification", "Background checks") described a pipeline that has
+        // never been built. VERIFICATION_STEPS describes the one that runs.
+        ...VERIFICATION_STEPS,
         {
           heading: 'Money protection',
           body: [

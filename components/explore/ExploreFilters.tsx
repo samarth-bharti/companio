@@ -28,6 +28,8 @@ interface ExploreFiltersProps {
   myGender: 'male' | 'female' | 'nonbinary' | undefined;
   viewMode: ViewMode;
   onViewModeChange: (m: ViewMode) => void;
+  /** How many companions the current filters return — shown on the Map button. */
+  resultCount: number;
   isFiltered: boolean;
   onClearFilters: () => void;
   /** "Surprise me" — highlights a strong match. Rendered in the filter bar. */
@@ -68,7 +70,7 @@ export function ExploreFilters({
   sort, onSortChange,
   freeNowOnly, onFreeNowToggle,
   sameGenderOnly, onSameGenderToggle, myGender,
-  viewMode, onViewModeChange,
+  viewMode, onViewModeChange, resultCount,
   isFiltered, onClearFilters,
   onSurprise,
 }: ExploreFiltersProps) {
@@ -192,23 +194,52 @@ export function ExploreFilters({
     </div>
   );
 
+  /**
+   * "Where are they, actually?" is the first question anyone asks of a local
+   * marketplace, and the answer was hidden behind a 32px pill with a 12px icon,
+   * sitting at the end of a row of five other pills. Nobody found it.
+   *
+   * It is now a real segmented control: 44px tall (the touch target the rest of
+   * the app already enforces and this one did not), 16px icons, and the map side
+   * carries the number of people it would show — a count is the reason to press
+   * a button, and "Map · 8" is a far better invitation than "Map".
+   */
   const viewToggle = (
-    <div className="flex items-center rounded-pill p-0.5 gap-0.5 shrink-0" style={pillBase} role="group" aria-label="Switch view">
-      {(['grid', 'map'] as ViewMode[]).map((m) => (
-        <button
-          key={m}
-          type="button"
-          aria-pressed={viewMode === m}
-          onClick={() => onViewModeChange(m)}
-          className="flex items-center gap-1 h-8 px-2.5 rounded-pill text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1"
-          style={viewMode === m
-            ? { background: 'var(--color-azure)', color: 'white', outlineColor: 'var(--color-azure)' }
-            : { color: 'var(--color-ink-muted)', outlineColor: 'var(--color-azure)' }}
-        >
-          {m === 'grid' ? <LayoutGrid size={12} aria-hidden /> : <Map size={12} aria-hidden />}
-          {m === 'grid' ? 'Grid' : 'Map'}
-        </button>
-      ))}
+    <div
+      className="flex items-center rounded-pill p-1 gap-1 shrink-0"
+      style={{ ...pillBase, boxShadow: 'var(--shadow-1)' }}
+      role="group"
+      aria-label="Switch between grid and map"
+    >
+      {(['grid', 'map'] as ViewMode[]).map((m) => {
+        const active = viewMode === m;
+        const isMap = m === 'map';
+        return (
+          <button
+            key={m}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onViewModeChange(m)}
+            className="flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-pill text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1"
+            style={active
+              ? { background: 'var(--color-azure)', color: 'white', outlineColor: 'var(--color-azure)' }
+              : { color: 'var(--color-ink)', outlineColor: 'var(--color-azure)' }}
+          >
+            {isMap ? <Map size={16} aria-hidden /> : <LayoutGrid size={16} aria-hidden />}
+            {isMap ? 'Map' : 'Grid'}
+            {isMap && resultCount > 0 && (
+              <span
+                className="text-xs font-bold tabular-nums px-1.5 py-0.5 rounded-full"
+                style={active
+                  ? { background: 'rgba(255,255,255,0.22)', color: 'white' }
+                  : { background: 'var(--color-azure-tint)', color: 'var(--color-azure-deep)' }}
+              >
+                {resultCount}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 

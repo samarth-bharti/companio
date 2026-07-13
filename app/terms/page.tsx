@@ -22,7 +22,7 @@ export default function TermsPage() {
         {
           heading: '2. Eligibility',
           body: [
-            'You must be 18 or older to use Companio. Companions additionally complete identity verification (ID match, selfie match) and a background check before their profile goes live.',
+            'You must be 18 or older to use Companio. Companions additionally submit a government ID, which our team reviews by hand before their profile goes live. We do not currently run an automated Aadhaar KYC check, a biometric selfie match, or a third-party criminal background check, and this clause will be updated when we do. Companio does not warrant the character or conduct of any companion, and meeting one is at your own risk.',
           ],
         },
         {

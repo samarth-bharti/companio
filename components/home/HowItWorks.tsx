@@ -22,7 +22,7 @@ const STEPS: Step[] = [
     num: "01",
     icon: Search,
     title: "Browse & pick",
-    desc: "Filter by category, city, language, and availability. Read verified reviews.",
+    desc: "Filter by category, city, language, and availability.",
     stubLabel: "Browse",
   },
   {
@@ -36,7 +36,7 @@ const STEPS: Step[] = [
     num: "03",
     icon: Star,
     title: "Meet, enjoy, rate",
-    desc: "Meet in a public place. After your experience, leave a verified review.",
+    desc: "Meet in a public place. Afterwards, rate the meetup — only people who actually met can.",
     stubLabel: "Meet",
   },
 ];

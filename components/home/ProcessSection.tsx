@@ -3,13 +3,14 @@
 import { motion } from "framer-motion";
 import { Search, MessageSquare, MapPin, Star } from "lucide-react";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
+import { VERIFICATION_SENTENCE } from '@/lib/trust';
 
 const STEPS = [
   {
     n: "01",
     icon: Search,
-    title: "Browse verified companions",
-    body: "Filter by activity, city, and availability. Every profile is ID-verified and background-checked before going live.",
+    title: "Browse companions",
+    body: `Filter by activity, city, and availability. ${VERIFICATION_SENTENCE}`,
     color: "#2E6BFF",
     bg: "#EBF1FF",
   },

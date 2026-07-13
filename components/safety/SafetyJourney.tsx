@@ -25,8 +25,8 @@ const ACCENT_STYLE: React.CSSProperties = {
 type Pillar = { icon: React.ElementType; title: string; body: string; color: string; id?: string };
 
 const PILLARS: Pillar[] = [
-  { icon: Fingerprint, title: 'Aadhaar & KYC verified',   color: '#2E6BFF',
-    body: "Every companion's identity is verified via Aadhaar before their profile is activated. No exceptions, no shortcuts." },
+  { icon: Fingerprint, title: 'ID checked, human-reviewed', color: '#2E6BFF',
+    body: 'No one lists without uploading a government ID. We check it, confirm the photo and the document are two different images, and a person reviews every application by hand. Automated Aadhaar KYC and background checks are not live yet, and we say so on our Trust page rather than implying otherwise.' },
   { icon: Lock,        title: '7-day refund promise',      color: '#7A4FE0',
     body: "Your first two meetings are included, and you're never charged to meet. Didn't find anyone you'd like to meet? Ask for a full refund within 7 days." },
   { icon: Siren,       title: 'SOS & live-share',          color: '#FFB23E', id: 'sos',

@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Safety, Companio",
-  description: "Learn how Companio keeps every member safe: Aadhaar KYC, a 7-day refund promise, SOS tools, and strict platonic enforcement.",
+  description: "How Companio keeps every member safe: government-ID checks, human review of every companion, a 7-day refund promise, SOS tools, and strict platonic enforcement.",
 };
 
 export default function SafetyPage() {

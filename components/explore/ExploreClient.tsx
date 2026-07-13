@@ -236,6 +236,7 @@ export function ExploreClient() {
         sameGenderOnly={sameGenderOnly}
         onSameGenderToggle={setSameGenderOnly}
         myGender={myGender}
+        resultCount={filteredCompanions.length}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         isFiltered={isFiltered}

@@ -11,7 +11,7 @@ const STEPS = [
   },
   {
     title: 'Verify',
-    body: 'Upload a profile photo and government ID. We run ID verification and a background check.',
+    body: 'Upload a profile photo and a government ID. A person on our team reviews both before your profile goes live.',
   },
   {
     title: 'Build your profile',

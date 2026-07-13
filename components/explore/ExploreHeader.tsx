@@ -84,7 +84,10 @@ export function ExploreHeader({
               color: 'var(--color-ink)',
             }}
           >
-            Verified company,{' '}
+            {/* "Verified company, near you." — the `verified` column is operator-
+                owned and is false for every companion on the platform. The word
+                cannot headline a page where it is true of nobody. */}
+            Good company,{' '}
             <em
               className="not-italic"
               style={{
@@ -117,7 +120,7 @@ export function ExploreHeader({
               aria-hidden="true"
             />
             <span className="text-sm font-medium" style={{ color: 'var(--color-ink-muted)' }}>
-              {cityCount} verified {cityCount === 1 ? 'companion' : 'companions'} ·{' '}
+              {cityCount} ID-checked {cityCount === 1 ? 'companion' : 'companions'} ·{' '}
               <span style={{ color: 'var(--color-emerald)', fontWeight: 600 }}>
                 <CountUp value={freeNowCount} />
               </span>{' '}
