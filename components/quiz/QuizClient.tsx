@@ -14,7 +14,7 @@ import {
   QUESTIONS, QUIZ_STEPS, INITIAL_ANSWERS, STEP_ACCENTS,
   getEmpathyEcho, type QuizAnswers,
 } from './quizData';
-import { setQuiz, isMatchableGender } from '@/lib/journeyState';
+import { setQuiz, isMatchableGender, type GenderId } from '@/lib/journeyState';
 import { dataClient } from '@/lib/dataClient';
 import { useCompanions } from '@/lib/useCompanions';
 import { rankCompanions } from '@/lib/matching';
@@ -125,9 +125,13 @@ export function QuizClient() {
     });
   }, [triggerEcho]);
 
-  const handleComfort = useCallback((value: QuizAnswers['comfort']) => {
+  const handleComfort = useCallback((value: QuizAnswers['comfort'], gender?: GenderId) => {
+    // A gender given here is used for THIS ranking, not just saved for later:
+    // the result screen appears seconds from now, and it has to already be the
+    // filtered one.
+    if (isMatchableGender(gender)) setMyGender(gender);
     setAnswers((prev) => {
-      const next = { ...prev, comfort: value };
+      const next = { ...prev, comfort: value, ...(gender ? { gender } : {}) };
       triggerEcho('comfort', next);
       return next;
     });
@@ -163,6 +167,9 @@ export function QuizClient() {
     void dataClient.setUser({
       firstName: answers.name,
       sameGenderOnly: answers.comfort.sameGender,
+      // Only sent when the quiz collected it — never overwrite a gender the
+      // account already holds with an absent one.
+      ...(answers.gender ? { gender: answers.gender } : {}),
     });
     router.push('/explore?matched=1');
   }, [answers, matches, router]);
@@ -244,6 +251,7 @@ export function QuizClient() {
               showEcho={phase === 'echo'}
               echoLine={echoLine}
               accent={accent}
+              knownGender={myGender !== undefined}
               onSingleAnswer={handleSingle}
               onMultiAnswer={handleMulti}
               onComfortAnswer={handleComfort}
