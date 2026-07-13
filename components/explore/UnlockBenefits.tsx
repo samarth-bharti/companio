@@ -5,6 +5,7 @@ import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { type LucideIcon } from "lucide-react";
 import { Users, CalendarHeart, ShieldCheck } from "lucide-react";
 import { stagger } from "@/lib/motion";
+import { UNLOCK_AMOUNT, applyDiscount, formatPaise } from "@/lib/money";
 
 type BenefitRow = {
   Icon: LucideIcon;
@@ -31,14 +32,21 @@ export function UnlockBenefits({
   city,
   count,
   headlineId,
+  discountPct = 0,
 }: {
   seedName: string;
   city: string;
   count: number;
   headlineId: string;
+  /** An unspent spin win. The wheel's prize is a discount on exactly this. */
+  discountPct?: number;
 }) {
   const reduced = useEffectiveReducedMotion();
   const total = count + 1;
+  // The same paise math the server bills on — not a rupee approximation of it.
+  const hasDiscount = discountPct > 0;
+  const fullPrice = formatPaise(UNLOCK_AMOUNT);
+  const payPrice = formatPaise(applyDiscount(UNLOCK_AMOUNT, discountPct));
 
   return (
     <div className="flex flex-col gap-4">
@@ -73,17 +81,36 @@ export function UnlockBenefits({
           >
             199
           </span>
-          {/* Big price */}
+          {/* Big price — struck through when a spin win is being applied. */}
+          {hasDiscount && (
+            <span
+              className="relative leading-none font-semibold text-[var(--color-ink-muted)] line-through"
+              style={{ fontFamily: "var(--font-display)", fontSize: "1.75rem" }}
+            >
+              {fullPrice}
+            </span>
+          )}
           <span
-            className="relative leading-none font-semibold text-[var(--color-ink)]"
-            style={{ fontFamily: "var(--font-display)", fontSize: "3rem" }}
+            className="relative leading-none font-semibold"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "3rem",
+              color: hasDiscount ? 'var(--color-emerald)' : 'var(--color-ink)',
+            }}
           >
-            ₹199
+            {payPrice}
           </span>
           {/* Context line */}
           <p className="pb-1 text-sm text-[var(--color-ink-muted)] leading-snug">
-            2 meetings included · worth{" "}
-            <span className="line-through">₹998</span>
+            {hasDiscount ? (
+              <span style={{ color: 'var(--color-emerald)', fontWeight: 600 }}>
+                {discountPct}% spin win applied
+              </span>
+            ) : (
+              <>
+                2 meetings included · worth <span className="line-through">₹998</span>
+              </>
+            )}
           </p>
         </div>
 

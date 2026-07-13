@@ -485,7 +485,15 @@ model SpinResult {
   prize         SpinPrize
   discountPct   Int       @default(0) // 0 / 10 / 20 — mirrors prize for fast checkout math
   expiresAt     DateTime  // 7 days after the spin
-  usedBookingId String?   // set when redeemed; null = still available
+  usedBookingId String?   // the booking it was spent on, when it was spent on one
+  // Redeemed-or-not. This used to be `usedBookingId != null`, which meant a win
+  // could only ever be spent on a BOOKING — and bookings are exactly what the
+  // RBI Payment Aggregator gate makes unsellable (see lib/server/pricing.ts).
+  // Every discount the wheel handed out was therefore unspendable: the same
+  // defect that got the `plus_month` jackpot deleted. A win now applies to the
+  // one thing v1 actually sells, so redemption is no longer booking-shaped.
+  usedAt        DateTime?
+  usedPurchaseId String?
   createdAt     DateTime  @default(now())
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -16,10 +16,11 @@ import {
   CREDIT_PACKS,
   isPackId,
   isPurchaseKindEnabled,
+  applyDiscount,
   UNLOCK_AMOUNT,
   PLUS_AMOUNT,
 } from '@/lib/server/pricing';
-import { quoteBooking } from '@/lib/server/booking';
+import { quoteBooking, bestSpin } from '@/lib/server/booking';
 import { envValue } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
@@ -58,7 +59,27 @@ export async function POST(req: Request) {
     let credits = 0;
     let spinResultId: string | null = null;
     if (kind === 'unlock') {
+      // A spin win discounts the unlock — the only thing v1 sells, and so the
+      // only thing a win can be spent on. The wheel used to award "% off your
+      // next meetup", which nobody could ever redeem.
+      //
+      // Reserved here, at the moment the price is fixed, because the Razorpay
+      // order is created for exactly this amount: if the win were claimed after
+      // the order, a second order could claim it too and both would be charged
+      // the discounted price.
       amount = UNLOCK_AMOUNT;
+      const spin = await bestSpin(prisma, userId);
+      if (spin) {
+        const reserved = await prisma.spinResult.updateMany({
+          where: { id: spin.id, usedAt: null },
+          data: { usedAt: new Date() },
+        });
+        if (reserved.count === 1) {
+          amount = applyDiscount(UNLOCK_AMOUNT, spin.discountPct);
+          spinResultId = spin.id;
+        }
+        // reserved.count === 0 ⇒ a concurrent order already took it. Full price.
+      }
     } else if (kind === 'plus') {
       amount = PLUS_AMOUNT;
     } else if (kind === 'credits') {
@@ -102,8 +123,8 @@ export async function POST(req: Request) {
       // fails (count=0) the spin was already claimed; re-quote without it.
       if (spinResultId) {
         const reserved = await prisma.spinResult.updateMany({
-          where: { id: spinResultId, usedBookingId: null },
-          data: { usedBookingId: bookingId },
+          where: { id: spinResultId, usedAt: null },
+          data: { usedBookingId: bookingId, usedAt: new Date() },
         });
         if (reserved.count === 0) {
           // Concurrent claim — recalculate price without the spin discount.

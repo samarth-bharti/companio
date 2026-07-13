@@ -80,11 +80,12 @@ export async function settlePurchase(
               create: { companionId: bk.companionId, bookingId: bk.id, amountPaise: bk.payoutPaise },
             });
           }
-          // Burn the redeemed spin win so it can never be reused.
+          // Burn the redeemed spin win so it can never be reused. It was already
+          // reserved (usedAt) at create-order; this records what it went on.
           if (purchase.spinResultId) {
             await tx.spinResult.update({
               where: { id: purchase.spinResultId },
-              data: { usedBookingId: bk.id },
+              data: { usedBookingId: bk.id, usedAt: new Date(), usedPurchaseId: purchase.id },
             });
           }
         }
@@ -102,6 +103,15 @@ export async function settlePurchase(
       }
       case 'unlock':
         await tx.user.update({ where: { id: purchase.userId }, data: { unlocked: true } });
+        // A spin win discounts the unlock, so the unlock is where it gets burnt.
+        // The old code only ever burnt a win on a booking — which is the reason
+        // no win was ever spendable at all.
+        if (purchase.spinResultId) {
+          await tx.spinResult.update({
+            where: { id: purchase.spinResultId },
+            data: { usedAt: new Date(), usedPurchaseId: purchase.id },
+          });
+        }
         break;
       case 'plus':
         await tx.subscription.upsert({

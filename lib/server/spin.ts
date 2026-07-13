@@ -25,10 +25,21 @@ export interface PrizeWeight {
 // the DB schema (can't be dropped without a migration) but is never drawn, so
 // users are never promised something we can't deliver. Re-add it only when a
 // Subscription redemption path is implemented in settlePurchase.
+//
+// THE SAME RULE CAUGHT THESE TWO.
+//
+// They used to read "10% off your next meetup". A meetup cannot be bought: v1
+// meetups are paid for with an included meeting (₹0), and `booking` purchases —
+// the only thing a meetup discount could apply to — are refused outright until
+// there is an RBI Payment Aggregator licence. So the wheel was handing out
+// discounts on a transaction that legally cannot happen. Nobody could ever spend
+// one, and nobody ever noticed, because nobody had.
+//
+// A win now discounts the ₹199 unlock, which is the one thing Companio sells.
 export const SPIN_PRIZES: PrizeWeight[] = [
   { prize: 'none',       weight: 85, discountPct: 0,  label: 'No win this week — spin again next week!' },
-  { prize: 'discount10', weight: 10, discountPct: 10, label: '10% off your next meetup' },
-  { prize: 'discount20', weight: 4,  discountPct: 20, label: '20% off your next meetup' },
+  { prize: 'discount10', weight: 10, discountPct: 10, label: '10% off your ₹199 unlock' },
+  { prize: 'discount20', weight: 4,  discountPct: 20, label: '20% off your ₹199 unlock' },
 ];
 
 export const SPIN_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // one spin per 7 days

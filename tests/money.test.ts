@@ -5,10 +5,37 @@ import {
   applySurge,
   clampHourly,
   gstComponent,
+  UNLOCK_AMOUNT,
   HOURLY_MIN,
   HOURLY_MAX,
   HOURLY_MAX_PREMIUM,
 } from '@/lib/server/pricing';
+import {
+  UNLOCK_AMOUNT as SHARED_UNLOCK,
+  applyDiscount as sharedDiscount,
+  formatPaise,
+} from '@/lib/money';
+
+// The UI must quote the exact amount the server will bill. It did not: the
+// unlock sheet discounted in whole rupees (₹199 → ₹159) while the server
+// discounted in paise (19900 → 15920 = ₹159.20), so a member with a 20% spin win
+// was offered one price and charged another. Both now import the same functions.
+describe('the price shown is the price charged', () => {
+  it('shares one implementation with the server', () => {
+    expect(SHARED_UNLOCK).toBe(UNLOCK_AMOUNT);
+    expect(sharedDiscount(UNLOCK_AMOUNT, 20)).toBe(applyDiscount(UNLOCK_AMOUNT, 20));
+  });
+
+  it('quotes a discounted unlock to the paise', () => {
+    expect(applyDiscount(UNLOCK_AMOUNT, 20)).toBe(15920);
+    expect(formatPaise(applyDiscount(UNLOCK_AMOUNT, 20))).toBe('₹159.20');
+    expect(formatPaise(applyDiscount(UNLOCK_AMOUNT, 10))).toBe('₹179.10');
+  });
+
+  it('prints whole rupees bare', () => {
+    expect(formatPaise(UNLOCK_AMOUNT)).toBe('₹199');
+  });
+});
 
 describe('splitMoney (commission)', () => {
   it('takes 30% from a standard user', () => {

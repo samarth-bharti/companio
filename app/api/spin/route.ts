@@ -29,10 +29,10 @@ export async function GET() {
     const { prisma } = await import('@/lib/prisma');
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { lastSpinAt: true },
+      select: { lastSpinAt: true, unlocked: true },
     });
     const reward = await prisma.spinResult.findFirst({
-      where: { userId, usedBookingId: null, expiresAt: { gt: new Date() }, discountPct: { gt: 0 } },
+      where: { userId, usedAt: null, expiresAt: { gt: new Date() }, discountPct: { gt: 0 } },
       orderBy: { discountPct: 'desc' },
       select: { prize: true, discountPct: true, expiresAt: true },
     });
@@ -42,6 +42,11 @@ export async function GET() {
       canSpin: canSpin(last, new Date()),
       nextSpinAt: nextSpinAt(last),
       reward,
+      // A win discounts the ₹199 unlock. Once that is bought there is nothing
+      // left for a discount to apply to, so we say so and do not let the member
+      // burn a spin on a prize they could never spend. Extra meetups are not
+      // purchasable (the RBI aggregator gate), so there is no second thing to buy.
+      nothingToWin: !!user?.unlocked,
     });
   });
 }
@@ -63,8 +68,18 @@ export async function POST(req: Request) {
 
     // Re-check eligibility and write atomically so a double-tap can't spin twice.
     const result = await prisma.$transaction(async (tx) => {
-      const u = await tx.user.findUnique({ where: { id: userId }, select: { lastSpinAt: true } });
+      const u = await tx.user.findUnique({
+        where: { id: userId },
+        select: { lastSpinAt: true, unlocked: true },
+      });
       const now = new Date();
+      // Refused on the server, not merely hidden in the UI: a member who has
+      // already unlocked has nothing a discount could apply to, and spending
+      // their weekly spin on an unspendable prize is the exact trick this
+      // wheel was doing to everybody.
+      if (u?.unlocked) {
+        return { nothingToWin: true as const };
+      }
       if (!canSpin(u?.lastSpinAt ?? null, now)) {
         return { cooldown: true as const, nextSpinAt: nextSpinAt(u?.lastSpinAt ?? null) };
       }
@@ -81,6 +96,9 @@ export async function POST(req: Request) {
       return { cooldown: false as const, spin };
     }, TX);
 
+    if ('nothingToWin' in result) {
+      return json({ error: 'nothing_to_win' }, 409);
+    }
     if (result.cooldown) {
       return json({ error: 'cooldown', nextSpinAt: result.nextSpinAt }, 429);
     }

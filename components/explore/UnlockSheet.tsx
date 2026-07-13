@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { PaymentMethodTiles } from "./PaymentMethodTiles";
 import { UnlockBenefits } from "./UnlockBenefits";
 import { payWithRazorpay } from "@/lib/razorpayClient";
+import { UNLOCK_AMOUNT, applyDiscount, formatPaise } from "@/lib/money";
 
 type PayState = "idle" | "processing" | "success";
 const HEADLINE_ID = "unlock-sheet-headline";
@@ -39,6 +40,10 @@ export function UnlockSheet({
   const [sel, setSel] = useState<string | null>(null);
   const [pay, setPay] = useState<PayState>("idle");
   const [payError, setPayError] = useState<string | null>(null);
+  // An unspent spin win. The server applies it when it fixes the order amount;
+  // this only mirrors it, so the member can see the price they will actually pay
+  // before they commit. The wheel was awarding discounts nobody could spend.
+  const [discountPct, setDiscountPct] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<Element | null>(null);
   // Synchronous double-submit guard + tracked timers. setPay is async, so a fast
@@ -80,6 +85,23 @@ export function UnlockSheet({
 
   // Unmount-only safety: never let a scheduled onSuccess fire after teardown.
   useEffect(() => () => { payTimers.current.forEach(clearTimeout); }, []);
+
+  // Look up the member's live spin win each time the sheet opens — it can expire.
+  useEffect(() => {
+    if (!open || isGuest) return;
+    let cancelled = false;
+    fetch('/api/spin')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled) setDiscountPct(d?.reward?.discountPct ?? 0);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [open, isGuest]);
+
+  // Exactly what the server will charge, to the paise. Quoting a rounded rupee
+  // figure here meant offering "Pay ₹159" and billing ₹159.20.
+  const payPrice = formatPaise(applyDiscount(UNLOCK_AMOUNT, discountPct));
 
   function fail(message: string) {
     payingRef.current = false;
@@ -171,7 +193,7 @@ export function UnlockSheet({
                   <X size={20} aria-hidden="true" />
                 </button>
               </div>
-              <UnlockBenefits seedName={seedName} city={city} count={count} headlineId={HEADLINE_ID} />
+              <UnlockBenefits seedName={seedName} city={city} count={count} headlineId={HEADLINE_ID} discountPct={discountPct} />
               {/* Guests create an account first — don't show payment UI yet, it
                   reads as "pay now" and conflicts with the account step. */}
               {!isGuest && <PaymentMethodTiles selected={sel} onSelect={setSel} />}
@@ -182,7 +204,7 @@ export function UnlockSheet({
                   </Button>
                 ) : (
                 <Button variant="cta" size="xl" className="w-full" onClick={doPay} disabled={pay !== "idle" || !sel}>
-                  {pay === "idle" && "Pay ₹199, unlock everything."}
+                  {pay === "idle" && `Pay ${payPrice}, unlock everything.`}
                   {pay === "processing" && (
                     <span className="flex items-center gap-2">
                       {reduced

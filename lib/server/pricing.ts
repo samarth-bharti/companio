@@ -19,7 +19,11 @@ export const CREDIT_PACKS = {
 
 export type PackId = keyof typeof CREDIT_PACKS;
 
-export const UNLOCK_AMOUNT = 19900;  // ₹199 one-time full unlock
+// Re-exported from lib/money so the UI and the server cannot compute a different
+// price from each other — they did, and a member was quoted ₹159 and charged
+// ₹159.20.
+export { UNLOCK_AMOUNT, applyDiscount } from '@/lib/money';
+
 export const PLUS_AMOUNT = 29900;    // ₹299 one-time — Companio Plus (no recurring billing)
 export const MEETING_AMOUNT = 49900; // ₹499 — a meeting beyond the free credits
 
@@ -101,12 +105,6 @@ export const GST_BPS = 1800; // 18% GST (applied once registration is live)
 export function applySurge(basePaise: number, multiplier: number): number {
   const m = Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
   return Math.round(basePaise * m);
-}
-
-/** Subtract a 0–100% discount from an amount (clamped, never negative). */
-export function applyDiscount(amountPaise: number, pct: number): number {
-  const p = Math.min(Math.max(Math.round(pct), 0), 100);
-  return Math.round((amountPaise * (100 - p)) / 100);
 }
 
 /** The GST component contained within a GST-inclusive amount. */
