@@ -16,6 +16,25 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 31_536_000,
     formats: ["image/avif", "image/webp"],
   },
+
+  // Files under public/ are served with `max-age=0, must-revalidate` by default,
+  // so the hero footage paid for a revalidation round trip on every single page
+  // load. Both files are content-stable — the mp4 is only ever replaced by
+  // `npm run encode:hero`, which rewrites the poster with it — so they can be
+  // cached hard. A replacement needs a new filename to bust this.
+  async headers() {
+    return [
+      {
+        source: "/:file(hero\\.mp4|hero-poster\\.webp)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 // Sentry's runtime init lives in instrumentation-client.ts / sentry.*.config.ts,
