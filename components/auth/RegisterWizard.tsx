@@ -6,7 +6,7 @@ import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import type { Variants } from 'framer-motion';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
 import { spring, calm } from '@/lib/motion';
-import { getQuiz } from '@/lib/journeyState';
+import { getQuiz, type GenderId } from '@/lib/journeyState';
 import { StepRole } from './StepRole';
 import { StepAboutYou } from './StepAboutYou';
 import { StepVerify } from './StepVerify';
@@ -17,7 +17,10 @@ export interface RegFormData {
   firstName: string;
   email: string;
   dob: string;
-  gender: string;
+  /** A `GenderId`, or '' before the member picks. Persisted by StepDone. */
+  gender: GenderId | '';
+  /** Only meaningful when `gender === 'self_described'`. */
+  genderSelfDescribed: string;
   city: string;
   /** True once the emailed code was exchanged for a real session. */
   otpVerified: boolean;
@@ -26,7 +29,7 @@ export interface RegFormData {
 
 const EMPTY: RegFormData = {
   role: '', firstName: '', email: '',
-  dob: '', gender: '', city: '',
+  dob: '', gender: '', genderSelfDescribed: '', city: '',
   otpVerified: false, termsAccepted: false,
 };
 

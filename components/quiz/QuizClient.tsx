@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -14,9 +14,10 @@ import {
   QUESTIONS, QUIZ_STEPS, INITIAL_ANSWERS, STEP_ACCENTS,
   getEmpathyEcho, type QuizAnswers,
 } from './quizData';
-import { TOP_MATCH_ID } from '@/lib/data/companions';
-import { setQuiz } from '@/lib/journeyState';
+import { setQuiz, isMatchableGender } from '@/lib/journeyState';
 import { dataClient } from '@/lib/dataClient';
+import { useCompanions } from '@/lib/useCompanions';
+import { rankCompanions } from '@/lib/matching';
 
 type Phase = 'question' | 'echo' | 'illusion' | 'result';
 
@@ -32,6 +33,33 @@ export function QuizClient() {
   const [phase, setPhase] = useState<Phase>('question');
   const [answers, setAnswers] = useState<QuizAnswers>(INITIAL_ANSWERS);
   const [echoLine, setEchoLine] = useState('');
+
+  // The real catalogue, from the database — the same list explore shows. The
+  // result screen used to be built from a hardcoded seed import, which is why it
+  // could promise "14 companions" in a city that has none.
+  const { companions } = useCompanions();
+  const [myGender, setMyGender] = useState<'male' | 'female' | 'nonbinary' | undefined>();
+
+  useEffect(() => {
+    let cancelled = false;
+    dataClient
+      .getUser()
+      .then((u) => {
+        if (!cancelled && isMatchableGender(u?.gender)) setMyGender(u!.gender as 'male' | 'female' | 'nonbinary');
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Who actually fits, in the city they actually chose, ranked by the answers
+  // they actually gave. Empty when the city has nobody — and the result screen
+  // says so instead of inventing a match.
+  const matches = useMemo(() => {
+    const inCity = companions.filter(
+      (c) => c.city.toLowerCase() === answers.city.toLowerCase(),
+    );
+    return rankCompanions(inCity, answers, myGender);
+  }, [companions, answers, myGender]);
 
   // Declared before the effect below that calls it; stable identity (useCallback []).
   const triggerEcho = useCallback((key: string, currentAnswers: QuizAnswers) => {
@@ -116,11 +144,28 @@ export function QuizClient() {
   // ── Navigation ───────────────────────────────────────────────────────────────
 
   const handleNavigate = useCallback(() => {
-    // All localStorage writes happen here — safe in event handler
-    setQuiz({ name: answers.name, city: answers.city, matchedId: TOP_MATCH_ID });
-    void dataClient.setUser({ firstName: answers.name });
+    // All localStorage writes happen here — safe in event handler.
+    //
+    // The answers are stored, not just the name: explore ranks against them, so
+    // "Best match" means something. `matchedId` is now whoever actually came
+    // first, and is empty when the chosen city has nobody in it.
+    setQuiz({
+      name: answers.name,
+      city: answers.city,
+      matchedId: matches[0]?.id ?? '',
+      activities: answers.activities,
+      languages: answers.languages,
+      sameGender: answers.comfort.sameGender,
+    });
+    // The comfort answer is a promise, so it is written to the account, where
+    // the explore filter can actually honour it. Saying "same-gender companions
+    // only" and storing it nowhere is what this replaces.
+    void dataClient.setUser({
+      firstName: answers.name,
+      sameGenderOnly: answers.comfort.sameGender,
+    });
     router.push('/explore?matched=1');
-  }, [answers.name, answers.city, router]);
+  }, [answers, matches, router]);
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -129,7 +174,14 @@ export function QuizClient() {
   }
 
   if (phase === 'result') {
-    return <ResultReveal name={answers.name} onNavigate={handleNavigate} />;
+    return (
+      <ResultReveal
+        name={answers.name}
+        city={answers.city}
+        matches={matches}
+        onNavigate={handleNavigate}
+      />
+    );
   }
 
   const currentQ = QUESTIONS[step];

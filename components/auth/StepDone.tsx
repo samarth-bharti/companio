@@ -41,6 +41,11 @@ export function StepDone({ form, next }: Props) {
         firstName: name,
         city: form.city || undefined,
         dateOfBirth: form.dob || undefined,
+        // Gender was collected on the previous step and then dropped on the
+        // floor here — the wizard asked, and nothing ever sent it.
+        gender: form.gender || undefined,
+        genderSelfDescribed:
+          form.gender === 'self_described' ? form.genderSelfDescribed.trim() || undefined : undefined,
       })
       .then(() => {
         if (!cancelled) track('signup', { role: form.role });
@@ -53,7 +58,7 @@ export function StepDone({ form, next }: Props) {
         }
       });
     return () => { cancelled = true; };
-  }, [name, form.city, form.dob, form.role]);
+  }, [name, form.city, form.dob, form.role, form.gender, form.genderSelfDescribed]);
 
   function proceed() {
     // A hard navigation, not router.push. The session cookie was set by a fetch,

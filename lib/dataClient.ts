@@ -48,6 +48,8 @@ export interface DataClient {
   // ── User profile ──────────────────────────────────────────────────────────
   getUser(): Promise<DemoUser | null>;
   setUser(u: DemoUser): Promise<void>;
+  /** Toggle the same-gender-only preference on its own, without a full profile write. */
+  setSameGenderOnly(v: boolean): Promise<void>;
 
   // ── Bookings ──────────────────────────────────────────────────────────────
   getBookings(): Promise<Booking[]>;
@@ -141,6 +143,11 @@ export function makeLocalStorageDataClient(): DataClient {
     async setUser(u) {
       const { setUser } = await import('./journeyState');
       setUser(u);
+    },
+    async setSameGenderOnly(v) {
+      const { getUser, setUser } = await import('./journeyState');
+      const u = getUser();
+      if (u) setUser({ ...u, sameGenderOnly: v });
     },
 
     // bookings
@@ -325,6 +332,13 @@ export function makeHttpDataClient(): DataClient {
     },
     async setUser(u) {
       await post('/api/user', u);
+    },
+    async setSameGenderOnly(v) {
+      // The route needs firstName (it is the one required field), so the
+      // preference rides along with the profile the server already has.
+      const current = await getOr<DemoUser | null>('/api/user', null);
+      if (!current) return;
+      await post('/api/user', { ...current, sameGenderOnly: v });
     },
 
     async getBookings() {

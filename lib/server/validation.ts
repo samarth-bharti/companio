@@ -34,11 +34,23 @@ export const addCreditsBody = z.object({ count: z.number().int().positive() });
 
 export const boolValueBody = z.object({ value: z.boolean() });
 
+export const genderEnum = z.enum([
+  'male',
+  'female',
+  'nonbinary',
+  'self_described',
+  'prefer_not_to_say',
+]);
+
 export const userBody = z.object({
   firstName: z.string().min(1),
   city: z.string().optional(),
   /** `YYYY-MM-DD`. Validated for adulthood in the route, not here. */
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD').optional(),
+  gender: genderEnum.optional(),
+  /** Meaningful only alongside `gender: 'self_described'`; ignored otherwise. */
+  genderSelfDescribed: z.string().trim().min(1).max(60).optional(),
+  sameGenderOnly: z.boolean().optional(),
 });
 
 const reviewBody = z.object({ stars: z.number().int().min(1).max(5), text: z.string() });

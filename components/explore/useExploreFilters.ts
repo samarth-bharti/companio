@@ -6,7 +6,8 @@ import type { City } from '@/lib/data/cities';
 import { useCompanions } from '@/lib/useCompanions';
 import { dataClient } from '@/lib/dataClient';
 import { getFavorites, toggleFavorite as persistToggle } from '@/lib/appState';
-import { getQuiz } from '@/lib/journeyState';
+import { getQuiz, isMatchableGender } from '@/lib/journeyState';
+import { scoreCompanion } from '@/lib/matching';
 
 /** Accepts either a city id ('indore') or a display name ('Indore'). */
 function matchCity(value: string): City | undefined {
@@ -51,6 +52,16 @@ export interface ExploreFiltersState {
   toggleFav: (id: string) => void;
   quizDone: boolean;
   quizName: string | undefined;
+  /** "Only companions of my own gender." Persisted on the account. */
+  sameGenderOnly: boolean;
+  setSameGenderOnly: (v: boolean) => void;
+  /**
+   * The member's own gender, when it is one we can compare on. Undefined means
+   * the filter cannot run — they have not told us, or they self-described /
+   * declined, which is not a category any companion can be equal to. The UI
+   * disables the toggle and says why rather than silently matching them wrong.
+   */
+  myGender: 'male' | 'female' | 'nonbinary' | undefined;
   /** Everyone in the selected city, before filters. Empty ⇒ city not served. */
   cityCompanions: Companion[];
   filteredCompanions: Companion[];
@@ -83,6 +94,16 @@ export function useExploreFilters(): ExploreFiltersState {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [quizDone, setQuizDone] = useState(false);
   const [quizName, setQuizName] = useState<string | undefined>(undefined);
+  const [myGender, setMyGender] = useState<'male' | 'female' | 'nonbinary' | undefined>();
+  const [quizAnswers, setQuizAnswers] = useState<{ activities: string[]; languages: string[] } | null>(null);
+  const [sameGenderOnly, setSameGenderOnlyState] = useState(false);
+
+  // Writing straight through to the account: this is a comfort preference, and
+  // it has to hold on the next device, not just this tab.
+  const setSameGenderOnly = useCallback((v: boolean) => {
+    setSameGenderOnlyState(v);
+    void dataClient.setSameGenderOnly(v).catch(() => {});
+  }, []);
 
   // Hydrate from storage after mount — SSR-safe (no localStorage on server).
   useEffect(() => {
@@ -91,6 +112,12 @@ export function useExploreFilters(): ExploreFiltersState {
     if (quiz) {
       setQuizDone(true);
       if (quiz.name) setQuizName(quiz.name);
+      // The answers themselves — "Best match" ranks against these. Before they
+      // were stored, the sort had nothing to go on but an authored matchScore.
+      setQuizAnswers({
+        activities: quiz.activities ?? [],
+        languages: quiz.languages ?? [],
+      });
       // Default to "Best match" when the quiz has been completed.
       setSort('best_match');
       const match = quiz.city ? matchCity(quiz.city) : undefined;
@@ -108,9 +135,15 @@ export function useExploreFilters(): ExploreFiltersState {
     dataClient
       .getUser()
       .then((u) => {
-        if (cancelled || cityPicked.current || !u?.city) return;
-        const match = matchCity(u.city);
-        if (match) setCityIdState(match.id);
+        if (cancelled || !u) return;
+        if (!cityPicked.current && u.city) {
+          const match = matchCity(u.city);
+          if (match) setCityIdState(match.id);
+        }
+        // The gender the member gave at signup, and whether they asked to see
+        // only their own. Both live on the account, not in this tab.
+        if (isMatchableGender(u.gender)) setMyGender(u.gender);
+        setSameGenderOnlyState(!!u.sameGenderOnly);
       })
       .catch(() => {});
     return () => {
@@ -152,7 +185,13 @@ export function useExploreFilters(): ExploreFiltersState {
     setAvailability('any');
     setSort(quizDone ? 'best_match' : 'nearest');
     setFreeNowOnly(false);
-  }, [quizDone]);
+    setSameGenderOnly(false);
+  }, [quizDone, setSameGenderOnly]);
+
+  // The filter can only run when both sides have a category to compare. Asking
+  // for it without a gender of your own is not an error — it just cannot narrow
+  // anything, and the UI explains that instead of quietly showing you everyone.
+  const sameGenderApplies = sameGenderOnly && myGender !== undefined;
 
   const filteredCompanions = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
@@ -168,24 +207,39 @@ export function useExploreFilters(): ExploreFiltersState {
       if (availability === 'weekends' && slot === 2) return false;
       if (availability === 'evenings' && slot === 1) return false;
       if (freeNowOnly && !c.availableNow) return false;
+      // The same-gender promise, finally kept. The quiz has told members
+      // "same-gender companions only" since day one and nothing filtered —
+      // companions did not even have a gender to compare against.
+      //
+      // A companion who has not declared one is excluded, not assumed: showing
+      // someone we are guessing about is exactly the failure this prevents.
+      if (sameGenderApplies && c.gender !== myGender) return false;
       return true;
     });
 
     if (sort === 'most_reviewed') list = [...list].sort((a, b) => b.reviews - a.reviews);
     else if (sort === 'price') list = [...list].sort((a, b) => a.ratePerMeeting - b.ratePerMeeting);
-    else if (sort === 'best_match') list = [...list].sort((a, b) => b.matchScore - a.matchScore);
+    else if (sort === 'best_match') {
+      // Ranked against what the member actually answered. Falls back to the
+      // authored matchScore only when there are no answers to rank against —
+      // which is also the only case where "best match" means nothing anyway.
+      list = quizAnswers
+        ? [...list].sort((a, b) => scoreCompanion(b, quizAnswers) - scoreCompanion(a, quizAnswers))
+        : [...list].sort((a, b) => b.matchScore - a.matchScore);
+    }
     else if (sort === 'nearest') list = [...list].sort((a, b) => a.distanceKm - b.distanceKm);
     else list = [...list].sort((a, b) => b.rating - a.rating); // top_rated default
 
     return list;
-  }, [cityCompanions, searchQuery, activityFilters, availability, freeNowOnly, sort]);
+  }, [cityCompanions, searchQuery, activityFilters, availability, freeNowOnly, sort, sameGenderApplies, myGender, quizAnswers]);
 
   const isFiltered =
     searchQuery !== '' ||
     activityFilters.length > 0 ||
     availability !== 'any' ||
     sort !== defaultSort ||
-    freeNowOnly;
+    freeNowOnly ||
+    sameGenderOnly;
 
   return {
     cityId, setCityId, selectedCity,
@@ -196,6 +250,7 @@ export function useExploreFilters(): ExploreFiltersState {
     freeNowOnly, setFreeNowOnly,
     favorites, toggleFav,
     quizDone, quizName,
+    sameGenderOnly, setSameGenderOnly, myGender,
     cityCompanions,
     filteredCompanions,
     isFiltered, clearFilters,

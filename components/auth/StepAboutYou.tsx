@@ -5,17 +5,23 @@ import type { ReactNode } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { CITIES } from '@/lib/data/cities';
+import type { GenderId } from '@/lib/journeyState';
 import { Reveal } from '@/components/motion/Reveal';
 import { ageInYears, parseDateOfBirth, maxAdultDob, MIN_AGE } from '@/lib/age';
 import { FieldStatus, ShakeWrapper } from './FieldStatus';
 import type { RegFormData } from './RegisterWizard';
 
-const GENDERS = [
-  'Woman',
-  'Man',
-  'Non-binary',
-  'Prefer to self-describe',
-  'Prefer not to say',
+// The label the member reads, and the value the database stores. These used to
+// be labels only: the answer was never sent, and the column stayed null for
+// everyone. The same-gender filter runs on this, so it has to be a real value.
+//
+// The last two are deliberately not matchable — see lib/journeyState.
+const GENDERS: { id: GenderId; label: string }[] = [
+  { id: 'female', label: 'Woman' },
+  { id: 'male', label: 'Man' },
+  { id: 'nonbinary', label: 'Non-binary' },
+  { id: 'self_described', label: 'Prefer to self-describe' },
+  { id: 'prefer_not_to_say', label: 'Prefer not to say' },
 ];
 
 function isEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
@@ -107,7 +113,8 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
   const firstNameValid = form.firstName.trim().length > 0;
   const emailValid     = isEmail(form.email);
   const dobValid       = !!form.dob && (age ?? -1) >= MIN_AGE;
-  const genderValid    = !!form.gender;
+  const selfDescribing = form.gender === 'self_described';
+  const genderValid    = !!form.gender && (!selfDescribing || form.genderSelfDescribed.trim().length > 0);
   const cityValid      = !!form.city;
 
   function validate(): boolean {
@@ -126,6 +133,8 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
       e.dob = `You must be ${MIN_AGE} or older to join Companio.`;
     if (!form.gender)
       e.gender = 'Please select a gender identity.';
+    else if (selfDescribing && !form.genderSelfDescribed.trim())
+      e.gender = 'Please tell us how you describe your gender.';
     if (!form.city)
       e.city = 'Please select your city.';
     setErrors(e);
@@ -220,18 +229,34 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
           )}
         </Field>
 
-        {/* Gender — emerald border when selected */}
+        {/* Gender — emerald border when selected. Used by the same-gender filter,
+            which is why we say what it is for rather than just asking. */}
         <Field label="Gender identity" error={errors.gender} id={`${id}-gen`}>
           <select
             id={`${id}-gen`}
             value={form.gender}
-            onChange={e => patch({ gender: e.target.value })}
+            onChange={e => patch({ gender: e.target.value as GenderId | '', genderSelfDescribed: '' })}
             className={FIELD_INPUT_BASE}
             style={{ ...FIELD_INPUT_STYLE, border: `1.5px solid ${fieldBorder(genderValid, !!errors.gender)}` }}
           >
             <option value="">Select…</option>
-            {GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
+            {GENDERS.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
           </select>
+          {selfDescribing && (
+            <input
+              type="text"
+              value={form.genderSelfDescribed}
+              onChange={e => patch({ genderSelfDescribed: e.target.value })}
+              placeholder="How do you describe your gender?"
+              maxLength={60}
+              aria-label="Describe your gender"
+              className={`${FIELD_INPUT_BASE} mt-2`}
+              style={{ ...FIELD_INPUT_STYLE, border: `1.5px solid ${fieldBorder(genderValid, !!errors.gender)}` }}
+            />
+          )}
+          <p className="mt-1 font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+            Lets you ask to see only companions of your own gender. You can change it later.
+          </p>
         </Field>
 
         {/* City — emerald border when selected */}

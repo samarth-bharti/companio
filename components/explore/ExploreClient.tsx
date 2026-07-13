@@ -75,6 +75,7 @@ export function ExploreClient() {
     freeNowOnly, setFreeNowOnly,
     favorites, toggleFav,
     quizDone, quizName,
+    sameGenderOnly, setSameGenderOnly, myGender,
     cityCompanions,
     filteredCompanions,
     isFiltered, clearFilters,
@@ -232,6 +233,9 @@ export function ExploreClient() {
         onSortChange={setSort}
         freeNowOnly={freeNowOnly}
         onFreeNowToggle={() => setFreeNowOnly(!freeNowOnly)}
+        sameGenderOnly={sameGenderOnly}
+        onSameGenderToggle={setSameGenderOnly}
+        myGender={myGender}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         isFiltered={isFiltered}

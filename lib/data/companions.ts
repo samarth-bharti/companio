@@ -40,6 +40,15 @@ export interface Companion {
   suggestions: string[];  // "What we'd do" — 3 city-specific ideas
   photo: string;          // Unsplash portrait URL
   accent: string;         // one of the four theme hex values
+  /**
+   * The companion's own gender. Drives the same-gender filter, which is a
+   * comfort/safety promise the quiz has always made and nothing has ever kept —
+   * because until now companions had no gender at all, on the row or in the type.
+   *
+   * Absent ⇒ undeclared ⇒ matches nobody who asked for same-gender company.
+   * Guessing here would be worse than showing fewer people.
+   */
+  gender?: 'male' | 'female' | 'nonbinary';
   sameGenderNote?: boolean;
   topMatch?: boolean;     // at most one per city
   /**
@@ -81,6 +90,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Ananya Iyer',
     firstName: 'Ananya',
     maskedName: 'Ana···',
+    gender: 'female',
     city: 'Mumbai',
     area: 'Bandra West',
     age: 27,
@@ -111,6 +121,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Rohan Desai',
     firstName: 'Rohan',
     maskedName: 'Roh···',
+    gender: 'male',
     city: 'Mumbai',
     area: 'Andheri West',
     age: 31,
@@ -140,6 +151,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Priya Nair',
     firstName: 'Priya',
     maskedName: 'Pri···',
+    gender: 'female',
     city: 'Mumbai',
     area: 'Colaba',
     age: 29,
@@ -170,6 +182,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Aarav Mehta',
     firstName: 'Aarav',
     maskedName: 'Aar···',
+    gender: 'male',
     city: 'Mumbai',
     area: 'Powai',
     age: 34,
@@ -199,6 +212,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Zara Sheikh',
     firstName: 'Zara',
     maskedName: 'Zar···',
+    gender: 'female',
     city: 'Mumbai',
     area: 'Juhu',
     age: 26,
@@ -228,6 +242,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Kiran Patil',
     firstName: 'Kiran',
     maskedName: 'Kir···',
+    gender: 'male',
     city: 'Mumbai',
     area: 'Dadar',
     age: 38,
@@ -257,6 +272,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Ishaan Choudhary',
     firstName: 'Ishaan',
     maskedName: 'Ish···',
+    gender: 'male',
     city: 'Mumbai',
     area: 'Lower Parel',
     age: 30,
@@ -286,6 +302,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Meena Krishnamurthy',
     firstName: 'Meena',
     maskedName: 'Mee···',
+    gender: 'female',
     city: 'Mumbai',
     area: 'Matunga',
     age: 43,
@@ -316,6 +333,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Sahil Bose',
     firstName: 'Sahil',
     maskedName: 'Sah···',
+    gender: 'male',
     city: 'Mumbai',
     area: 'Versova',
     age: 28,
@@ -345,6 +363,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Deepika Rao',
     firstName: 'Deepika',
     maskedName: 'Dee···',
+    gender: 'female',
     city: 'Mumbai',
     area: 'Worli',
     age: 32,
@@ -374,6 +393,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Arjun Pillai',
     firstName: 'Arjun',
     maskedName: 'Arj···',
+    gender: 'male',
     city: 'Mumbai',
     area: 'Chembur',
     age: 36,
@@ -403,6 +423,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Fatima Shaikh',
     firstName: 'Fatima',
     maskedName: 'Fati···',
+    gender: 'female',
     city: 'Mumbai',
     area: 'Malad',
     age: 25,
@@ -433,6 +454,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Vivek Sharma',
     firstName: 'Vivek',
     maskedName: 'Viv···',
+    gender: 'male',
     city: 'Mumbai',
     area: 'Khar',
     age: 33,
@@ -462,6 +484,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Nisha Kulkarni',
     firstName: 'Nisha',
     maskedName: 'Nis···',
+    gender: 'female',
     city: 'Mumbai',
     area: 'Vile Parle',
     age: 40,
@@ -494,6 +517,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Meghna Joshi',
     firstName: 'Meghna',
     maskedName: 'Meg···',
+    gender: 'female',
     city: 'Indore',
     area: 'Vijay Nagar',
     age: 26,
@@ -524,6 +548,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Aditya Rathore',
     firstName: 'Aditya',
     maskedName: 'Adi···',
+    gender: 'male',
     city: 'Indore',
     area: 'Rajwada',
     age: 30,
@@ -553,6 +578,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Sanya Kulkarni',
     firstName: 'Sanya',
     maskedName: 'San···',
+    gender: 'female',
     city: 'Indore',
     area: 'New Palasia',
     age: 24,
@@ -583,6 +609,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Kabir Malviya',
     firstName: 'Kabir',
     maskedName: 'Kab···',
+    gender: 'male',
     city: 'Indore',
     area: 'Bhawarkuan',
     age: 23,
@@ -612,6 +639,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Ritika Sharma',
     firstName: 'Ritika',
     maskedName: 'Rit···',
+    gender: 'female',
     city: 'Indore',
     area: 'Geeta Bhawan',
     age: 29,
@@ -642,6 +670,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Farhan Qureshi',
     firstName: 'Farhan',
     maskedName: 'Far···',
+    gender: 'male',
     city: 'Indore',
     area: 'Khajrana',
     age: 32,
@@ -671,6 +700,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Nandini Verma',
     firstName: 'Nandini',
     maskedName: 'Nan···',
+    gender: 'female',
     city: 'Indore',
     area: 'Saket Nagar',
     age: 27,
@@ -701,6 +731,7 @@ export const COMPANIONS: Companion[] = [
     name: 'Vikrant Chouhan',
     firstName: 'Vikrant',
     maskedName: 'Vik···',
+    gender: 'male',
     city: 'Indore',
     area: 'Rau',
     age: 34,

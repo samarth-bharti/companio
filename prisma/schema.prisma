@@ -56,10 +56,15 @@ enum MessageFrom {
   them
 }
 
+// Only the first three are a category we can MATCH on. `self_described` carries
+// its text in User.genderSelfDescribed; `prefer_not_to_say` carries nothing.
+// The same-gender filter needs a shared category on both sides, so those two
+// cannot use it — and the UI says so rather than quietly matching them wrong.
 enum Gender {
   male
   female
   nonbinary
+  self_described
   prefer_not_to_say
 }
 
@@ -119,6 +124,12 @@ model User {
   firstName   String
   lastName    String?
   gender      Gender?
+  // Free text, only ever set when gender == self_described. Asking someone to
+  // self-describe and then storing nothing was the old behaviour.
+  genderSelfDescribed String?
+  // "Only show me companions of my own gender." A comfort/safety preference the
+  // member owns, honoured by the explore filter and settable outside the quiz.
+  sameGenderOnly Boolean @default(false)
   city        String?  // matches City.id from lib/data/cities
   // Companio is 18+. Null means "we have never asked" — which is NOT an adult:
   // booking and companion applications refuse until it is set (lib/server/age.ts).
@@ -256,6 +267,11 @@ model Companion {
   suggestions    String[] // 3 city-specific outing ideas
   photo          String   // Unsplash URL
   accent         String   // hex colour string
+  // The companion's own gender. Null = never declared, which is NOT a match for
+  // anyone: a member who asked for same-gender company must not be shown someone
+  // whose gender we are guessing at. Required by the application form, so every
+  // real companion has one; nullable only so the column could be added.
+  gender         Gender?
   sameGenderNote Boolean  @default(false)
   topMatch       Boolean  @default(false)
   verified       Boolean  @default(false)

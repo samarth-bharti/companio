@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, X, Zap, LayoutGrid, Map, SlidersHorizontal, Shuffle } from 'lucide-react';
+import { Search, X, Zap, LayoutGrid, Map, SlidersHorizontal, Shuffle, UserCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
@@ -22,6 +22,10 @@ interface ExploreFiltersProps {
   onSortChange: (v: SortKey) => void;
   freeNowOnly: boolean;
   onFreeNowToggle: () => void;
+  sameGenderOnly: boolean;
+  onSameGenderToggle: (v: boolean) => void;
+  /** Undefined ⇒ we have no comparable gender for this member, so the filter cannot run. */
+  myGender: 'male' | 'female' | 'nonbinary' | undefined;
   viewMode: ViewMode;
   onViewModeChange: (m: ViewMode) => void;
   isFiltered: boolean;
@@ -64,6 +68,7 @@ export function ExploreFilters({
   availability, onAvailabilityChange,
   sort, onSortChange,
   freeNowOnly, onFreeNowToggle,
+  sameGenderOnly, onSameGenderToggle, myGender,
   viewMode, onViewModeChange,
   isFiltered, onClearFilters,
   onSurprise,
@@ -73,7 +78,10 @@ export function ExploreFilters({
 
   // Count of "extra" filters for the mobile Filters badge.
   const activeCount =
-    activityFilters.length + (availability !== 'any' ? 1 : 0) + (freeNowOnly ? 1 : 0);
+    activityFilters.length +
+    (availability !== 'any' ? 1 : 0) +
+    (freeNowOnly ? 1 : 0) +
+    (sameGenderOnly ? 1 : 0);
 
   // Lock scroll + Esc-to-close while the mobile drawer is open.
   useEffect(() => {
@@ -128,6 +136,38 @@ export function ExploreFilters({
       Free now
     </button>
   );
+
+  // A comfort preference, not a gimmick — so it lives in the open, next to the
+  // other filters, and can be turned off as easily as on. It used to be a
+  // one-time quiz answer that nothing acted on.
+  //
+  // Without a gender of our own to compare, the filter is inert. We disable it
+  // and say why, instead of leaving it on and showing everyone anyway.
+  const sameGenderButton = (className: string) => {
+    const usable = myGender !== undefined;
+    return (
+      <button
+        type="button"
+        aria-pressed={sameGenderOnly}
+        disabled={!usable}
+        onClick={() => onSameGenderToggle(!sameGenderOnly)}
+        title={usable ? undefined : 'Add your gender in your profile to use this filter.'}
+        className={cn(
+          'flex items-center justify-center gap-1.5 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1',
+          !usable && 'opacity-50 cursor-not-allowed',
+          className,
+        )}
+        style={
+          sameGenderOnly && usable
+            ? { background: 'var(--color-violet)', border: '1.5px solid var(--color-violet)', color: 'white', outlineColor: 'var(--color-violet)' }
+            : { ...pillBase, color: 'var(--color-ink-muted)' }
+        }
+      >
+        <UserCheck size={13} aria-hidden="true" />
+        Same gender
+      </button>
+    );
+  };
 
   const activityChips = (
     <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by activity">
@@ -198,6 +238,7 @@ export function ExploreFilters({
             {availabilitySelect('h-10 rounded-pill px-3 text-sm appearance-none cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1')}
             {sortSelect('h-10 rounded-pill px-3 text-sm appearance-none cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1')}
             {freeNowButton('h-10 px-3 rounded-pill text-sm')}
+            {sameGenderButton('h-10 px-3 rounded-pill text-sm')}
             {onSurprise && (
               <button
                 type="button"
@@ -285,6 +326,16 @@ export function ExploreFilters({
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold" style={{ color: 'var(--color-ink-muted)' }}>Availability</label>
                 {availabilitySelect('w-full h-11 rounded-xl px-3 text-sm cursor-pointer focus-visible:outline focus-visible:outline-2')}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold" style={{ color: 'var(--color-ink-muted)' }}>Comfort</label>
+                {sameGenderButton('w-full h-11 rounded-xl text-sm')}
+                {myGender === undefined && (
+                  <p className="text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+                    Add your gender in your profile to use this filter.
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
