@@ -1,9 +1,15 @@
 # Companio
 
-A paid **platonic companionship marketplace** — book a verified companion for
+A paid **platonic companionship marketplace** — book an ID-checked companion for
 real-world activities (city walks, café chats, museum tours). Warm, premium,
 and **strictly platonic**: no romantic/sexual/dating framing anywhere (legal +
 trust + payment-processor requirement — see [the hard rule](#hard-rules)).
+
+> **"ID-checked", not "verified".** No companion is verified: the `verified` column
+> is operator-owned and false for all of them, and there is no Aadhaar/KYC vendor
+> integrated. `lib/trust.ts` is the single source of truth for what the product may
+> claim, and `tests/trustClaims.test.ts` fails the build if a claim it cannot keep
+> reappears. See [`docs/STATUS.md`](docs/STATUS.md).
 
 Built with **Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 ·
 framer-motion**. Backend seam is **Prisma + Neon Postgres · Auth.js · Razorpay ·

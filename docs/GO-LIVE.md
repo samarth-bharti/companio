@@ -1,7 +1,7 @@
 # Companio — Go-Live Runbook, Deployment & Buying Plan
 
 > **Single source of truth for launch.** Read this first when resuming. "YOU" =
-> you procure / paste a value. "ME" = code/commands Claude runs.
+> a value you procure and paste in. "ME" = code and commands run in the repo.
 
 ## Timeline & strategy
 
@@ -172,6 +172,28 @@ NEXT_PUBLIC_MAPTILER_KEY, NEXT_PUBLIC_MAP_TILE_URL.
 | `MARKETPLACE_PAYMENTS_ENABLED` | `lib/server/pricing.ts` | **Leave it unset.** Set to the exact string `true` only when Razorpay Route (or a PA licence) is in place. It unlocks `kind=booking\|credits\|plus` in `create-order` — the flows where Companio collects a user's money and owes part of it to a companion. Doing that unlicensed is the RBI Payment Aggregator breach. v1 sells the ₹199 unlock only, and that needs no flag. |
 | `NEXT_PUBLIC_MAPTILER_KEY` | `lib/map/tiles.ts` | Basemap tiles. **Unset = OpenStreetMap's community servers**, which permit commercial use but forbid heavy traffic under the OSMF Tile Usage Policy. Set a key before real volume. (`NEXT_PUBLIC_MAP_TILE_URL` + `NEXT_PUBLIC_MAP_TILE_ATTRIBUTION` accept any raster source you license instead.) The old hardcoded CARTO basemap was enterprise-only for commercial use and has been removed. |
 | `GST_ACTIVE` | `lib/server/payments.ts` | Was undocumented. `true` once GST registration is live; receipts show ₹0 tax until then. |
+| `ALLOW_TEST_CHECKOUT` | `app/api/test-checkout/route.ts` | Added 2026-07-13. `true` lets the ₹199 unlock complete **for free**, so the only thing Companio sells can be clicked through before Razorpay exists. It grants the benefit through `settlePurchase()` — the same function the real webhook calls — so what works here works in production, and the RBI gate still applies (only `unlock`). **The off switch is `RAZORPAY_KEY_ID`:** its presence is an unconditional refusal, so the day the real keys are pasted in this endpoint stops working with no code change and nothing to remember. Only the exact string `true` enables it. |
+
+### Deploying to Vercel with no keys — read this or sign-in will look broken
+
+A Vercel deployment runs with `NODE_ENV=production`, and **production refuses to
+send a sign-in code it cannot email** (`lib/server/otp.ts`). That is deliberate:
+accepting the request, sending nothing, and showing "check your inbox" is precisely
+the theatre this codebase spent a week deleting.
+
+The practical consequence: **on a Vercel deploy with no `RESEND_API_KEY`, nobody
+can sign in at all.** The code is not printed to the screen there — that only
+happens outside production, where no real user's code exists to leak.
+
+So pick one:
+
+- **Test locally** (`npm run dev`), where the code appears on the sign-in screen. This
+  is the fastest path and needs no keys at all.
+- **Or set `RESEND_API_KEY` in Vercel** (free tier: 3,000 emails/month) before
+  expecting anyone to sign in to the deployed site.
+
+`ALLOW_TEST_CHECKOUT=true` in Vercel does work, and is safe there — but it is
+useless without a way to sign in first.
 
 **A note on `NEXT_PUBLIC_RAZORPAY_KEY_ID`.** The instant this is set, the demo
 payment path becomes unreachable by design — `lib/razorpayClient.ts` no longer
