@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Lock, BadgeCheck } from 'lucide-react';
+import { blurredPhoto } from '@/lib/photo';
 import { cn } from '@/lib/utils';
 import { TiltCard } from '@/components/motion/TiltCard';
 import { spring } from '@/lib/motion';
@@ -29,10 +30,12 @@ export function BlurLockCard({
 }) {
   const shouldReduce = useEffectiveReducedMotion();
 
-  // Privacy: fetch a tiny, server-blurred version (Unsplash transform) so the
-  // full-resolution photo never reaches the browser — a CSS-only blur of the
-  // real image can be removed in DevTools. A light CSS blur just smooths it.
-  const lockedSrc = `${companion.photo}${companion.photo.includes('?') ? '&' : '?'}w=64&blur=1000&q=30`;
+  // The API already hands a locked viewer a blurred URL (lib/server/redact.ts).
+  // This re-applies the same transform rather than appending another set of
+  // query parameters to it: the card must never be the only thing standing
+  // between a locked profile and its face, but it must not undo the server's
+  // work either. blurredPhoto() rebuilds the query, so it is idempotent.
+  const lockedSrc = blurredPhoto(companion.photo);
 
   return (
     <TiltCard maxDeg={4}>

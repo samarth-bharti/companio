@@ -28,6 +28,17 @@ export async function findVisibleCompanion(id: string): Promise<Companion | null
   return row ? toCompanion(row) : null;
 }
 
+/**
+ * The one companion per city who can be read without paying.
+ *
+ * Computed from the rows actually being served, so suspending the teaser hands
+ * the preview to whoever is next rather than leaving the city with none.
+ */
+export async function freePreviewIdSet(): Promise<Set<string>> {
+  const { freePreviewIds } = await import('@/lib/server/redact');
+  return freePreviewIds(await listVisibleCompanions());
+}
+
 /** Every visible companion, best match first. */
 export async function listVisibleCompanions(): Promise<Companion[]> {
   if (!envValue('DATABASE_URL')) return COMPANIONS;
