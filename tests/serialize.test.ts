@@ -60,17 +60,29 @@ describe('toNotification', () => {
 });
 
 describe('toCompanion', () => {
+  const row = (over: Record<string, unknown> = {}) => ({
+    id: 'ananya', name: 'Ananya', firstName: 'Ananya', maskedName: 'Ana',
+    city: 'mumbai', area: 'Bandra', age: 28, activities: [], languages: [],
+    rating: 4.9, reviewCount: 124, ratePerMeeting: 499, bio: '', suggestions: [],
+    photo: '', accent: '#000', sameGenderNote: false, topMatch: true,
+    verified: true, availableNow: true, availability: 'Free now', distanceKm: 3,
+    matchScore: 98, reviewsList: [], createdAt: new Date(), updatedAt: new Date(),
+    ...over,
+  });
+
   it('renames reviewCount to reviews and drops db-only fields', () => {
-    const c = toCompanion({
-      id: 'ananya', name: 'Ananya', firstName: 'Ananya', maskedName: 'Ana',
-      city: 'mumbai', area: 'Bandra', age: 28, activities: [], languages: [],
-      rating: 4.9, reviewCount: 124, ratePerMeeting: 499, bio: '', suggestions: [],
-      photo: '', accent: '#000', sameGenderNote: false, topMatch: true,
-      verified: true, availableNow: true, availability: 'Free now', distanceKm: 3,
-      matchScore: 98, reviewsList: [], createdAt: new Date(), updatedAt: new Date(),
-    } as any);
+    const c = toCompanion(row() as any);
     expect(c.reviews).toBe(124);
     expect((c as any).reviewCount).toBeUndefined();
     expect((c as any).createdAt).toBeUndefined();
+  });
+
+  // The "Verified" badge renders off this field and nothing else. It was once
+  // stripped here while the cards drew a hardcoded tick, so every seeded profile
+  // claimed an ID check none of them had passed. The badge must be able to be
+  // false, and must reach the client to be false.
+  it('carries `verified` through to the client, both ways', () => {
+    expect(toCompanion(row({ verified: true }) as any).verified).toBe(true);
+    expect(toCompanion(row({ verified: false }) as any).verified).toBe(false);
   });
 });

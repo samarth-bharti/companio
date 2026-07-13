@@ -111,10 +111,12 @@ export function BookingStepReview({ companion, state, onConfirm, onBack, submitt
             <p className="font-sans font-bold text-sm truncate" style={{ color: 'var(--color-ink)' }}>
               {companion.name}
             </p>
-            <div className="flex items-center gap-1">
-              <BadgeCheck size={12} style={{ color: 'var(--color-azure)' }} aria-hidden="true" />
-              <span className="font-sans text-xs" style={{ color: 'var(--color-azure-deep)' }}>Verified</span>
-            </div>
+            {companion.verified && (
+              <div className="flex items-center gap-1">
+                <BadgeCheck size={12} style={{ color: 'var(--color-azure)' }} aria-hidden="true" />
+                <span className="font-sans text-xs" style={{ color: 'var(--color-azure-deep)' }}>Verified</span>
+              </div>
+            )}
           </div>
         </div>
 

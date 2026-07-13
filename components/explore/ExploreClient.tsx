@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
-import { getUnlocked, getUser } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
 import { emitDataChange } from '@/lib/dataEvents';
 import { track } from '@/lib/analytics';
 import { topMatchIdFor, freeNowCountIn } from '@/lib/data/companions';
@@ -102,10 +102,22 @@ export function ExploreClient() {
     setTimeout(() => setHighlightId(id), 40);
   }, [unlocked, cityCompanions, teaserId]);
 
-  // Hydrate unlock state from localStorage (SSR-safe; hook handles quiz/favorites).
+  // Whether you have an account, and whether you have paid, are facts the server
+  // owns. These were read from localStorage, which the real sign-in never writes:
+  // a member who had just registered was still seen as a guest, so the unlock
+  // sheet offered to create the account they were already signed into.
   useEffect(() => {
-    setSignedIn(getUser() !== null);
-    if (getUnlocked()) setUnlocked(true);
+    let cancelled = false;
+    Promise.all([dataClient.getUser(), dataClient.getUnlocked()])
+      .then(([user, isUnlocked]) => {
+        if (cancelled) return;
+        setSignedIn(user !== null);
+        if (isUnlocked) setUnlocked(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // The "N of M unlocked" chip counts the city actually on screen. It used to

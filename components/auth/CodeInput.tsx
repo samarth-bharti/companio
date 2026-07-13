@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import type { ClipboardEvent, KeyboardEvent } from 'react';
 import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
-import { spring } from '@/lib/motion';
+import { pop } from '@/lib/motion';
 
 const INPUT_STYLE = {
   background: 'var(--color-bg)',
@@ -62,7 +62,7 @@ export function CodeInput({
         <motion.div
           key={i}
           animate={reduced ? {} : { scale: d ? [1, 1.12, 1] : 1 }}
-          transition={reduced ? { duration: 0 } : spring.snappy}
+          transition={reduced ? { duration: 0 } : pop}
         >
           <input
             ref={(el) => {

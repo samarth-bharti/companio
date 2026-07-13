@@ -97,21 +97,24 @@ export function CompanionProfilePortrait({ companion }: Props) {
           >
             {companion.name}
           </h1>
-          {/* ID badge — stamp in on mount */}
-          <motion.div
-            className="flex items-center gap-1.5"
-            initial={reduced ? false : { scale: 0.6, opacity: 0, rotate: -8 }}
-            animate={{ scale: 1, opacity: 1, rotate: 0 }}
-            transition={reduced ? { duration: 0 } : { ...spring.stamp, delay: 0.15 }}
-          >
-            <BadgeCheck size={15} style={{ color: 'var(--color-azure)' }} aria-hidden="true" />
-            <span
-              className="font-sans text-xs font-semibold"
-              style={{ color: 'var(--color-azure-deep)' }}
+          {/* ID badge — stamp in on mount. Only for someone who actually cleared
+              the ID check; "ID-verified" is a claim, not decoration. */}
+          {companion.verified && (
+            <motion.div
+              className="flex items-center gap-1.5"
+              initial={reduced ? false : { scale: 0.6, opacity: 0, rotate: -8 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              transition={reduced ? { duration: 0 } : { ...spring.stamp, delay: 0.15 }}
             >
-              ID-verified
-            </span>
-          </motion.div>
+              <BadgeCheck size={15} style={{ color: 'var(--color-azure)' }} aria-hidden="true" />
+              <span
+                className="font-sans text-xs font-semibold"
+                style={{ color: 'var(--color-azure-deep)' }}
+              >
+                ID-verified
+              </span>
+            </motion.div>
+          )}
         </div>
 
         <button

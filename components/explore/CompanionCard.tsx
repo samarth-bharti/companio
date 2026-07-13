@@ -58,7 +58,7 @@ export const CompanionCard = memo(function CompanionCard({
   const shouldReduce = useEffectiveReducedMotion();
   const {
     id, name, city, area, age, rating, reviews,
-    activities, languages, bio, photo, topMatch,
+    activities, languages, bio, photo, topMatch, verified,
   } = companion;
 
   const ease = [0.16, 1, 0.3, 1] as const;
@@ -157,8 +157,12 @@ export const CompanionCard = memo(function CompanionCard({
             <span className="text-[1.15rem] font-bold text-white leading-tight tracking-tight drop-shadow group-hover:underline decoration-white/40 underline-offset-2" style={{ fontFamily: 'var(--font-display)' }}>
               {name}{age ? <span className="font-medium opacity-80">, {age}</span> : null}
             </span>
-            <BadgeCheck size={17} className="shrink-0 drop-shadow text-white" aria-hidden="true" />
-            <span className="sr-only">Verified</span>
+            {verified && (
+              <>
+                <BadgeCheck size={17} className="shrink-0 drop-shadow text-white" aria-hidden="true" />
+                <span className="sr-only">Verified</span>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-1 text-[0.8rem] font-medium text-white/85 mt-0.5">
             <MapPin size={12} aria-hidden="true" />

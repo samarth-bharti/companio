@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Check } from 'lucide-react';
-import { spring } from '@/lib/motion';
+import { pop, spring } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 interface ChoiceTileProps {
@@ -16,7 +16,7 @@ interface ChoiceTileProps {
 
 /**
  * ChoiceTile — tactile selectable option for quiz questions.
- * spring.snappy on select, check-pop on stamp, aria-pressed for a11y.
+ * Scale pop on select, check-pop on stamp, aria-pressed for a11y.
  */
 export function ChoiceTile({
   label,
@@ -49,7 +49,7 @@ export function ChoiceTile({
       whileHover={reduced ? {} : { scale: 1.01 }}
       whileTap={reduced ? {} : { scale: 0.97 }}
       animate={!reduced && selected ? { scale: [1, 1.03, 1] } : { scale: 1 }}
-      transition={spring.snappy}
+      transition={pop}
       aria-pressed={selected}
     >
       <span className="flex-1">{label}</span>

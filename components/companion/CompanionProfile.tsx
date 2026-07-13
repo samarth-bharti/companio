@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Reveal } from '@/components/motion/Reveal';
 import { PassportStack } from '@/components/ui/PassportStack';
-import { type Companion, TOP_MATCH_ID } from '@/lib/data/companions';
-import { getUnlocked } from '@/lib/journeyState';
+import { type Companion, topMatchIdFor } from '@/lib/data/companions';
+import { dataClient } from '@/lib/dataClient';
 import { CompanionProfilePortrait } from './CompanionProfilePortrait';
 import { CompanionProfileSuggestions } from './CompanionProfileSuggestions';
 import { CompanionProfileReviews } from './CompanionProfileReviews';
@@ -21,11 +21,29 @@ export function CompanionProfile({ companion }: Props) {
   const router = useRouter();
 
   // Gate: profiles are behind the ₹199 unlock except the free preview.
+  //
+  // The free preview is per city — it is whoever explore shows unblurred in the
+  // city you are browsing. This used to compare against a single hardcoded id
+  // (a Mumbai companion), so in every other city the one profile a locked
+  // visitor could see was the one profile that bounced them back to /explore.
+  //
+  // Whether the unlock was bought is likewise the server's answer, not
+  // localStorage's: a member who had paid was still being turned away.
+  const isCityPreview = topMatchIdFor(companion.city) === companion.id;
+
   useEffect(() => {
-    if (!getUnlocked() && companion.id !== TOP_MATCH_ID) {
-      router.replace('/explore');
-    }
-  }, [companion.id, router]);
+    if (isCityPreview) return;
+    let cancelled = false;
+    dataClient
+      .getUnlocked()
+      .then((unlocked) => {
+        if (!cancelled && !unlocked) router.replace('/explore');
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isCityPreview, router]);
 
   return (
     <main className="min-h-screen pb-24 md:pb-0" style={{ background: 'var(--color-bg)' }}>

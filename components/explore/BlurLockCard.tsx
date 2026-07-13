@@ -100,8 +100,12 @@ export function BlurLockCard({
             >
               {companion.maskedName}
             </span>
-            <BadgeCheck size={16} className="text-azure shrink-0" aria-hidden="true" />
-            <span className="sr-only">Verified</span>
+            {companion.verified && (
+              <>
+                <BadgeCheck size={16} className="text-azure shrink-0" aria-hidden="true" />
+                <span className="sr-only">Verified</span>
+              </>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-1.5">

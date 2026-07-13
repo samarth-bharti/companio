@@ -54,10 +54,14 @@ export const toNotification = (n: PNotification): AppNotification => ({
 
 export function toCompanion(c: PCompanion): Companion {
   // reviewsList is stored as Json; the TS Companion type owns its exact shape.
-  // createdAt/updatedAt/verified are db-only — destructured out so they don't
-  // leak into the frontend shape.
+  // createdAt/updatedAt are db-only — destructured out so they don't leak into
+  // the frontend shape.
+  //
+  // `verified` DOES cross to the client: the badge is rendered from it. While it
+  // was stripped here, every card drew a hardcoded "Verified" tick regardless of
+  // what the column said.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { reviewCount, reviewsList, createdAt, updatedAt, verified, ...rest } = c;
+  const { reviewCount, reviewsList, createdAt, updatedAt, ...rest } = c;
   return {
     ...rest,
     reviews: reviewCount,

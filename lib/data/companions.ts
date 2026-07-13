@@ -42,6 +42,18 @@ export interface Companion {
   accent: string;         // one of the four theme hex values
   sameGenderNote?: boolean;
   topMatch?: boolean;     // at most one per city
+  /**
+   * Whether an operator has actually cleared this person's government ID.
+   *
+   * DATABASE-OWNED. It is deliberately absent from every authored entry below,
+   * so the seed (which spreads authored fields into its update branch) can never
+   * write it and re-verify someone an admin un-verified. Absent ⇒ not verified.
+   *
+   * The "Verified" badge renders off this and nothing else. It used to be
+   * hardcoded markup on every card, which told members that 22 seeded profiles
+   * had passed an ID check that none of them had been through.
+   */
+  verified?: boolean;
   availableNow: boolean;
   availability: string;    // e.g. "Free now" | "Free this evening" | …
   distanceKm: number;

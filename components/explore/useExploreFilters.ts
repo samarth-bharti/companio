@@ -1,11 +1,18 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { COMPANIONS } from '@/lib/data/companions';
 import type { Companion } from '@/lib/data/companions';
 import { CITIES, DEFAULT_CITY_ID, getCity } from '@/lib/data/cities';
 import type { City } from '@/lib/data/cities';
 import { useCompanions } from '@/lib/useCompanions';
+import { dataClient } from '@/lib/dataClient';
 import { getFavorites, toggleFavorite as persistToggle } from '@/lib/appState';
 import { getQuiz } from '@/lib/journeyState';
+
+/** Accepts either a city id ('indore') or a display name ('Indore'). */
+function matchCity(value: string): City | undefined {
+  const v = value.trim().toLowerCase();
+  return CITIES.find((c) => c.id === v || c.name.toLowerCase() === v);
+}
 
 export type SortKey = 'top_rated' | 'most_reviewed' | 'price' | 'best_match' | 'nearest';
 export type Availability = 'any' | 'weekends' | 'evenings';
@@ -56,7 +63,16 @@ export interface ExploreFiltersState {
 export function useExploreFilters(): ExploreFiltersState {
   const { companions, loading, error: loadError } = useCompanions();
 
-  const [cityId, setCityId] = useState(DEFAULT_CITY_ID);
+  const [cityId, setCityIdState] = useState(DEFAULT_CITY_ID);
+  // Once the member picks a city by hand, nothing may pull it back — the
+  // account lookup below resolves asynchronously and could otherwise land on
+  // top of a choice already made.
+  const cityPicked = useRef(false);
+  const setCityId = useCallback((id: string) => {
+    cityPicked.current = true;
+    setCityIdState(id);
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [activityFilters, setActivityFilters] = useState<string[]>([]);
   const [availability, setAvailability] = useState<Availability>('any');
@@ -77,9 +93,29 @@ export function useExploreFilters(): ExploreFiltersState {
       if (quiz.name) setQuizName(quiz.name);
       // Default to "Best match" when the quiz has been completed.
       setSort('best_match');
-      const match = CITIES.find((c) => c.name.toLowerCase() === quiz.city?.toLowerCase());
-      if (match) setCityId(match.id);
+      const match = quiz.city ? matchCity(quiz.city) : undefined;
+      if (match) setCityIdState(match.id);
     }
+  }, []);
+
+  /**
+   * The city on the account outranks the quiz's: it is the answer the member
+   * gave while signing up, and it survives a cleared localStorage. Without this
+   * a member who registered in Indore landed on Mumbai's roster.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    dataClient
+      .getUser()
+      .then((u) => {
+        if (cancelled || cityPicked.current || !u?.city) return;
+        const match = matchCity(u.city);
+        if (match) setCityIdState(match.id);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const selectedCity: City = useMemo(() => getCity(cityId), [cityId]);

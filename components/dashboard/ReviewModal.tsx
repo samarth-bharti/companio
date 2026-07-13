@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X } from 'lucide-react';
 import { dataClient } from '@/lib/dataClient';
-import { calm, spring } from '@/lib/motion';
+import { calm, pop, spring } from '@/lib/motion';
 import type { Booking } from '@/lib/appState';
 
 interface ReviewModalProps {
@@ -152,7 +152,7 @@ export function ReviewModal({ booking, onClose, onSaved }: ReviewModalProps) {
                       whileHover={reduced ? {} : { scale: 1.2 }}
                       whileTap={reduced ? {} : { scale: 0.88 }}
                       animate={n === stars && !reduced ? { scale: [1, 1.15, 1] } : { scale: 1 }}
-                      transition={spring.snappy}
+                      transition={pop}
                       aria-hidden="true"
                     >
                       ★
