@@ -37,7 +37,22 @@ export function CompanionDashHeader() {
         </div>
       )}
 
-      {live?.profile.suspended && (
+      {/* A newly approved companion is hidden because they have no photo yet, not
+          because anyone moderated them. Telling them to "contact support" for
+          something they can fix themselves — and that we caused — is the wrong
+          message on the first screen they ever see. */}
+      {live?.profile.suspended && !live.profile.photo && (
+        <div
+          className="w-full py-2.5 px-6 text-center font-sans text-sm font-semibold"
+          style={{ background: 'rgba(255,178,62,0.14)', color: '#8A5A00', borderBottom: '1px solid rgba(255,178,62,0.35)' }}
+          role="status"
+        >
+          You&apos;re approved. Your profile goes live as soon as we add your photo — we&apos;ll
+          email you when it does.
+        </div>
+      )}
+
+      {live?.profile.suspended && !!live.profile.photo && (
         <div
           className="w-full py-2.5 px-6 text-center font-sans text-sm font-semibold"
           style={{ background: 'rgba(192,57,43,0.08)', color: '#C0392B', borderBottom: '1px solid rgba(192,57,43,0.2)' }}

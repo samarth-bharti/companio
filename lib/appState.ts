@@ -5,7 +5,7 @@
 // addCredits below tops that same wallet up.
 
 import { readJSON, writeJSON, canUseStorage } from './storage';
-import { getWallet, KEY_WALLET } from './journeyState';
+import { getWallet, KEY_WALLET, type GenderId } from './journeyState';
 
 const KEY_BOOKINGS = 'companio_bookings';
 const KEY_FAVES = 'companio_favorites';
@@ -187,6 +187,8 @@ export function setPlan(p: Plan): void {
 export interface CompanionApplication {
   name: string;
   city: string;
+  /** Carried onto the approved profile — the same-gender filter matches on it. */
+  gender?: GenderId;
   activities: string[];
   rate: number;
   bio: string;

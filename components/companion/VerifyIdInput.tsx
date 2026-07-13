@@ -15,9 +15,13 @@ interface Props {
   onNumberChange: (n: string) => void;
 }
 
+// The PAN example must itself be a valid PAN. "ABCDE1234F" is not: the fourth
+// character is the holder type, and 'D' is not one of them — so the form was
+// showing an example it would reject, and the same string appears in the error
+// message telling you what a valid one looks like. 'P' is an individual.
 const TYPES: { id: IdDocType; label: string; placeholder: string }[] = [
   { id: 'aadhaar', label: 'Aadhaar', placeholder: '1234 5678 9012' },
-  { id: 'pan',     label: 'PAN',     placeholder: 'ABCDE1234F' },
+  { id: 'pan',     label: 'PAN',     placeholder: 'ABCPE1234F' },
 ];
 
 export function VerifyIdInput({
@@ -91,7 +95,7 @@ export function VerifyIdInput({
         <p className="font-sans text-xs" style={{ color: '#C7161A' }}>
           {idDocType === 'aadhaar'
             ? 'Enter a valid 12-digit Aadhaar number (starts with 2–9)'
-            : 'Enter a valid PAN — format: ABCDE1234F'}
+            : 'Enter a valid PAN — format: ABCPE1234F'}
         </p>
       )}
 

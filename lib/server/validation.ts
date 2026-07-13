@@ -105,8 +105,24 @@ export const orderCreateBody = z.object({
 export const applicationBody = z.object({
   name: z.string().min(1),
   city: z.string().min(1),
+  /**
+   * Required to be matchable. The same-gender filter is a comfort promise to
+   * members, and a companion with no gender is shown to nobody who asked for
+   * one — so an applicant who skips this is invisible to the members most
+   * likely to book them. Optional in the schema only because a draft may not
+   * have reached that question yet.
+   */
+  gender: genderEnum.optional(),
   activities: z.array(z.string()),
-  rate: z.number().int().nonnegative(),
+  /**
+   * PAISE, not rupees. The apply wizard's slider is in rupees and multiplies on
+   * submit — it used to send its rupee value straight into this paise column, so
+   * every applicant's rate was stored a hundred times too small.
+   *
+   * Bounded to the band the wizard offers (₹299–₹999) so a hand-rolled request
+   * cannot register a ₹0 or ₹50,000 companion.
+   */
+  rate: z.number().int().min(29900).max(99900),
   bio: z.string(),
   idUploaded: z.boolean(),
   backgroundConsent: z.boolean(),

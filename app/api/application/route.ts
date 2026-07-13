@@ -20,6 +20,7 @@ export async function GET() {
     return json({
       name: a.name,
       city: a.city,
+      gender: a.gender ?? undefined,
       activities: a.activities,
       rate: a.rate,
       bio: a.bio,

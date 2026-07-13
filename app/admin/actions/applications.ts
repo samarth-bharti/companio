@@ -24,7 +24,7 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
     const app = await prisma.companionApplication.findUnique({
       where: { id },
       select: {
-        id: true, userId: true, name: true, city: true,
+        id: true, userId: true, name: true, city: true, gender: true,
         bio: true, activities: true, rate: true, status: true,
       },
     });
@@ -49,11 +49,24 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
           maskedName,
           city: app.city,
           area: app.city,     // admin can edit the area later
+          gender: app.gender, // drives the same-gender filter; null ⇒ unmatchable
           bio: app.bio,
           activities: app.activities,
           ratePerMeeting: app.rate,
           hourlyRate: app.rate,
-          photo: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800',
+          // NO PHOTO, AND SUSPENDED UNTIL THERE IS ONE.
+          //
+          // This used to be a hardcoded Unsplash URL. Approving a real person
+          // published a live, bookable profile in their real name, in their real
+          // city — wearing a stranger's face. The selfie they uploaded is only
+          // hashed (DPDPA), never stored, so there is no photo to use here and we
+          // must not invent one.
+          //
+          // The profile is created suspended: it exists, the companion owns it,
+          // and it is invisible to members until an admin adds a real photo and
+          // lifts the suspension.
+          photo: '',
+          suspended: true,
           accent: '#5b5bd6',
           suggestions: [],
           languages: [],
@@ -82,7 +95,8 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
     revalidatePath(PATH);
     revalidatePath('/admin/companions');
     return succeeded(
-      `Approved. Profile ${companionId} created — add their photo, area and languages before it goes live.`,
+      `Approved. Profile ${companionId} created and HIDDEN until it has a real photo — ` +
+        `add their photo, area and languages, then unsuspend it to go live.`,
     );
   });
 }

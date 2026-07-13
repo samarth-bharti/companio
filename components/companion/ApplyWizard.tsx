@@ -5,8 +5,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
 import { Button } from '@/components/ui/Button';
-import { getApplication, saveApplication, addNotification } from '@/lib/appState';
-import { getUser } from '@/lib/journeyState';
+import { addNotification } from '@/lib/appState';
+import { dataClient } from '@/lib/dataClient';
+import type { GenderId } from '@/lib/journeyState';
 import { validateIdNumber, type IdDocType } from '@/lib/idFormat';
 import { WizardStepAbout } from './WizardStepAbout';
 import { WizardStepServices } from './WizardStepServices';
@@ -19,6 +20,11 @@ const STEPS = ['About', 'Services', 'Verify', 'Preview'];
 interface WizardData {
   name: string;
   city: string;
+  /**
+   * Pre-filled from the account — they told us at registration, so we do not ask
+   * twice — but editable, because this is the gender members will match against.
+   */
+  gender: GenderId | '';
   bio: string;
   activities: string[];
   rate: number;
@@ -33,7 +39,7 @@ interface WizardData {
 }
 
 const INIT: WizardData = {
-  name: '', city: '', bio: '',
+  name: '', city: '', gender: '', bio: '',
   activities: [], rate: 499,
   photoFile: null, idFile: null,
   backgroundConsent: false, platonicAck: false,
@@ -50,19 +56,36 @@ export function ApplyWizard() {
   const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
-    const app = getApplication();
-    if (app?.status === 'submitted') setSubmitted(true);
+    // Also from the server: an application submitted on another device (or in
+    // this one, before localStorage was cleared) must still read as submitted.
+    void dataClient
+      .getApplication()
+      .then((app) => {
+        if (app?.status === 'submitted') setSubmitted(true);
+      })
+      .catch(() => {});
+
     // Pre-fill from the account just created during registration — this is one
     // continuous onboarding, so we never ask for name/city twice.
-    const user = getUser();
-    if (user) {
-      setAccountName(user.firstName);
-      setData((d) => ({
-        ...d,
-        name: d.name || user.firstName,
-        city: d.city || user.city || '',
-      }));
-    }
+    //
+    // Read from the SERVER, not localStorage: the real sign-in never writes that
+    // key, so this prefill was silently empty for every account created by the
+    // actual register wizard.
+    let cancelled = false;
+    dataClient
+      .getUser()
+      .then((user) => {
+        if (cancelled || !user) return;
+        setAccountName(user.firstName);
+        setData((d) => ({
+          ...d,
+          name: d.name || user.firstName,
+          city: d.city || user.city || '',
+          gender: d.gender || (user.gender ?? ''),
+        }));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   const update = (patch: Partial<WizardData>) => setData((d) => ({ ...d, ...patch }));
@@ -72,6 +95,9 @@ export function ApplyWizard() {
     if (step === 0) {
       if (!data.name.trim()) errs.push('Name is required.');
       if (!data.city) errs.push('Please select your city.');
+      // Without this a companion cannot be matched by members who ask to meet
+      // someone of their own gender — which is the filter most likely to be on.
+      if (!data.gender) errs.push('Please select your gender identity.');
     } else if (step === 1) {
       if (!data.activities.length) errs.push('Select at least one activity.');
     } else if (step === 2) {
@@ -101,12 +127,27 @@ export function ApplyWizard() {
   };
 
   const handleSubmit = async () => {
-    // Always persist to local state (works in demo + http modes).
-    saveApplication({
+    // Through dataClient, so the application reaches the SERVER.
+    //
+    // This called `saveApplication` from lib/appState directly — localStorage,
+    // and only localStorage. In http mode the application was never posted:
+    // no CompanionApplication row was created, so no admin ever saw it, no
+    // application could be approved, and therefore no companion could ever own a
+    // profile or sign in to a dashboard. It also made the document upload below
+    // fail, because that route updates a row that did not exist.
+    //
+    // Awaited before the upload for that reason: the row must exist first.
+    await dataClient.saveApplication({
       name: data.name,
       city: data.city,
+      gender: data.gender || undefined,
       activities: data.activities,
-      rate: data.rate,
+      // RUPEES → PAISE. The slider is in rupees (it renders "₹499"); the column
+      // is paise, and approval copies it straight into Companion.hourlyRate,
+      // which is paise. So a companion who asked for ₹499 was stored as ₹4.99,
+      // shown to the admin as "₹5/mtg", and given an hourly rate so far below
+      // the legal floor that the booking quote clamped it back up to ₹300.
+      rate: data.rate * 100,
       bio: data.bio,
       idUploaded: !!data.idFile,
       backgroundConsent: data.backgroundConsent,

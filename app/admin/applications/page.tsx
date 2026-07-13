@@ -91,7 +91,7 @@ export default async function AdminApplications() {
                 action={approveApplication}
                 submitLabel="Approve → create companion"
                 submitClassName={btnGreen}
-                confirm={`Approve ${a.name}? This creates a live companion profile and promotes their account.`}
+                confirm={`Approve ${a.name}? This promotes their account and creates their profile — HIDDEN until you add a real photo. It does not go live yet.`}
               >
                 <input type="hidden" name="id" value={a.id} />
               </ActionForm>

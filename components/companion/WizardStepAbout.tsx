@@ -1,14 +1,28 @@
 'use client';
 
 import { CITIES } from '@/lib/data/cities';
+import type { GenderId } from '@/lib/journeyState';
 
 const BIO_MAX = 280;
 
 export interface AboutData {
   name: string;
   city: string;
+  gender: GenderId | '';
   bio: string;
 }
+
+/**
+ * Only these three can be matched against. A member who asks for a companion of
+ * their own gender is compared on this field, so "prefer not to say" would make
+ * a companion unbookable by exactly the members most likely to want them — which
+ * is a worse answer than not offering the option here at all.
+ */
+const COMPANION_GENDERS: { id: GenderId; label: string }[] = [
+  { id: 'female', label: 'Woman' },
+  { id: 'male', label: 'Man' },
+  { id: 'nonbinary', label: 'Non-binary' },
+];
 
 interface Props {
   data: AboutData;
@@ -84,6 +98,38 @@ export function WizardStepAbout({ data, onChange }: Props) {
             </option>
           ))}
         </select>
+      </div>
+
+      {/* Gender — members filter on this, so we say why we're asking. */}
+      <div className="mb-5">
+        <label
+          htmlFor="wiz-gender"
+          className="font-sans text-sm font-semibold block mb-2"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          Your gender <span aria-hidden="true" style={{ color: '#C7161A' }}>*</span>
+        </label>
+        <select
+          id="wiz-gender"
+          value={data.gender}
+          onChange={(e) => onChange({ gender: e.target.value as GenderId | '' })}
+          className="w-full h-11 px-4 font-sans text-sm"
+          style={fieldStyle}
+          required
+        >
+          <option value="" disabled>
+            Select your gender
+          </option>
+          {COMPANION_GENDERS.map((g) => (
+            <option key={g.id} value={g.id}>
+              {g.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+          Members can ask to meet only companions of their own gender. Without this you
+          will not appear for them.
+        </p>
       </div>
 
       {/* Bio */}

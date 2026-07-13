@@ -450,6 +450,11 @@ model CompanionApplication {
   userId            String            @unique
   name              String
   city              String
+  // Collected because the same-gender filter is a safety promise to members, and
+  // a companion with no declared gender matches nobody who asked for one. An
+  // approved applicant used to arrive with no gender at all, which made every
+  // real companion invisible to the very members most likely to need the filter.
+  gender            Gender?
   activities        String[]
   rate              Int               // ratePerMeeting in paise
   bio               String

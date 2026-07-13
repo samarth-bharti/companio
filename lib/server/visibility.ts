@@ -21,6 +21,12 @@ import type { Prisma } from '@prisma/client';
 export const VISIBLE_COMPANION: Prisma.CompanionWhereInput = {
   suspended: false,
   bannedAt: null,
+  // A profile with no photo cannot go live. An approved applicant is created
+  // without one — their selfie is hashed, never stored, so there is nothing to
+  // show — and the old code filled the gap with a stock photo of a stranger.
+  // Belt and braces with the `suspended: true` that approval now sets: even an
+  // admin who unsuspends too early cannot publish a faceless profile.
+  photo: { not: '' },
 };
 
 /** True when this user row is allowed to act (book, message, pay, sign in). */
