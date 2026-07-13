@@ -40,6 +40,35 @@ declare global {
 
 const SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
 
+/**
+ * Complete the purchase without a gateway, when the SERVER says it is running in
+ * test mode. Returns 'unconfigured' otherwise, which is the old behaviour and
+ * the honest answer: this deployment cannot sell anything.
+ */
+async function payWithTestCheckout(intent: RazorpayIntent): Promise<PayResult> {
+  const res = await postJson<{ ok?: boolean }>('/api/test-checkout', { kind: intent.kind });
+  if (res.status === 200 && res.data?.ok) return 'success';
+  if (res.status === 401) return 'auth_required';
+  return 'unconfigured';
+}
+
+/**
+ * Is this deployment running the free test checkout? Used only to SHOW the
+ * warning banner — never to decide whether a purchase succeeds. The server makes
+ * that call.
+ */
+export async function testCheckoutEnabled(): Promise<boolean> {
+  if (razorpayConfigured()) return false;
+  try {
+    const res = await fetch('/api/test-checkout');
+    if (!res.ok) return false;
+    const body = (await res.json()) as { enabled?: boolean };
+    return body.enabled === true;
+  } catch {
+    return false;
+  }
+}
+
 /** True only when a publishable key is present — the client gate for live mode. */
 export function razorpayConfigured(): boolean {
   return !!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
@@ -90,7 +119,16 @@ async function postJson<T>(url: string, body: unknown): Promise<{ status: number
  *  - 'failed'        : create-order, verify, or the gateway errored.
  */
 export async function payWithRazorpay(intent: RazorpayIntent): Promise<PayResult> {
-  if (!razorpayConfigured()) return 'unconfigured';
+  // No gateway on this deployment. Before giving up, ask the server whether it
+  // is running with test checkout switched on — if it is, the purchase completes
+  // for free, through the same settlePurchase() the real webhook calls.
+  //
+  // The decision is the SERVER's, never a NEXT_PUBLIC_ flag: a build-time
+  // variable baked into the bundle is exactly the thing that gets shipped to
+  // production by accident. /api/test-checkout refuses outright the moment a
+  // Razorpay key exists.
+  if (!razorpayConfigured()) return payWithTestCheckout(intent);
+
   if (!(await loadScript()) || !window.Razorpay) return 'failed';
 
   const order = await postJson<OrderResponse>('/api/razorpay/create-order', intent);

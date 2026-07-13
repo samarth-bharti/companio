@@ -15,7 +15,7 @@ type BenefitRow = {
 const ROWS: BenefitRow[] = [
   {
     Icon: Users,
-    text: (city, total) => `Every verified profile in ${city}, all ${total}, unblurred.`,
+    text: (city, total) => `Every profile in ${city}, all ${total}, unblurred.`,
   },
   {
     Icon: CalendarHeart,

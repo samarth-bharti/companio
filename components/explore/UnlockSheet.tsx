@@ -9,7 +9,7 @@ import { spring } from "@/lib/motion";
 import { Button } from "@/components/ui/Button";
 import { PaymentMethodTiles } from "./PaymentMethodTiles";
 import { UnlockBenefits } from "./UnlockBenefits";
-import { payWithRazorpay } from "@/lib/razorpayClient";
+import { payWithRazorpay, testCheckoutEnabled } from "@/lib/razorpayClient";
 import { UNLOCK_AMOUNT, applyDiscount, formatPaise } from "@/lib/money";
 
 type PayState = "idle" | "processing" | "success";
@@ -102,6 +102,17 @@ export function UnlockSheet({
   // Exactly what the server will charge, to the paise. Quoting a rounded rupee
   // figure here meant offering "Pay ₹159" and billing ₹159.20.
   const payPrice = formatPaise(applyDiscount(UNLOCK_AMOUNT, discountPct));
+
+  // Whether this deployment hands the unlock out for free. Asked of the server,
+  // and shown loudly — a free unlock that looks like a paid one is how a "test"
+  // build quietly becomes the live one.
+  const [testMode, setTestMode] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void testCheckoutEnabled().then((v) => { if (!cancelled) setTestMode(v); });
+    return () => { cancelled = true; };
+  }, [open]);
 
   function fail(message: string) {
     payingRef.current = false;
@@ -196,6 +207,25 @@ export function UnlockSheet({
               <UnlockBenefits seedName={seedName} city={city} count={count} headlineId={HEADLINE_ID} discountPct={discountPct} />
               {/* Guests create an account first — don't show payment UI yet, it
                   reads as "pay now" and conflicts with the account step. */}
+              {/* Loud on purpose. A free unlock that looks like a paid one is
+                  how a test build quietly becomes the live one. */}
+              {!isGuest && testMode && (
+                <div
+                  className="flex items-start gap-2 rounded-lg px-3 py-2.5 mb-3"
+                  style={{
+                    background: 'rgba(255,178,62,0.12)',
+                    border: '1px solid rgba(255,178,62,0.45)',
+                  }}
+                  role="status"
+                >
+                  <span aria-hidden="true">🧪</span>
+                  <p className="font-sans text-xs leading-relaxed" style={{ color: 'var(--color-ink)' }}>
+                    <strong>Test mode.</strong> No payment gateway is connected, so this button
+                    unlocks everything for free and no money is taken. Adding Razorpay keys
+                    switches this off automatically.
+                  </p>
+                </div>
+              )}
               {!isGuest && <PaymentMethodTiles selected={sel} onSelect={setSel} />}
               <div aria-live="polite" aria-atomic="true">
                 {isGuest ? (
