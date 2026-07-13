@@ -60,8 +60,12 @@ export function toCompanion(c: PCompanion): Companion {
   // `verified` DOES cross to the client: the badge is rendered from it. While it
   // was stripped here, every card drew a hardcoded "Verified" tick regardless of
   // what the column said.
+  //
+  // `distanceKm` stops here too. The column still exists, but it is an authored
+  // constant that was rendered as "3.2 km away" — a distance from a member whose
+  // location we have never known. It is not the client's business.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { reviewCount, reviewsList, createdAt, updatedAt, ...rest } = c;
+  const { reviewCount, reviewsList, createdAt, updatedAt, distanceKm, ...rest } = c;
   return {
     ...rest,
     reviews: reviewCount,

@@ -77,6 +77,12 @@ describe('toCompanion', () => {
     expect((c as any).createdAt).toBeUndefined();
   });
 
+  // It was rendered as "3.2 km away" and sorted the grid by default, and it is
+  // an authored constant — not a distance from a member we cannot locate.
+  it('does not ship distanceKm to the client', () => {
+    expect((toCompanion(row({ distanceKm: 3 }) as any) as any).distanceKm).toBeUndefined();
+  });
+
   // The "Verified" badge renders off this field and nothing else. It was once
   // stripped here while the cards drew a hardcoded tick, so every seeded profile
   // claimed an ID check none of them had passed. The badge must be able to be

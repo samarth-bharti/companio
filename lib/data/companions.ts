@@ -65,8 +65,14 @@ export interface Companion {
   verified?: boolean;
   availableNow: boolean;
   availability: string;    // e.g. "Free now" | "Free this evening" | …
-  distanceKm: number;
-  matchScore: number;      // compatibility score used for the default sort
+  /**
+   * NOT A DISTANCE FROM YOU. An authored constant, still in the database column
+   * so the seed's shape is unchanged, but no longer part of the client type: it
+   * was rendered as "3.2 km away" on every card and drove the DEFAULT "Nearest"
+   * sort, and we have never known where any member is standing. The area is the
+   * honest answer, and the area is real.
+   */
+  matchScore: number;      // authored fallback; the real score is lib/matching.ts
   reviewsList: {
     name: string;
     city: string;
@@ -110,7 +116,6 @@ export const COMPANIONS: Companion[] = [
     topMatch: true,
     availableNow: true,
     availability: 'Free now',
-    distanceKm: 2.1,
     matchScore: 95,
     reviewsList: [],
   },
@@ -140,7 +145,6 @@ export const COMPANIONS: Companion[] = [
     accent: EMERALD,
     availableNow: false,
     availability: 'Free this evening',
-    distanceKm: 4.3,
     matchScore: 82,
     reviewsList: [],
   },
@@ -171,7 +175,6 @@ export const COMPANIONS: Companion[] = [
     sameGenderNote: true,
     availableNow: true,
     availability: 'Free now',
-    distanceKm: 1.8,
     matchScore: 91,
     reviewsList: [],
   },
@@ -201,7 +204,6 @@ export const COMPANIONS: Companion[] = [
     accent: GOLD,
     availableNow: false,
     availability: 'Available tomorrow',
-    distanceKm: 6.7,
     matchScore: 74,
     reviewsList: [],
   },
@@ -231,7 +233,6 @@ export const COMPANIONS: Companion[] = [
     accent: AZURE,
     availableNow: true,
     availability: 'Free now',
-    distanceKm: 3.2,
     matchScore: 88,
     reviewsList: [],
   },
@@ -261,7 +262,6 @@ export const COMPANIONS: Companion[] = [
     accent: EMERALD,
     availableNow: false,
     availability: 'Free weekends',
-    distanceKm: 8.1,
     matchScore: 67,
     reviewsList: [],
   },
@@ -291,7 +291,6 @@ export const COMPANIONS: Companion[] = [
     accent: VIOLET,
     availableNow: false,
     availability: 'Free this evening',
-    distanceKm: 5.5,
     matchScore: 78,
     reviewsList: [],
   },
@@ -322,7 +321,6 @@ export const COMPANIONS: Companion[] = [
     sameGenderNote: true,
     availableNow: true,
     availability: 'Free now',
-    distanceKm: 7.4,
     matchScore: 85,
     reviewsList: [],
   },
@@ -352,7 +350,6 @@ export const COMPANIONS: Companion[] = [
     accent: AZURE,
     availableNow: false,
     availability: 'Available tomorrow',
-    distanceKm: 9.6,
     matchScore: 71,
     reviewsList: [],
   },
@@ -382,7 +379,6 @@ export const COMPANIONS: Companion[] = [
     accent: VIOLET,
     availableNow: true,
     availability: 'Free now',
-    distanceKm: 4.0,
     matchScore: 92,
     reviewsList: [],
   },
@@ -412,7 +408,6 @@ export const COMPANIONS: Companion[] = [
     accent: EMERALD,
     availableNow: false,
     availability: 'Free this evening',
-    distanceKm: 11.2,
     matchScore: 63,
     reviewsList: [],
   },
@@ -443,7 +438,6 @@ export const COMPANIONS: Companion[] = [
     sameGenderNote: true,
     availableNow: false,
     availability: 'Free weekends',
-    distanceKm: 3.8,
     matchScore: 80,
     reviewsList: [],
   },
@@ -473,7 +467,6 @@ export const COMPANIONS: Companion[] = [
     accent: AZURE,
     availableNow: false,
     availability: 'Available tomorrow',
-    distanceKm: 2.9,
     matchScore: 76,
     reviewsList: [],
   },
@@ -503,7 +496,6 @@ export const COMPANIONS: Companion[] = [
     accent: VIOLET,
     availableNow: false,
     availability: 'Free this evening',
-    distanceKm: 10.3,
     matchScore: 69,
     reviewsList: [],
   },
@@ -537,7 +529,6 @@ export const COMPANIONS: Companion[] = [
     topMatch: true,
     availableNow: true,
     availability: 'Free now',
-    distanceKm: 3.2,
     matchScore: 94,
     reviewsList: [],
   },
@@ -567,7 +558,6 @@ export const COMPANIONS: Companion[] = [
     accent: VIOLET,
     availableNow: false,
     availability: 'Free this weekend',
-    distanceKm: 5.6,
     matchScore: 88,
     reviewsList: [],
   },
@@ -598,7 +588,6 @@ export const COMPANIONS: Companion[] = [
     sameGenderNote: true,
     availableNow: true,
     availability: 'Free now',
-    distanceKm: 2.4,
     matchScore: 86,
     reviewsList: [],
   },
@@ -628,7 +617,6 @@ export const COMPANIONS: Companion[] = [
     accent: EMERALD,
     availableNow: false,
     availability: 'Free mornings',
-    distanceKm: 7.1,
     matchScore: 83,
     reviewsList: [],
   },
@@ -659,7 +647,6 @@ export const COMPANIONS: Companion[] = [
     sameGenderNote: true,
     availableNow: false,
     availability: 'Free weekdays',
-    distanceKm: 4.0,
     matchScore: 81,
     reviewsList: [],
   },
@@ -689,7 +676,6 @@ export const COMPANIONS: Companion[] = [
     accent: GOLD,
     availableNow: false,
     availability: 'Free this evening',
-    distanceKm: 6.8,
     matchScore: 79,
     reviewsList: [],
   },
@@ -720,7 +706,6 @@ export const COMPANIONS: Companion[] = [
     sameGenderNote: true,
     availableNow: true,
     availability: 'Free now',
-    distanceKm: 3.9,
     matchScore: 77,
     reviewsList: [],
   },
@@ -750,7 +735,6 @@ export const COMPANIONS: Companion[] = [
     accent: EMERALD,
     availableNow: false,
     availability: 'Free weekends',
-    distanceKm: 11.4,
     matchScore: 74,
     reviewsList: [],
   },

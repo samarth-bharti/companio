@@ -43,7 +43,6 @@ const AVAIL_OPTIONS: { value: Availability; label: string }[] = [
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'best_match', label: 'Best match' },
   { value: 'top_rated', label: 'Top rated' },
-  { value: 'nearest', label: 'Nearest' },
   { value: 'most_reviewed', label: 'Most reviewed' },
   { value: 'price', label: 'Price' },
 ];

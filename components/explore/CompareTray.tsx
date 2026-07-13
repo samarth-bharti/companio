@@ -129,8 +129,10 @@ function CompareModal({
                 <p className="font-semibold text-sm" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-ink)' }}>
                   {c.firstName}
                 </p>
+                {/* "X km away" was an authored constant, not a distance from
+                    anyone. We know the member's city, never their location. */}
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
-                  {c.area} · {c.distanceKm} km away
+                  {c.area} · {c.city}
                 </p>
               </div>
               {/* Stats */}

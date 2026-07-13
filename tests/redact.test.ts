@@ -13,7 +13,7 @@ const make = (over: Partial<Companion>): Companion => ({
   photo: 'https://images.unsplash.com/photo-1?w=480&q=80',
   accent: '#000',
   availableNow: false, availability: 'Available tomorrow',
-  distanceKm: 5, matchScore: 70,
+  matchScore: 70,
   reviewsList: [{ name: 'A', city: 'Indore', stars: 5, text: 'Lovely' }],
   ...over,
 });

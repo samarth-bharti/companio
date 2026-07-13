@@ -15,7 +15,13 @@ function matchCity(value: string): City | undefined {
   return CITIES.find((c) => c.id === v || c.name.toLowerCase() === v);
 }
 
-export type SortKey = 'top_rated' | 'most_reviewed' | 'price' | 'best_match' | 'nearest';
+/**
+ * 'nearest' is gone. It sorted on `Companion.distanceKm`, an authored constant
+ * in the seed file — not a distance from the member, who we cannot locate any
+ * closer than the city they picked. It was the DEFAULT sort, so the grid's
+ * running order was decided by a number that meant nothing.
+ */
+export type SortKey = 'top_rated' | 'most_reviewed' | 'price' | 'best_match';
 export type Availability = 'any' | 'weekends' | 'evenings';
 
 /** Stable availability slot per companion id: 0=any-time, 1=weekends, 2=evenings. */
@@ -87,9 +93,12 @@ export function useExploreFilters(): ExploreFiltersState {
   const [searchQuery, setSearchQuery] = useState('');
   const [activityFilters, setActivityFilters] = useState<string[]>([]);
   const [availability, setAvailability] = useState<Availability>('any');
-  // Default to "nearest" for non-quiz users. "Top rated" is meaningless while
-  // no profile has been reviewed — every rating is 0.
-  const [sort, setSort] = useState<SortKey>('nearest');
+  // "Best match" for everyone. It is a real score now: computed from the quiz
+  // answers when there are any, and neutral-and-equal for everyone when there
+  // are not — which leaves the grid in the order the server sent it, rather than
+  // ranked by a made-up distance. "Top rated" would be meaningless anyway while
+  // no profile has been reviewed.
+  const [sort, setSort] = useState<SortKey>('best_match');
   const [freeNowOnly, setFreeNowOnly] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [quizDone, setQuizDone] = useState(false);
@@ -153,8 +162,9 @@ export function useExploreFilters(): ExploreFiltersState {
 
   const selectedCity: City = useMemo(() => getCity(cityId), [cityId]);
 
-  // The "neutral" sort depends on whether the quiz is done.
-  const defaultSort: SortKey = quizDone ? 'best_match' : 'nearest';
+  // One neutral sort, quiz or no quiz — it degrades to "everyone scores the
+  // same" when there are no answers to rank against.
+  const defaultSort: SortKey = 'best_match';
 
   /**
    * Companions who actually list in the selected city.
@@ -183,7 +193,7 @@ export function useExploreFilters(): ExploreFiltersState {
     setSearchQuery('');
     setActivityFilters([]);
     setAvailability('any');
-    setSort(quizDone ? 'best_match' : 'nearest');
+    setSort('best_match');
     setFreeNowOnly(false);
     setSameGenderOnly(false);
   }, [quizDone, setSameGenderOnly]);
@@ -227,7 +237,6 @@ export function useExploreFilters(): ExploreFiltersState {
         ? [...list].sort((a, b) => scoreCompanion(b, quizAnswers) - scoreCompanion(a, quizAnswers))
         : [...list].sort((a, b) => b.matchScore - a.matchScore);
     }
-    else if (sort === 'nearest') list = [...list].sort((a, b) => a.distanceKm - b.distanceKm);
     else list = [...list].sort((a, b) => b.rating - a.rating); // top_rated default
 
     return list;

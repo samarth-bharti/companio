@@ -9,7 +9,7 @@ const base: Companion = {
   rating: 0, reviews: 0, ratePerMeeting: 499,
   bio: '', suggestions: [], photo: '', accent: '#000',
   availableNow: false, availability: 'Available tomorrow',
-  distanceKm: 5, matchScore: 70, reviewsList: [],
+  matchScore: 70, reviewsList: [],
 };
 
 const make = (over: Partial<Companion>): Companion => ({ ...base, ...over });

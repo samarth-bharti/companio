@@ -178,8 +178,12 @@ export const CompanionCard = memo(function CompanionCard({
           <RatingBadge rating={rating} reviews={reviews} />
           {isUnlockedGrid && (
             <>
+              {/* "3.2 km" used to sit here, read as a distance from you, and was
+                  an authored number in the seed file. We do not know where you
+                  are — only which city you chose — so we cannot compute a
+                  distance, and we no longer print one. The area is real. */}
               <span aria-hidden="true">·</span>
-              <span>{companion.distanceKm} km</span>
+              <span>{area}</span>
               <span aria-hidden="true">·</span>
               <span
                 className="inline-flex items-center gap-1 font-semibold"
