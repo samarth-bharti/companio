@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { ChoiceTile } from './ChoiceTile';
 import { EmpathyEcho } from './EmpathyEcho';
 import { CITIES } from '@/lib/data/cities';
+import type { GenderId } from '@/lib/journeyState';
 import { spring } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { QuizQuestionDef, QuizAnswers } from './quizData';
@@ -18,19 +19,20 @@ interface QuizQuestionProps {
   showEcho: boolean;
   echoLine: string;
   accent: string;
+  /** True when the account already records a matchable gender. */
+  knownGender: boolean;
   onSingleAnswer: (key: string, value: string) => void;
   onMultiAnswer: (key: string, value: string[]) => void;
-  onComfortAnswer: (value: QuizAnswers['comfort']) => void;
+  onComfortAnswer: (value: QuizAnswers['comfort'], gender?: GenderId) => void;
   onNameAnswer: (name: string) => void;
   onEchoDone: () => void;
 }
 
 export function QuizQuestion({
-  question, stepIndex, answers, showEcho, echoLine, accent,
+  question, stepIndex, answers, showEcho, echoLine, accent, knownGender,
   onSingleAnswer, onMultiAnswer, onComfortAnswer, onNameAnswer, onEchoDone,
 }: QuizQuestionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const ghostNumeral = String(stepIndex + 1).padStart(2, '0');
 
   // Move focus to first interactive element on question mount
   useEffect(() => {
@@ -51,23 +53,6 @@ export function QuizQuestion({
         className="pointer-events-none absolute top-1/4 right-1/4 w-80 h-80 rounded-full blur-3xl opacity-[0.07]"
         style={{ background: accent }}
       />
-      {/* Ghost numeral */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-6 left-2 select-none"
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(5rem, 14vw, 9rem)',
-          fontWeight: 700,
-          letterSpacing: '-0.04em',
-          color: accent,
-          opacity: 0.08,
-          lineHeight: 1,
-        }}
-      >
-        {ghostNumeral}
-      </div>
-
       {/* Split layout */}
       <div
         ref={containerRef}
@@ -124,6 +109,7 @@ export function QuizQuestion({
               question={question}
               answers={answers}
               accent={accent}
+              knownGender={knownGender}
               onSingleAnswer={onSingleAnswer}
               onMultiAnswer={onMultiAnswer}
               onComfortAnswer={onComfortAnswer}
@@ -142,13 +128,26 @@ interface BodyProps {
   question: QuizQuestionDef;
   answers: QuizAnswers;
   accent: string;
+  /** True when the account already records a matchable gender. */
+  knownGender: boolean;
   onSingleAnswer: (key: string, value: string) => void;
   onMultiAnswer: (key: string, value: string[]) => void;
-  onComfortAnswer: (v: QuizAnswers['comfort']) => void;
+  onComfortAnswer: (v: QuizAnswers['comfort'], gender?: GenderId) => void;
   onNameAnswer: (name: string) => void;
 }
 
-function QuestionBody({ question, answers, accent, onSingleAnswer, onMultiAnswer, onComfortAnswer, onNameAnswer }: BodyProps) {
+/**
+ * Only the genders matching can actually compare. "Prefer not to say" is a valid
+ * answer everywhere else on the site, but it cannot drive a same-gender filter,
+ * so it is not offered as a way to switch one on.
+ */
+const QUIZ_GENDERS: { id: GenderId; label: string }[] = [
+  { id: 'female', label: 'Woman' },
+  { id: 'male', label: 'Man' },
+  { id: 'nonbinary', label: 'Non-binary' },
+];
+
+function QuestionBody({ question, answers, accent, knownGender, onSingleAnswer, onMultiAnswer, onComfortAnswer, onNameAnswer }: BodyProps) {
   const { key, type, options } = question;
 
   const [citySearch, setCitySearch] = useState('');
@@ -157,6 +156,7 @@ function QuestionBody({ question, answers, accent, onSingleAnswer, onMultiAnswer
     return Array.isArray(v) ? v : [];
   });
   const [pendingComfort, setPendingComfort] = useState(answers.comfort);
+  const [pendingGender, setPendingGender] = useState<GenderId | undefined>(answers.gender);
   const [nameVal, setNameVal] = useState(answers.name);
 
   const filteredCities = CITIES.filter((c) =>
@@ -232,21 +232,57 @@ function QuestionBody({ question, answers, accent, onSingleAnswer, onMultiAnswer
   }
 
   if (type === 'comfort') {
+    // Matching compares the member's gender to the companion's, so asking for a
+    // same-gender companion without telling us the member's gender is a promise
+    // nothing can keep. Ask for it here, at the moment the promise is made, and
+    // only when the account does not already know.
+    const needsGender = pendingComfort.sameGender && !knownGender;
+    const blocked = needsGender && !pendingGender;
+
     return (
       <fieldset className="border-0 p-0 m-0 flex flex-col gap-3">
         <legend className="sr-only">{question.title}</legend>
         <ComfortToggle label="I'd prefer a same-gender companion"
           checked={pendingComfort.sameGender}
           onChange={(v) => setPendingComfort((p) => ({ ...p, sameGender: v }))} accent={accent} />
+
+        {needsGender && (
+          <div className="flex flex-col gap-2 pl-1">
+            <p className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
+              Then we need to know yours, so we can match it.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {QUIZ_GENDERS.map((g) => (
+                <button
+                  key={g.id} type="button"
+                  onClick={() => setPendingGender(g.id)}
+                  aria-pressed={pendingGender === g.id}
+                  className="px-3 py-1.5 rounded-pill text-sm font-medium border min-h-[36px] cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2"
+                  style={{
+                    background: pendingGender === g.id ? accent : 'rgba(255,255,255,0.75)',
+                    borderColor: pendingGender === g.id ? accent : 'rgba(46,107,255,0.18)',
+                    color: pendingGender === g.id ? 'white' : 'var(--color-ink)',
+                  }}
+                >{g.label}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <ComfortToggle label="Public places first"
           checked={pendingComfort.publicPlaces}
           onChange={(v) => setPendingComfort((p) => ({ ...p, publicPlaces: v }))} accent={accent} />
         <div className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm"
           style={{ background: 'rgba(31,174,107,0.08)', border: '1px solid rgba(31,174,107,0.22)', color: '#157A4A' }}>
           <span aria-hidden="true">✓</span>
-          <span>ID-verified companions, always on</span>
+          <span>ID-checked companions, always on</span>
         </div>
-        <Button variant="cta" size="md" onClick={() => onComfortAnswer(pendingComfort)} className="self-start">
+        <Button
+          variant="cta" size="md"
+          disabled={blocked}
+          onClick={() => onComfortAnswer(pendingComfort, needsGender ? pendingGender : undefined)}
+          className="self-start"
+        >
           Next →
         </Button>
       </fieldset>

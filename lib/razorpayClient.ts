@@ -14,7 +14,23 @@ export type RazorpayIntent = {
   bookingId?: string;
 };
 
-export type PayResult = 'success' | 'dismissed' | 'failed' | 'unconfigured';
+/**
+ * 'unconfigured' is returned ONLY when no publishable key exists — i.e. this
+ * build genuinely has no payment gateway and callers may run their local demo.
+ *
+ * Once a key IS present, every other failure is a REAL failure and must surface
+ * as one. A 401 (no session) previously collapsed into 'unconfigured', so the
+ * caller ran its demo animation and granted the paid benefit for free. Keep
+ * these variants distinct: a signed-out user gets 'auth_required', a
+ * half-configured server gets 'unavailable' — neither may ever reach demo mode.
+ */
+export type PayResult =
+  | 'success'
+  | 'dismissed'
+  | 'failed'
+  | 'auth_required'
+  | 'unavailable'
+  | 'unconfigured';
 
 // Razorpay injects this global once checkout.js loads.
 type RazorpayCtor = new (opts: Record<string, unknown>) => { open: () => void };
@@ -23,6 +39,35 @@ declare global {
 }
 
 const SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
+
+/**
+ * Complete the purchase without a gateway, when the SERVER says it is running in
+ * test mode. Returns 'unconfigured' otherwise, which is the old behaviour and
+ * the honest answer: this deployment cannot sell anything.
+ */
+async function payWithTestCheckout(intent: RazorpayIntent): Promise<PayResult> {
+  const res = await postJson<{ ok?: boolean }>('/api/test-checkout', { kind: intent.kind });
+  if (res.status === 200 && res.data?.ok) return 'success';
+  if (res.status === 401) return 'auth_required';
+  return 'unconfigured';
+}
+
+/**
+ * Is this deployment running the free test checkout? Used only to SHOW the
+ * warning banner — never to decide whether a purchase succeeds. The server makes
+ * that call.
+ */
+export async function testCheckoutEnabled(): Promise<boolean> {
+  if (razorpayConfigured()) return false;
+  try {
+    const res = await fetch('/api/test-checkout');
+    if (!res.ok) return false;
+    const body = (await res.json()) as { enabled?: boolean };
+    return body.enabled === true;
+  } catch {
+    return false;
+  }
+}
 
 /** True only when a publishable key is present — the client gate for live mode. */
 export function razorpayConfigured(): boolean {
@@ -65,20 +110,32 @@ async function postJson<T>(url: string, body: unknown): Promise<{ status: number
 
 /**
  * Run the real payment. Returns:
- *  - 'unconfigured' : no client key, OR server not configured / no session (503/401)
- *                     -> caller should run its demo fallback.
- *  - 'success'      : signature verified and purchase settled server-side.
- *  - 'dismissed'    : user closed the Checkout modal.
- *  - 'failed'       : create-order, verify, or the gateway errored.
+ *  - 'unconfigured'  : no publishable key at all -> caller may run its demo.
+ *  - 'auth_required' : key present, but the visitor has no session (401).
+ *  - 'unavailable'   : key present, but the server is missing its own keys, or
+ *                      this purchase kind is disabled (503).
+ *  - 'success'       : signature verified and purchase settled server-side.
+ *  - 'dismissed'     : user closed the Checkout modal.
+ *  - 'failed'        : create-order, verify, or the gateway errored.
  */
 export async function payWithRazorpay(intent: RazorpayIntent): Promise<PayResult> {
-  if (!razorpayConfigured()) return 'unconfigured';
+  // No gateway on this deployment. Before giving up, ask the server whether it
+  // is running with test checkout switched on — if it is, the purchase completes
+  // for free, through the same settlePurchase() the real webhook calls.
+  //
+  // The decision is the SERVER's, never a NEXT_PUBLIC_ flag: a build-time
+  // variable baked into the bundle is exactly the thing that gets shipped to
+  // production by accident. /api/test-checkout refuses outright the moment a
+  // Razorpay key exists.
+  if (!razorpayConfigured()) return payWithTestCheckout(intent);
+
   if (!(await loadScript()) || !window.Razorpay) return 'failed';
 
   const order = await postJson<OrderResponse>('/api/razorpay/create-order', intent);
-  // 401 (no session) or 503 (server keys absent) mean live mode isn't actually
-  // wired yet despite the public key — fall back to demo rather than erroring.
-  if (order.status === 401 || order.status === 503) return 'unconfigured';
+  // A publishable key exists, so live mode is INTENDED. Never degrade to the
+  // demo path from here — that would hand out the paid benefit for free.
+  if (order.status === 401) return 'auth_required';
+  if (order.status === 503) return 'unavailable';
   if (order.status !== 200 || !order.data?.orderId) return 'failed';
 
   const { orderId, amount, currency, keyId } = order.data;

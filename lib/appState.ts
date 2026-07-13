@@ -5,7 +5,7 @@
 // addCredits below tops that same wallet up.
 
 import { readJSON, writeJSON, canUseStorage } from './storage';
-import { getWallet, KEY_WALLET } from './journeyState';
+import { getWallet, KEY_WALLET, type GenderId } from './journeyState';
 
 const KEY_BOOKINGS = 'companio_bookings';
 const KEY_FAVES = 'companio_favorites';
@@ -34,9 +34,18 @@ export interface Booking {
   dateISO: string; // meeting date, e.g. '2026-06-15'
   time: string; // display slot, e.g. 'Morning · 7–9 AM'
   place: string;
-  status: 'pending_payment' | 'upcoming' | 'completed' | 'cancelled' | 'refunded';
+  // Mirrors the BookingStatus enum in prisma/schema.prisma. `cancelled` is the
+  // member calling it off; `declined` is the companion refusing it, which
+  // returns the member's credit.
+  status: 'pending_payment' | 'upcoming' | 'completed' | 'cancelled' | 'declined' | 'refunded';
   usedCredit: boolean;
   pricePaid: number; // 0 when a credit was used
+  /**
+   * The 4-digit code both people read out when they meet, so each knows the
+   * other is the person from the app. Optional only for bookings created before
+   * the column existed.
+   */
+  meetupCode?: string;
   review?: { stars: number; text: string };
   createdAt: number; // epoch ms
 }
@@ -184,6 +193,8 @@ export function setPlan(p: Plan): void {
 export interface CompanionApplication {
   name: string;
   city: string;
+  /** Carried onto the approved profile — the same-gender filter matches on it. */
+  gender?: GenderId;
   activities: string[];
   rate: number;
   bio: string;

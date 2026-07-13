@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X, Columns2 } from 'lucide-react';
 import type { Companion } from '@/lib/data/companions';
 import { spring } from '@/lib/motion';
@@ -26,7 +27,7 @@ function CompareModal({
   quizDone: boolean;
   onClose: () => void;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const panelRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<Element | null>(null);
 
@@ -128,8 +129,10 @@ function CompareModal({
                 <p className="font-semibold text-sm" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-ink)' }}>
                   {c.firstName}
                 </p>
+                {/* "X km away" was an authored constant, not a distance from
+                    anyone. We know the member's city, never their location. */}
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
-                  {c.area} · {c.distanceKm} km away
+                  {c.area} · {c.city}
                 </p>
               </div>
               {/* Stats */}
@@ -173,7 +176,7 @@ export function CompareTray({
   compareIds, companions, quizDone, onToggle, onClear,
 }: CompareTrayProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   const selected = compareIds
     .map((id) => companions.find((c) => c.id === id))

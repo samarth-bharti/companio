@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { BadgeCheck, MapPin, Clock, Calendar, type LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { getWallet, type Wallet } from '@/lib/journeyState';
+import { type Wallet } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
 import { type Companion } from '@/lib/data/companions';
 import { calm } from '@/lib/motion';
 
@@ -22,6 +24,8 @@ interface Props {
   state: BookingFormState;
   onConfirm: () => void;
   onBack: () => void;
+  /** True while the booking request is in flight. */
+  submitting?: boolean;
 }
 
 function Row({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
@@ -36,12 +40,17 @@ function Row({ icon: Icon, label, value }: { icon: LucideIcon; label: string; va
   );
 }
 
-export function BookingStepReview({ companion, state, onConfirm, onBack }: Props) {
+export function BookingStepReview({ companion, state, onConfirm, onBack, submitting = false }: Props) {
   const [wallet, setWallet] = useState<Wallet | null>(null);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
+  // Read the wallet through dataClient, not journeyState: in http mode the
+  // authoritative balance is a row in Postgres, and localStorage is a stale
+  // copy that a signed-in member on a new device has never written.
   useEffect(() => {
-    setWallet(getWallet());
+    let cancelled = false;
+    dataClient.getWallet().then((w) => { if (!cancelled) setWallet(w); }).catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   const hasCredits = (wallet?.credits ?? 0) > 0;
@@ -63,21 +72,6 @@ export function BookingStepReview({ companion, state, onConfirm, onBack }: Props
           Make sure everything looks right.
         </p>
       </div>
-
-      <span
-        aria-hidden="true"
-        className="absolute right-4 top-0 font-display select-none pointer-events-none"
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(4rem, 12vw, 7rem)',
-          fontWeight: 900,
-          letterSpacing: '-0.04em',
-          color: 'rgba(46,107,255,0.07)',
-          lineHeight: 1,
-        }}
-      >
-        05
-      </span>
 
       {/* Summary card — calm reveal on mount */}
       <motion.div
@@ -102,10 +96,12 @@ export function BookingStepReview({ companion, state, onConfirm, onBack }: Props
             <p className="font-sans font-bold text-sm truncate" style={{ color: 'var(--color-ink)' }}>
               {companion.name}
             </p>
-            <div className="flex items-center gap-1">
-              <BadgeCheck size={12} style={{ color: 'var(--color-azure)' }} aria-hidden="true" />
-              <span className="font-sans text-xs" style={{ color: 'var(--color-azure-deep)' }}>Verified</span>
-            </div>
+            {companion.verified && (
+              <div className="flex items-center gap-1">
+                <BadgeCheck size={12} style={{ color: 'var(--color-azure)' }} aria-hidden="true" />
+                <span className="font-sans text-xs" style={{ color: 'var(--color-azure-deep)' }}>Verified</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -141,10 +137,10 @@ export function BookingStepReview({ companion, state, onConfirm, onBack }: Props
         ) : (
           <>
             <p className="font-sans font-bold text-base" style={{ color: 'var(--color-ink)' }}>
-              ₹499 for this meetup
+              You&apos;ve used both included meetings
             </p>
             <p className="font-sans text-sm mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
-              ₹499 · UPI (demo), ₹ held in escrow until you meet.
+              Paid meetups are coming soon. We&apos;ll email you the moment they open.
             </p>
           </>
         )}
@@ -160,16 +156,24 @@ export function BookingStepReview({ companion, state, onConfirm, onBack }: Props
         >
           Back
         </Button>
+        {/* v1 is unlock-only: a meetup can only be booked with an included
+            meeting. Without one there is nothing to charge against, so the
+            action is disabled rather than silently creating a free booking. */}
         <Button
           variant="cta"
           size="lg"
           type="button"
           className="flex-1"
           onClick={onConfirm}
+          disabled={!hasCredits || submitting}
           style={{ minHeight: 44 }}
-          aria-label="Confirm your meetup booking"
+          aria-label={
+            hasCredits
+              ? 'Confirm your meetup booking'
+              : 'Booking unavailable — you have used both included meetings'
+          }
         >
-          Confirm meetup
+          {submitting ? 'Confirming…' : hasCredits ? 'Confirm meetup' : 'No meetings left'}
         </Button>
       </div>
     </div>

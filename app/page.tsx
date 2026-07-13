@@ -28,8 +28,10 @@ export default function Home() {
       <ScrollProgressPill />
       <Nav heroMode />
       <main id="main-content">
+        {/* The hero now fades to --color-ink-dark-panel at its bottom, so it flows
+            straight into PeopleSection. A WaveBridge here would only re-introduce
+            a light band between two dark sections. */}
         <PhoneJourneyHero />
-        <WaveBridge fill="var(--color-ink-dark-panel)" height={90} />
         <PeopleSection />
         {/* grad-dark-panel ENDS at #0F1120 — flipped arch must match that edge */}
         <WaveBridge fill="#0F1120" base="var(--color-bg)" flip height={80} />

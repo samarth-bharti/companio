@@ -8,7 +8,7 @@ import { safeRedirect } from '@/lib/safeRedirect';
 export const metadata: Metadata = {
   title: 'Create Account, Companio',
   description:
-    'Join Companio and connect with ID-verified companions for platonic activities across India.',
+    'Join Companio and connect with ID-checked companions for platonic activities across India.',
 };
 
 export default async function RegisterPage({

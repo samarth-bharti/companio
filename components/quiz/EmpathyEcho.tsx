@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useReducedMotion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import { Button } from '@/components/ui/Button';
 
@@ -19,7 +19,7 @@ interface EmpathyEchoProps {
  * Reduced motion: line appears immediately + explicit Next button.
  */
 export function EmpathyEcho({ line, onDone }: EmpathyEchoProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     if (reduced) return;

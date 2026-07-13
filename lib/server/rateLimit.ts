@@ -18,6 +18,8 @@
 // In-memory backend
 // ---------------------------------------------------------------------------
 
+import { envValue } from '@/lib/env';
+
 interface MemEntry {
   count: number;
   resetAt: number; // epoch ms
@@ -53,8 +55,8 @@ function memIncr(key: string, windowMs: number): { count: number; resetAt: numbe
 // Upstash backend (plain fetch, no sdk)
 // ---------------------------------------------------------------------------
 
-const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
-const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+const upstashUrl = envValue('UPSTASH_REDIS_REST_URL');
+const upstashToken = envValue('UPSTASH_REDIS_REST_TOKEN');
 const useUpstash = Boolean(upstashUrl && upstashToken);
 
 /**

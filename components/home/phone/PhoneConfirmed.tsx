@@ -63,7 +63,7 @@ export function PhoneConfirmed() {
           </div>
         </div>
 
-        {/* Footer: escrow/meetup usage */}
+        {/* Footer: included-meetup usage */}
         <p className="font-sans text-[10px] mt-4 text-center" style={{ color: 'var(--color-ink-muted)' }}>
           Added to your meetups · 1 of 2 included used
         </p>

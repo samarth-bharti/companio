@@ -11,6 +11,7 @@
 import type { PrismaClient } from '@prisma/client';
 import { sendEmail } from './email';
 import { bookingConfirmationEmail, receiptEmail } from './emailTemplates';
+import { envValue } from '@/lib/env';
 
 /** Minimal shape needed to compose the confirmation — the created Booking row. */
 type BookingLike = {
@@ -45,7 +46,9 @@ export async function notifyBookingCreated(
   userId: string,
   booking: BookingLike,
 ): Promise<void> {
-  if (!process.env.RESEND_API_KEY) return; // email dormant — skip the lookups entirely
+  // envValue(), not process.env: a placeholder key must read as "no email",
+  // otherwise we run the lookups and hand sendEmail() a credential Resend 401s.
+  if (!envValue('RESEND_API_KEY')) return; // email dormant — skip the lookups entirely
   try {
     const [user, companion] = await Promise.all([
       prisma.user.findUnique({
@@ -85,7 +88,9 @@ export async function notifyPurchaseSettled(
   result: SettleResult,
 ): Promise<void> {
   if (!result.settled || result.idempotent) return;
-  if (!process.env.RESEND_API_KEY) return; // email dormant — skip the lookups entirely
+  // envValue(), not process.env: a placeholder key must read as "no email",
+  // otherwise we run the lookups and hand sendEmail() a credential Resend 401s.
+  if (!envValue('RESEND_API_KEY')) return; // email dormant — skip the lookups entirely
   try {
     const purchase = await prisma.purchase.findUnique({
       where: { razorpayOrderId: orderId },

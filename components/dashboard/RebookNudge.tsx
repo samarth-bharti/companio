@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import type { Booking } from '@/lib/appState';
 import type { Companion } from '@/lib/data/companions';
@@ -11,7 +12,7 @@ interface RebookNudgeProps {
 }
 
 export function RebookNudge({ booking, companion }: RebookNudgeProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   // Parent OverviewPanel stagger wrapper handles entrance; this owns hover/tap
   return (

@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Check } from 'lucide-react';
 import { spring, stagger, calm } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -12,7 +13,7 @@ interface Props {
 }
 
 export function BookingStepActivity({ activities, selected, onSelect }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   return (
     <fieldset className="border-0 p-0 m-0 space-y-4">
@@ -27,21 +28,6 @@ export function BookingStepActivity({ activities, selected, onSelect }: Props) {
         What would you like to do?
       </legend>
 
-      {/* Ghost numeral */}
-      <span
-        aria-hidden="true"
-        className="absolute right-4 top-0 font-display select-none pointer-events-none"
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(4rem, 12vw, 7rem)',
-          fontWeight: 900,
-          letterSpacing: '-0.04em',
-          color: 'rgba(46,107,255,0.07)',
-          lineHeight: 1,
-        }}
-      >
-        01
-      </span>
 
       {/* Stagger container — calm entrance for transactional flow */}
       <motion.div

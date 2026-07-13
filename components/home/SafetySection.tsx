@@ -9,14 +9,14 @@ import { ClipReveal } from "@/components/journey/ClipReveal";
 const TRUST_PILLARS = [
   {
     icon: Fingerprint,
-    title: "KYC verified",
-    body: "Every companion's identity is verified via ID before activation. No exceptions.",
+    title: "ID checked, human-reviewed",
+    body: "No one lists without a government ID, and a person reviews every application before a profile goes live.",
     color: "#2E6BFF",
   },
   {
     icon: Lock,
-    title: "₹ held in escrow",
-    body: "Your payment is locked in escrow until after you meet. No meeting, no charge.",
+    title: "7-day refund promise",
+    body: "Didn't find anyone you'd like to meet? Ask for a full refund within 7 days.",
     color: "#7A4FE0",
   },
   {

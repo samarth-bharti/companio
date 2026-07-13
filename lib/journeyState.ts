@@ -12,7 +12,31 @@ export interface Wallet {
 export interface QuizResult {
   name: string;
   city: string;
+  /**
+   * The companion the quiz actually matched, computed from the answers below.
+   * It used to be the constant `TOP_MATCH_ID` — the same Mumbai companion for
+   * every member, in every city, whatever they answered.
+   *
+   * Empty when the chosen city has nobody in it. There is no match to name.
+   */
   matchedId: string;
+  /**
+   * The answers themselves, kept so the explore grid can rank against them.
+   * Without these, "Best match" had nothing to sort by but an authored number.
+   */
+  activities: string[];
+  languages: string[];
+  sameGender: boolean;
+}
+
+/** The four the DB can store, plus the two that carry no matchable category. */
+export type GenderId = 'male' | 'female' | 'nonbinary' | 'self_described' | 'prefer_not_to_say';
+
+/** Only these three are a category the same-gender filter can compare on. */
+export const MATCHABLE_GENDERS = ['male', 'female', 'nonbinary'] as const;
+
+export function isMatchableGender(g: string | undefined | null): g is 'male' | 'female' | 'nonbinary' {
+  return g === 'male' || g === 'female' || g === 'nonbinary';
 }
 
 export interface DemoUser {
@@ -20,6 +44,23 @@ export interface DemoUser {
   /** Carried from registration so the companion application can pre-fill it
    *  (the two flows are one continuous onboarding, not separate forms). */
   city?: string;
+  /**
+   * The register wizard has always asked for this and always thrown it away:
+   * StepDone never sent it, the API refused it, and the column stayed null. It
+   * is stored now because the same-gender filter is a real promise that needs it.
+   */
+  gender?: GenderId;
+  /** Only ever set when `gender === 'self_described'`. */
+  genderSelfDescribed?: string;
+  /** "Only show me companions of my own gender." */
+  sameGenderOnly?: boolean;
+  /**
+   * `YYYY-MM-DD`. Collected by the register wizard, which already refuses under
+   * 18s in the browser — but the value used to be discarded, so the server had
+   * no idea how old anyone was. Booking and companion applications now require
+   * it (see lib/server/age.ts). Set-once on the server.
+   */
+  dateOfBirth?: string;
 }
 
 // ── Keys ─────────────────────────────────────────────────────────────────────

@@ -11,7 +11,8 @@ interface ExploreHeaderProps {
   name?: string;
   cityName: string;
   unlockedCount: number;
-  members: number;
+  /** How many companions actually list in this city. */
+  cityCount: number;
   selectedCityId: string;
   onCityChange: (id: string) => void;
   quizDone: boolean;
@@ -26,7 +27,7 @@ interface ExploreHeaderProps {
  */
 export function ExploreHeader({
   matched, name, cityName, unlockedCount,
-  members, selectedCityId, onCityChange, quizDone, freeNowCount,
+  cityCount, selectedCityId, onCityChange, quizDone, freeNowCount,
 }: ExploreHeaderProps) {
   return (
     <section
@@ -59,7 +60,8 @@ export function ExploreHeader({
                 color: 'var(--color-ink)',
               }}
             >
-              Your 14 matches in {cityName}{name ? `, ${name}` : ''}.
+              Your {cityCount} {cityCount === 1 ? 'match' : 'matches'} in {cityName}
+              {name ? `, ${name}` : ''}.
             </h1>
             <p
               className="mb-6"
@@ -82,7 +84,10 @@ export function ExploreHeader({
               color: 'var(--color-ink)',
             }}
           >
-            Verified company,{' '}
+            {/* "Verified company, near you." — the `verified` column is operator-
+                owned and is false for every companion on the platform. The word
+                cannot headline a page where it is true of nobody. */}
+            Good company,{' '}
             <em
               className="not-italic"
               style={{
@@ -97,44 +102,47 @@ export function ExploreHeader({
           </h1>
         )}
 
-        {/* Social proof — one tight line: real members + free-now count. */}
-        <div
-          className="mb-4 flex w-fit items-center gap-2 rounded-pill px-4 py-2"
-          style={{
-            background: 'rgba(255,255,255,0.92)',
-            border: '1.5px solid rgba(31,174,107,0.20)',
-            boxShadow: 'var(--shadow-1)',
-          }}
-        >
-          <span
-            className="h-2 w-2 shrink-0 rounded-full animate-pulse"
-            style={{ background: 'var(--color-emerald)' }}
-            aria-hidden="true"
-          />
-          <span className="text-sm font-medium" style={{ color: 'var(--color-ink-muted)' }}>
-            {members}+ members ·{' '}
-            <span style={{ color: 'var(--color-emerald)', fontWeight: 600 }}>
-              <CountUp value={freeNowCount} />
-            </span>{' '}
-            free to meet today
-          </span>
-        </div>
-
-        {/* Unlock counter — aria-live so screen readers announce the 1→14 roll */}
-        <div
-          aria-live="polite"
-          className="mb-5 flex items-center gap-1 text-sm"
-          style={{ color: 'var(--color-ink-muted)', fontFamily: 'var(--font-sans)' }}
-        >
-          <span className="font-semibold" style={{ color: 'var(--color-ink)' }}>
-            <DigitRoll
-              value={unlockedCount}
-              aria-label={String(unlockedCount)}
-              className="text-sm"
+        {/* Counts the companions actually in this city. The old copy read
+            "{members}+ members", a hardcoded per-city figure that was invented.
+            Hidden entirely when the city has nobody, rather than saying "0+". */}
+        {cityCount > 0 && (
+          <div
+            className="mb-4 flex w-fit items-center gap-2 rounded-pill px-4 py-2"
+            style={{
+              background: 'rgba(255,255,255,0.92)',
+              border: '1.5px solid rgba(31,174,107,0.20)',
+              boxShadow: 'var(--shadow-1)',
+            }}
+          >
+            <span
+              className="h-2 w-2 shrink-0 rounded-full animate-pulse"
+              style={{ background: 'var(--color-emerald)' }}
+              aria-hidden="true"
             />
-          </span>
-          <span> of 14 profiles unlocked</span>
-        </div>
+            <span className="text-sm font-medium" style={{ color: 'var(--color-ink-muted)' }}>
+              {cityCount} ID-checked {cityCount === 1 ? 'companion' : 'companions'} ·{' '}
+              <span style={{ color: 'var(--color-emerald)', fontWeight: 600 }}>
+                <CountUp value={freeNowCount} />
+              </span>{' '}
+              free to meet today
+            </span>
+          </div>
+        )}
+
+        {/* Unlock counter — aria-live so screen readers announce the roll.
+            The denominator is this city's roster, not a hardcoded 14. */}
+        {cityCount > 0 && (
+          <div
+            aria-live="polite"
+            className="mb-5 flex items-center gap-1 text-sm"
+            style={{ color: 'var(--color-ink-muted)', fontFamily: 'var(--font-sans)' }}
+          >
+            <span className="font-semibold" style={{ color: 'var(--color-ink)' }}>
+              <DigitRoll value={unlockedCount} aria-label={String(unlockedCount)} className="text-sm" />
+            </span>
+            <span> of {cityCount} profiles unlocked</span>
+          </div>
+        )}
 
         {/* Quiz link — only before quiz is done */}
         {!quizDone && (

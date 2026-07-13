@@ -1,13 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import {
-  motion,
-  useReducedMotion,
-  useMotionValue,
-  useTransform,
-  type MotionValue,
-} from 'framer-motion';
+import { motion, useMotionValue, useTransform, type MotionValue } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Reveal } from '@/components/motion/Reveal';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +21,7 @@ export interface ActivitySceneProps {
   progress?: MotionValue<number>;
   /**
    * Vertical-stack mode (parent decided: reduced motion OR mobile).
-   * Must come from the parent — the scene's own useReducedMotion() cannot
+   * Must come from the parent — the scene's own useEffectiveReducedMotion() cannot
    * know about the mobile fallback, and the horizontal-mode fallback
    * MotionValue would leave scenes 2–5 stuck at opacity 0.
    */
@@ -71,7 +66,7 @@ export function ActivityScene({
   stacked = false,
   introNode,
 }: ActivitySceneProps) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   // Fallback MotionValue so hooks are always called unconditionally.
   const fallback = useMotionValue(index === 0 ? 1 : 0);
   const motionSrc = progress ?? fallback;
@@ -83,7 +78,6 @@ export function ActivityScene({
   const opacity = useTransform(motionSrc, [band0, band1], index === 0 ? [1, 1] : [0, 1]);
   const ty = useTransform(motionSrc, [band0, band1], index === 0 ? [0, 0] : [20, 0]);
 
-  const numeral = String(index + 1).padStart(2, '0');
   // Even indices: text left, photo right. Odd: photo left, text right.
   const photoOnLeft = index % 2 !== 0;
   const ink = dark ? 'var(--color-panel-text)' : 'var(--color-ink)';
@@ -92,27 +86,7 @@ export function ActivityScene({
 
   const inner = (
     <div className={cn('flex flex-col md:flex-row h-full', photoOnLeft && 'md:flex-row-reverse')}>
-      {/* Text column */}
-      <div className="flex flex-col justify-center px-8 md:px-16 py-10 flex-1 relative">
-        {/* Ghost numeral — Fraunces, 8% alpha, absolute behind text */}
-        <span
-          aria-hidden="true"
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(7rem,13vw,11rem)',
-            letterSpacing: '-0.04em',
-            lineHeight: 1,
-            position: 'absolute',
-            bottom: '4%',
-            right: '-0.05em',
-            color: dark ? 'rgba(244,242,255,0.07)' : 'rgba(46,107,255,0.08)',
-            userSelect: 'none',
-            pointerEvents: 'none',
-            zIndex: 0,
-          }}
-        >
-          {numeral}
-        </span>
+      <div className="flex flex-col justify-center px-8 md:px-16 py-10 flex-1 relative overflow-hidden">
         <div style={{ position: 'relative', zIndex: 1 }}>
           {introNode}
           <p className="label-eyebrow mb-3" style={{ color: accent }}>{eyebrow}</p>

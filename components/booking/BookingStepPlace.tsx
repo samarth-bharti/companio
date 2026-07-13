@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Check, MapPin } from 'lucide-react';
 import { spring, stagger, calm } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -20,10 +21,35 @@ const AREA_PLACES: Record<string, string[]> = {
   'Malad':        ['Malad creek trail', 'Mindspace park area', 'Inorbit vicinity (outdoors)'],
   'Khar':         ['Khar Gymkhana area', 'Hill Road café district', 'Khar Linking Road'],
   'Vile Parle':   ['Vile Parle East market lanes', 'JVPD garden area', 'Juhu beach (nearby)'],
+
+  // Indore. Every Mumbai area above had real, named landmarks; Indore had none,
+  // so it fell through to the generator below and offered members a meetup at
+  // "Vijay Nagar public garden", "Vijay Nagar main promenade" and "Vijay Nagar
+  // market area" — three places that do not exist, in a city where Sarafa and
+  // Rajwada do. A meeting point you cannot actually meet at is not a detail.
+  'Vijay Nagar':  ['Meghdoot Garden', 'Vijay Nagar square', 'Scheme 54 garden'],
+  'Rajwada':      ['Rajwada palace square', 'Sarafa Bazaar', 'Krishnapura Chhatri'],
+  'New Palasia':  ['56 Dukaan food street', 'Palasia square', 'Nehru Park'],
+  'Bhawarkuan':   ['Bhawarkuan square', 'Pipliyahana lake path', 'Devi Ahilya University campus edge'],
+  'Saket Nagar':  ['Saket square', 'Meghdoot Garden (nearby)', 'Nehru Stadium grounds'],
+  'Geeta Bhawan': ['Geeta Bhawan square', 'Nehru Park', 'Palasia café strip'],
+  'Khajrana':     ['Khajrana Ganesh temple grounds', 'Khajrana main road market', 'Bengali Square'],
+  'Rau':          ['Rau circle', 'Rau market square', 'Ralamandal hill approach'],
 };
 
+/**
+ * Real, named public places — or nothing.
+ *
+ * This used to synthesise three plausible-sounding venues from the area name:
+ * `${area} public garden`, `${area} main promenade`, `${area} market area`. They
+ * read like real places and were not, so a member in Indore could confirm a
+ * booking at an address that does not exist and turn up to nowhere.
+ *
+ * An area we have not mapped now returns an empty list, and the step asks the
+ * two of them to agree a public place instead of inventing one.
+ */
 function getPlaces(area: string): string[] {
-  return AREA_PLACES[area] ?? [`${area} public garden`, `${area} main promenade`, `${area} market area`];
+  return AREA_PLACES[area] ?? [];
 }
 
 interface Props {
@@ -33,7 +59,7 @@ interface Props {
 }
 
 export function BookingStepPlace({ area, selected, onSelect }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const places  = getPlaces(area);
 
   return (
@@ -51,21 +77,6 @@ export function BookingStepPlace({ area, selected, onSelect }: Props) {
       <p className="font-sans text-sm mb-6" style={{ color: 'var(--color-ink-muted)' }}>
         Public places only, for everyone&apos;s comfort.
       </p>
-
-      <span
-        aria-hidden="true"
-        className="absolute right-4 top-0 font-display select-none pointer-events-none"
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 'clamp(4rem, 12vw, 7rem)',
-          fontWeight: 900,
-          letterSpacing: '-0.04em',
-          color: 'rgba(46,107,255,0.07)',
-          lineHeight: 1,
-        }}
-      >
-        04
-      </span>
 
       {/* Stagger container — calm entrance for transactional flow */}
       <motion.div
@@ -131,6 +142,38 @@ export function BookingStepPlace({ area, selected, onSelect }: Props) {
           );
         })}
       </motion.div>
+
+      {/* An area we have no real landmarks for. Rather than invent three, ask
+          for one — the two of them know the neighbourhood better than we do. */}
+      {places.length === 0 && (
+        <div className="flex flex-col gap-2">
+          <label
+            htmlFor="booking-place-custom"
+            className="font-sans text-sm font-semibold"
+            style={{ color: 'var(--color-ink)' }}
+          >
+            Name a public place in {area}
+          </label>
+          <input
+            id="booking-place-custom"
+            type="text"
+            value={selected}
+            onChange={(e) => onSelect(e.target.value)}
+            maxLength={80}
+            placeholder="e.g. the main market square"
+            className="w-full h-12 px-4 rounded-xl font-sans text-sm"
+            style={{
+              background: 'var(--color-bg)',
+              border: '1.5px solid rgba(20,26,46,0.14)',
+              color: 'var(--color-ink)',
+            }}
+          />
+          <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+            We don&apos;t have landmarks listed for {area} yet, so pick somewhere public that
+            you both know. Your companion will see it before they accept.
+          </p>
+        </div>
+      )}
     </fieldset>
   );
 }

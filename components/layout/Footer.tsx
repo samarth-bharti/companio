@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { Seal } from "@/components/ui/Seal";
 import { COMPANY_DISPLAY } from "@/lib/company";
+import { TRUST_CHIP } from '@/lib/trust';
 
 const COLUMNS = [
   {
@@ -37,14 +38,14 @@ const COLUMNS = [
       { label: "Safety centre",      href: "/safety" },
       { label: "Platonic promise",   href: "/safety#promise" },
       { label: "Verify a companion", href: "/verify" },
-      { label: "Trust & KYC",        href: "/trust" },
+      { label: "Trust & verification", href: "/trust" },
     ],
   },
 ];
 
 const TRUST_BADGES = [
   { label: "Razorpay secured",    color: "rgba(244,242,255,0.6)", border: "rgba(244,242,255,0.15)" },
-  { label: "KYC verified", color: "rgba(244,242,255,0.6)", border: "rgba(244,242,255,0.15)" },
+  { label: TRUST_CHIP, color: "rgba(244,242,255,0.6)", border: "rgba(244,242,255,0.15)" },
   { label: "Strictly platonic",   color: "var(--color-emerald)",  border: "rgba(31,174,107,0.3)" },
 ] as const;
 
@@ -93,7 +94,7 @@ export function Footer() {
             </Link>
             <p className="text-xs font-sans leading-relaxed" style={{ color: "rgba(244,242,255,0.5)" }}>
               Trusted companionship for city walks, events, workouts &amp; more.
-              Strictly platonic. Always verified.
+              Strictly platonic. Every companion ID-checked.
             </p>
           </div>
 

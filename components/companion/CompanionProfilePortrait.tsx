@@ -4,21 +4,15 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BadgeCheck, Heart, MessageCircle } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { TiltCard } from '@/components/motion/TiltCard';
-import { getFavorites, toggleFavorite } from '@/lib/appState';
+import { dataClient } from '@/lib/dataClient';
 import { type Companion } from '@/lib/data/companions';
 import { spring, stagger } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 /** Deterministic response-rate derived from companion id */
-function responseStats(id: string) {
-  const h = id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const rates = [94, 95, 96, 97, 98, 99];
-  const times = ['~30 min', '~45 min', '~1 hr', '~1 hr', '~2 hrs', '~2 hrs'];
-  return { rate: rates[h % rates.length], time: times[h % times.length] };
-}
-
 const chipBase: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -51,18 +45,29 @@ interface Props {
 
 export function CompanionProfilePortrait({ companion }: Props) {
   const [isFav, setIsFav] = useState(false);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
+  // Favourites live on the server. Reading them straight out of localStorage
+  // meant a heart tapped here never reached /api/favorites, so the companion
+  // never appeared in the dashboard's Saved panel — which does read the server.
   useEffect(() => {
-    setIsFav(getFavorites().includes(companion.id));
+    let cancelled = false;
+    dataClient.getFavorites()
+      .then((ids) => { if (!cancelled) setIsFav(ids.includes(companion.id)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [companion.id]);
 
-  function handleFav() {
-    const next = toggleFavorite(companion.id);
-    setIsFav(next.includes(companion.id));
+  async function handleFav() {
+    const optimistic = !isFav;
+    setIsFav(optimistic);
+    try {
+      const next = await dataClient.toggleFavorite(companion.id);
+      setIsFav(next.includes(companion.id));
+    } catch {
+      setIsFav(!optimistic);
+    }
   }
-
-  const { rate, time } = responseStats(companion.id);
 
   return (
     <section aria-label={`${companion.firstName}'s profile`}>
@@ -96,21 +101,24 @@ export function CompanionProfilePortrait({ companion }: Props) {
           >
             {companion.name}
           </h1>
-          {/* ID badge — stamp in on mount */}
-          <motion.div
-            className="flex items-center gap-1.5"
-            initial={reduced ? false : { scale: 0.6, opacity: 0, rotate: -8 }}
-            animate={{ scale: 1, opacity: 1, rotate: 0 }}
-            transition={reduced ? { duration: 0 } : { ...spring.stamp, delay: 0.15 }}
-          >
-            <BadgeCheck size={15} style={{ color: 'var(--color-azure)' }} aria-hidden="true" />
-            <span
-              className="font-sans text-xs font-semibold"
-              style={{ color: 'var(--color-azure-deep)' }}
+          {/* ID badge — stamp in on mount. Only for someone who actually cleared
+              the ID check; "ID-checked" is a claim, not decoration. */}
+          {companion.verified && (
+            <motion.div
+              className="flex items-center gap-1.5"
+              initial={reduced ? false : { scale: 0.6, opacity: 0, rotate: -8 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              transition={reduced ? { duration: 0 } : { ...spring.stamp, delay: 0.15 }}
             >
-              ID-verified
-            </span>
-          </motion.div>
+              <BadgeCheck size={15} style={{ color: 'var(--color-azure)' }} aria-hidden="true" />
+              <span
+                className="font-sans text-xs font-semibold"
+                style={{ color: 'var(--color-azure-deep)' }}
+              >
+                ID-checked
+              </span>
+            </motion.div>
+          )}
         </div>
 
         <button
@@ -160,10 +168,10 @@ export function CompanionProfilePortrait({ companion }: Props) {
         {companion.bio}
       </p>
 
-      {/* Response rate */}
-      <p className="font-sans text-xs mb-5" style={{ color: 'var(--color-ink-muted)' }}>
-        Replies within {time} · {rate}% response rate
-      </p>
+      {/* There used to be a "Replies within ~45 min · 97% response rate" line
+          here. Both numbers were a hash of the companion's id: nobody had ever
+          sent them a message, let alone been replied to. A response rate has to
+          be measured before it can be shown, so it is gone until it is. */}
 
       {/* Message CTA */}
       <Link

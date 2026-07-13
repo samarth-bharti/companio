@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, X, Zap, LayoutGrid, Map, SlidersHorizontal, Shuffle } from 'lucide-react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { Search, X, Zap, LayoutGrid, Map, SlidersHorizontal, Shuffle, UserCheck } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { Availability, SortKey } from './useExploreFilters';
@@ -21,8 +22,14 @@ interface ExploreFiltersProps {
   onSortChange: (v: SortKey) => void;
   freeNowOnly: boolean;
   onFreeNowToggle: () => void;
+  sameGenderOnly: boolean;
+  onSameGenderToggle: (v: boolean) => void;
+  /** Undefined ⇒ we have no comparable gender for this member, so the filter cannot run. */
+  myGender: 'male' | 'female' | 'nonbinary' | undefined;
   viewMode: ViewMode;
   onViewModeChange: (m: ViewMode) => void;
+  /** How many companions the current filters return — shown on the Map button. */
+  resultCount: number;
   isFiltered: boolean;
   onClearFilters: () => void;
   /** "Surprise me" — highlights a strong match. Rendered in the filter bar. */
@@ -38,7 +45,6 @@ const AVAIL_OPTIONS: { value: Availability; label: string }[] = [
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'best_match', label: 'Best match' },
   { value: 'top_rated', label: 'Top rated' },
-  { value: 'nearest', label: 'Nearest' },
   { value: 'most_reviewed', label: 'Most reviewed' },
   { value: 'price', label: 'Price' },
 ];
@@ -63,16 +69,20 @@ export function ExploreFilters({
   availability, onAvailabilityChange,
   sort, onSortChange,
   freeNowOnly, onFreeNowToggle,
-  viewMode, onViewModeChange,
+  sameGenderOnly, onSameGenderToggle, myGender,
+  viewMode, onViewModeChange, resultCount,
   isFiltered, onClearFilters,
   onSurprise,
 }: ExploreFiltersProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Count of "extra" filters for the mobile Filters badge.
   const activeCount =
-    activityFilters.length + (availability !== 'any' ? 1 : 0) + (freeNowOnly ? 1 : 0);
+    activityFilters.length +
+    (availability !== 'any' ? 1 : 0) +
+    (freeNowOnly ? 1 : 0) +
+    (sameGenderOnly ? 1 : 0);
 
   // Lock scroll + Esc-to-close while the mobile drawer is open.
   useEffect(() => {
@@ -128,6 +138,38 @@ export function ExploreFilters({
     </button>
   );
 
+  // A comfort preference, not a gimmick — so it lives in the open, next to the
+  // other filters, and can be turned off as easily as on. It used to be a
+  // one-time quiz answer that nothing acted on.
+  //
+  // Without a gender of our own to compare, the filter is inert. We disable it
+  // and say why, instead of leaving it on and showing everyone anyway.
+  const sameGenderButton = (className: string) => {
+    const usable = myGender !== undefined;
+    return (
+      <button
+        type="button"
+        aria-pressed={sameGenderOnly}
+        disabled={!usable}
+        onClick={() => onSameGenderToggle(!sameGenderOnly)}
+        title={usable ? undefined : 'Add your gender in your profile to use this filter.'}
+        className={cn(
+          'flex items-center justify-center gap-1.5 font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1',
+          !usable && 'opacity-50 cursor-not-allowed',
+          className,
+        )}
+        style={
+          sameGenderOnly && usable
+            ? { background: 'var(--color-violet)', border: '1.5px solid var(--color-violet)', color: 'white', outlineColor: 'var(--color-violet)' }
+            : { ...pillBase, color: 'var(--color-ink-muted)' }
+        }
+      >
+        <UserCheck size={13} aria-hidden="true" />
+        Same gender
+      </button>
+    );
+  };
+
   const activityChips = (
     <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by activity">
       {ALL_ACTIVITIES.map((act) => {
@@ -152,23 +194,52 @@ export function ExploreFilters({
     </div>
   );
 
+  /**
+   * "Where are they, actually?" is the first question anyone asks of a local
+   * marketplace, and the answer was hidden behind a 32px pill with a 12px icon,
+   * sitting at the end of a row of five other pills. Nobody found it.
+   *
+   * It is now a real segmented control: 44px tall (the touch target the rest of
+   * the app already enforces and this one did not), 16px icons, and the map side
+   * carries the number of people it would show — a count is the reason to press
+   * a button, and "Map · 8" is a far better invitation than "Map".
+   */
   const viewToggle = (
-    <div className="flex items-center rounded-pill p-0.5 gap-0.5 shrink-0" style={pillBase} role="group" aria-label="Switch view">
-      {(['grid', 'map'] as ViewMode[]).map((m) => (
-        <button
-          key={m}
-          type="button"
-          aria-pressed={viewMode === m}
-          onClick={() => onViewModeChange(m)}
-          className="flex items-center gap-1 h-8 px-2.5 rounded-pill text-xs font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1"
-          style={viewMode === m
-            ? { background: 'var(--color-azure)', color: 'white', outlineColor: 'var(--color-azure)' }
-            : { color: 'var(--color-ink-muted)', outlineColor: 'var(--color-azure)' }}
-        >
-          {m === 'grid' ? <LayoutGrid size={12} aria-hidden /> : <Map size={12} aria-hidden />}
-          {m === 'grid' ? 'Grid' : 'Map'}
-        </button>
-      ))}
+    <div
+      className="flex items-center rounded-pill p-1 gap-1 shrink-0"
+      style={{ ...pillBase, boxShadow: 'var(--shadow-1)' }}
+      role="group"
+      aria-label="Switch between grid and map"
+    >
+      {(['grid', 'map'] as ViewMode[]).map((m) => {
+        const active = viewMode === m;
+        const isMap = m === 'map';
+        return (
+          <button
+            key={m}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onViewModeChange(m)}
+            className="flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-pill text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1"
+            style={active
+              ? { background: 'var(--color-azure)', color: 'white', outlineColor: 'var(--color-azure)' }
+              : { color: 'var(--color-ink)', outlineColor: 'var(--color-azure)' }}
+          >
+            {isMap ? <Map size={16} aria-hidden /> : <LayoutGrid size={16} aria-hidden />}
+            {isMap ? 'Map' : 'Grid'}
+            {isMap && resultCount > 0 && (
+              <span
+                className="text-xs font-bold tabular-nums px-1.5 py-0.5 rounded-full"
+                style={active
+                  ? { background: 'rgba(255,255,255,0.22)', color: 'white' }
+                  : { background: 'var(--color-azure-tint)', color: 'var(--color-azure-deep)' }}
+              >
+                {resultCount}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 
@@ -197,6 +268,7 @@ export function ExploreFilters({
             {availabilitySelect('h-10 rounded-pill px-3 text-sm appearance-none cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1')}
             {sortSelect('h-10 rounded-pill px-3 text-sm appearance-none cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1')}
             {freeNowButton('h-10 px-3 rounded-pill text-sm')}
+            {sameGenderButton('h-10 px-3 rounded-pill text-sm')}
             {onSurprise && (
               <button
                 type="button"
@@ -284,6 +356,16 @@ export function ExploreFilters({
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold" style={{ color: 'var(--color-ink-muted)' }}>Availability</label>
                 {availabilitySelect('w-full h-11 rounded-xl px-3 text-sm cursor-pointer focus-visible:outline focus-visible:outline-2')}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold" style={{ color: 'var(--color-ink-muted)' }}>Comfort</label>
+                {sameGenderButton('w-full h-11 rounded-xl text-sm')}
+                {myGender === undefined && (
+                  <p className="text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+                    Add your gender in your profile to use this filter.
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center gap-2">

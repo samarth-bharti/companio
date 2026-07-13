@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { ShieldAlert, Loader2, MessageCircle, Send, Copy, Check } from 'lucide-react';
 import {
   getCurrentPosition, mapsLink, sosMessage, whatsappLink, smsLink, shareSos,
@@ -16,7 +17,7 @@ type Phase = 'idle' | 'locating' | 'ready' | 'error';
  * client-side and free — no backend, no paid maps key.
  */
 export function SosButton({ companionName }: { companionName?: string }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [phase, setPhase] = useState<Phase>('idle');
   const [coords, setCoords] = useState<Coords | null>(null);
   const [error, setError] = useState('');

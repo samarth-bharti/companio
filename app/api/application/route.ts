@@ -20,6 +20,7 @@ export async function GET() {
     return json({
       name: a.name,
       city: a.city,
+      gender: a.gender ?? undefined,
       activities: a.activities,
       rate: a.rate,
       bio: a.bio,
@@ -37,6 +38,24 @@ export async function POST(req: Request) {
     const parsed = applicationBody.safeParse(await readJsonBody(req));
     if (!parsed.success) return badRequest(parsed.error.flatten());
     const { prisma } = await import('@/lib/prisma');
+    const { isAdult } = await import('@/lib/server/age');
+
+    // Becoming a companion means meeting strangers for money. 18+, enforced
+    // server-side, before any document is even uploaded.
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { dateOfBirth: true },
+    });
+    if (!isAdult(me?.dateOfBirth)) {
+      return json(
+        {
+          error: 'age_verification_required',
+          detail: 'Confirm your date of birth before applying. Companions must be 18 or over.',
+        },
+        403,
+      );
+    }
+
     // status is server-controlled. update strips it entirely so a re-save can
     // never overwrite an admin-set status (approved/rejected) back to a user
     // value. create clamps it to draft|submitted — the zod schema already bars

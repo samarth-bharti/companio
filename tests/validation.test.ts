@@ -1,8 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
   addCreditsBody, boolValueBody, userBody, bookingCreateBody, bookingPatchBody,
-  favoriteToggleBody, messageAppendBody, notificationBody, planBody, applicationBody,
+  favoriteToggleBody, messageAppendBody, messageReactBody, notificationBody, planBody, applicationBody,
 } from '@/lib/server/validation';
+
+// A date that is always in the future. Frozen literals rot: this suite used
+// '2026-06-15', which silently became a past date and then failed once bookings
+// began rejecting past dates.
+const FUTURE_DATE = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
 
 const ok = (s: { success: boolean }) => s.success;
 
@@ -28,7 +33,7 @@ describe('userBody', () => {
 
 describe('bookingCreateBody', () => {
   // pricePaid and review are no longer client-supplied (server-computed / gated).
-  const valid = { companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15', time: 'AM', place: 'Bandra', usedCredit: false };
+  const valid = { companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE, time: 'AM', place: 'Bandra', usedCredit: false };
   it('accepts a full valid body', () => expect(ok(bookingCreateBody.safeParse(valid))).toBe(true));
   it('strips an unknown pricePaid field (not rejected, just ignored)', () => expect(ok(bookingCreateBody.safeParse({ ...valid, pricePaid: 49900 }))).toBe(true));
   it('rejects missing companionId', () => expect(ok(bookingCreateBody.safeParse({ ...valid, companionId: undefined }))).toBe(false));
@@ -51,6 +56,19 @@ describe('messageAppendBody', () => {
   it('accepts me/them', () => expect(ok(messageAppendBody.safeParse({ from: 'them', text: 'hi' }))).toBe(true));
   it('rejects an unknown from', () => expect(ok(messageAppendBody.safeParse({ from: 'bot', text: 'hi' }))).toBe(false));
   it('rejects empty text', () => expect(ok(messageAppendBody.safeParse({ from: 'me', text: '' }))).toBe(false));
+  it('accepts a sticker', () => expect(ok(messageAppendBody.safeParse({ from: 'me', text: '🎉', kind: 'sticker' }))).toBe(true));
+  it('omitting kind is fine', () => expect(ok(messageAppendBody.safeParse({ from: 'me', text: 'hi' }))).toBe(true));
+  it('rejects an unknown kind', () => expect(ok(messageAppendBody.safeParse({ from: 'me', text: 'hi', kind: 'voice' }))).toBe(false));
+});
+
+describe('messageReactBody', () => {
+  it('accepts an emoji', () => expect(ok(messageReactBody.safeParse({ messageId: 'm1', emoji: '❤️' }))).toBe(true));
+  it('rejects an empty emoji', () => expect(ok(messageReactBody.safeParse({ messageId: 'm1', emoji: '' }))).toBe(false));
+  it('rejects a missing messageId', () => expect(ok(messageReactBody.safeParse({ emoji: '❤️' }))).toBe(false));
+  // The length cap is what stops a "reaction" being used as a second, unfiltered
+  // message channel — `text` is screened for phone numbers, this would not be.
+  it('rejects a long string posing as an emoji', () =>
+    expect(ok(messageReactBody.safeParse({ messageId: 'm1', emoji: 'call me on 9876543210' }))).toBe(false));
 });
 
 describe('notificationBody', () => {

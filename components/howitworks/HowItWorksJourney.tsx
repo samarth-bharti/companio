@@ -11,12 +11,13 @@ import { MagneticButton } from '@/components/motion/MagneticButton';
 import { LottiePlayer } from '@/components/motion/LottiePlayer';
 import { useJsScroll } from '@/lib/useJsScroll';
 import { spring } from '@/lib/motion';
+import { VERIFICATION_SENTENCE } from '@/lib/trust';
 
 const STEPS = [
-  { n: '01', icon: Search,       title: 'Browse verified companions',   color: '#2E6BFF', bg: '#EBF1FF', lottie: '/lottie/explore-scene.json',
-    body: 'Filter by activity, city, and schedule. Every profile is ID-verified and background-checked before going live.' },
+  { n: '01', icon: Search,       title: 'Browse companions',   color: '#2E6BFF', bg: '#EBF1FF', lottie: '/lottie/explore-scene.json',
+    body: `Filter by activity, city, and schedule. ${VERIFICATION_SENTENCE}` },
   { n: '02', icon: MessageSquare, title: 'Book & chat before you meet', color: '#7A4FE0', bg: '#F0EBFF', lottie: '/lottie/scene-1.json',
-    body: 'Message your companion, align on plans, ask any question. Payment is held safely in escrow, released only after you meet.' },
+    body: "Message your companion, align on plans, ask any question. Your first two meetings are included, so there's nothing to pay to meet." },
   { n: '03', icon: MapPin,        title: 'Meet in a public place',      color: '#1FAE6B', bg: '#E6F5EE', lottie: '/lottie/hiw-meet.json',
     body: 'All first meetings happen in public. In-app SOS and live-share are active the moment you check in.' },
   { n: '04', icon: Star,          title: 'Enjoy & rate honestly',       color: '#FFB23E', bg: '#FFF8EC', lottie: '/lottie/hiw-rate.json',
@@ -104,18 +105,6 @@ export function HowItWorksJourney() {
                         className="flex flex-col rounded-2xl p-7"
                         style={{ background: s.bg, border: `1.5px solid ${s.color}22` }}
                       >
-                        {/* Ghost numeral stamps in on viewport entry */}
-                        <motion.span
-                          aria-hidden="true"
-                          className="font-display font-bold leading-none mb-4 select-none block"
-                          style={{ fontSize: '4.5rem', color: `${s.color}28` }}
-                          initial={{ scale: 0.4, rotate: -10 }}
-                          whileInView={{ scale: 1, rotate: 0 }}
-                          transition={spring.stamp}
-                          viewport={{ once: true }}
-                        >
-                          {s.n}
-                        </motion.span>
 
                         <LottiePlayer src={s.lottie} width={150} height={150} className="mb-4 self-start" />
 

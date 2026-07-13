@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { spring } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
@@ -19,7 +20,7 @@ interface MagneticButtonProps {
  */
 export function MagneticButton({ children, className, maxShift = 6 }: MagneticButtonProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const [pointerFine, setPointerFine] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0 });
 

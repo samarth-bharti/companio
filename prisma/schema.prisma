@@ -25,7 +25,8 @@ enum BookingStatus {
   pending_payment // cash booking created, awaiting Razorpay settlement — NOT confirmed
   upcoming        // confirmed: paid by credit, or cash payment settled
   completed       // meetup date has passed (set by cron, never at payment time)
-  cancelled
+  cancelled       // called off by the member
+  declined        // the companion refused it; the member's credit is returned
   refunded        // admin reversed the charge (credits returned / Razorpay refund)
 }
 
@@ -55,10 +56,20 @@ enum MessageFrom {
   them
 }
 
+enum MessageKind {
+  text
+  sticker
+}
+
+// Only the first three are a category we can MATCH on. `self_described` carries
+// its text in User.genderSelfDescribed; `prefer_not_to_say` carries nothing.
+// The same-gender filter needs a shared category on both sides, so those two
+// cannot use it — and the UI says so rather than quietly matching them wrong.
 enum Gender {
   male
   female
   nonbinary
+  self_described
   prefer_not_to_say
 }
 
@@ -118,7 +129,17 @@ model User {
   firstName   String
   lastName    String?
   gender      Gender?
+  // Free text, only ever set when gender == self_described. Asking someone to
+  // self-describe and then storing nothing was the old behaviour.
+  genderSelfDescribed String?
+  // "Only show me companions of my own gender." A comfort/safety preference the
+  // member owns, honoured by the explore filter and settable outside the quiz.
+  sameGenderOnly Boolean @default(false)
   city        String?  // matches City.id from lib/data/cities
+  // Companio is 18+. Null means "we have never asked" — which is NOT an adult:
+  // booking and companion applications refuse until it is set (lib/server/age.ts).
+  // Google OAuth does not provide this, so it is collected once, after sign-in.
+  dateOfBirth DateTime?
   role        UserRole @default(user) // gates admin panel + companion dashboard
   // The Companion profile this login owns (set when an application is approved).
   // null for ordinary members; @unique so one profile maps to one account.
@@ -158,6 +179,44 @@ model User {
   @@index([city])
   @@index([role])
   @@map("users")
+}
+
+// ── Email one-time codes ──────────────────────────────────────────────────────
+// Sign-in codes for the passwordless email flow. The code itself is never
+// stored: only a SHA-256 hash salted with NEXTAUTH_SECRET, so a database leak
+// cannot be replayed into sessions. Rows are consumed on first successful use
+// and swept by the cron job once expired.
+model EmailOtp {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  // Wrong guesses against this code. verifyOtp() refuses past MAX_OTP_ATTEMPTS,
+  // which stops a 10-minute window from being brute-forced across 1e6 codes.
+  attempts  Int      @default(0)
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([email, expiresAt])
+  @@map("email_otps")
+}
+
+// ── Contact messages ──────────────────────────────────────────────────────────
+// Submissions from /contact. Persisted first, emailed second: if Resend is down
+// the message is still on record rather than lost to a failed fetch.
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  topic     String
+  message   String
+  // Set once the notification email actually left Resend.
+  emailedAt DateTime?
+  handledAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("contact_messages")
 }
 
 // ── Wallet + Credit Ledger ────────────────────────────────────────────────────
@@ -213,6 +272,11 @@ model Companion {
   suggestions    String[] // 3 city-specific outing ideas
   photo          String   // Unsplash URL
   accent         String   // hex colour string
+  // The companion's own gender. Null = never declared, which is NOT a match for
+  // anyone: a member who asked for same-gender company must not be shown someone
+  // whose gender we are guessing at. Required by the application form, so every
+  // real companion has one; nullable only so the column could be added.
+  gender         Gender?
   sameGenderNote Boolean  @default(false)
   topMatch       Boolean  @default(false)
   verified       Boolean  @default(false)
@@ -221,6 +285,10 @@ model Companion {
   suspended      Boolean  @default(false)
   bannedAt       DateTime?
   banReason      String?
+  // Where this companion is paid. Collected in the companion dashboard; read by
+  // an admin when settling a CompanionPayout. Nullable: a companion with no
+  // payout method simply cannot be paid yet, and the admin payouts page says so.
+  payoutUpi      String?
   // Presence + smart-match fields
   availableNow   Boolean  @default(false)
   availability   String   @default("Available tomorrow")
@@ -257,6 +325,12 @@ model Booking {
   time        String        // display slot e.g. 'Morning · 7–9 AM'
   place       String
   status      BookingStatus @default(upcoming)
+  // The 4-digit code both people read out when they meet, so each knows the other
+  // is the person from the app. /verify has always told members to compare it —
+  // it just never existed, which made the instruction worse than useless: a member
+  // who could not find a code would assume the real companion was an impostor.
+  // Every Indian already knows this ritual from a ride app's OTP.
+  meetupCode  String        @default("")
   usedCredit  Boolean       @default(false)
   hours       Int           @default(1) // session length — total = hourlyRate × hours
   pricePaid   Int           @default(0) // paise the user actually paid (after discount/surge)
@@ -339,6 +413,14 @@ model Message {
   companionId String
   from        MessageFrom // 'me' | 'them'
   text        String
+  // A sticker is a single emoji rendered large. Without this column the POST
+  // route dropped `kind` and a sticker came back from the server as a small
+  // text bubble on the next load.
+  kind        MessageKind @default(text)
+  // Emoji reactions on this message. Held on the message itself rather than in
+  // a join table: they are a short, unordered set owned by the one member who
+  // can see the thread, and nothing queries across them.
+  reactions   String[]    @default([])
   ts          BigInt      // epoch ms — matches the number in ChatMessage
   createdAt   DateTime    @default(now())
 
@@ -387,6 +469,11 @@ model CompanionApplication {
   userId            String            @unique
   name              String
   city              String
+  // Collected because the same-gender filter is a safety promise to members, and
+  // a companion with no declared gender matches nobody who asked for one. An
+  // approved applicant used to arrive with no gender at all, which made every
+  // real companion invisible to the very members most likely to need the filter.
+  gender            Gender?
   activities        String[]
   rate              Int               // ratePerMeeting in paise
   bio               String
@@ -422,7 +509,15 @@ model SpinResult {
   prize         SpinPrize
   discountPct   Int       @default(0) // 0 / 10 / 20 — mirrors prize for fast checkout math
   expiresAt     DateTime  // 7 days after the spin
-  usedBookingId String?   // set when redeemed; null = still available
+  usedBookingId String?   // the booking it was spent on, when it was spent on one
+  // Redeemed-or-not. This used to be `usedBookingId != null`, which meant a win
+  // could only ever be spent on a BOOKING — and bookings are exactly what the
+  // RBI Payment Aggregator gate makes unsellable (see lib/server/pricing.ts).
+  // Every discount the wheel handed out was therefore unspendable: the same
+  // defect that got the `plus_month` jackpot deleted. A win now applies to the
+  // one thing v1 actually sells, so redemption is no longer booking-shaped.
+  usedAt        DateTime?
+  usedPurchaseId String?
   createdAt     DateTime  @default(now())
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 

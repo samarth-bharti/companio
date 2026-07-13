@@ -148,7 +148,7 @@ export function Chapters() {
             Pick your chapter.
           </h2>
           <p className="text-lead text-ink-muted mt-4 max-w-lg mx-auto">
-            Whatever you need company for, there&apos;s a verified companion for it.
+            Whatever you need company for, there&apos;s a ID-checked companion for it.
           </p>
         </Reveal>
 

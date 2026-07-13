@@ -32,6 +32,7 @@ export function toBooking(b: PBooking): Booking {
     status: b.status,
     usedCredit: b.usedCredit,
     pricePaid: b.pricePaid,
+    meetupCode: b.meetupCode || undefined,
     review: (b.review as { stars: number; text: string } | null) ?? undefined,
     createdAt: b.createdAt.getTime(),
   };
@@ -41,6 +42,8 @@ export const toMessage = (m: PMessage): ChatMessage => ({
   id: m.id,
   from: m.from,
   text: m.text,
+  kind: m.kind,
+  reactions: m.reactions,
   ts: Number(m.ts),
 });
 
@@ -54,10 +57,18 @@ export const toNotification = (n: PNotification): AppNotification => ({
 
 export function toCompanion(c: PCompanion): Companion {
   // reviewsList is stored as Json; the TS Companion type owns its exact shape.
-  // createdAt/updatedAt/verified are db-only — destructured out so they don't
-  // leak into the frontend shape.
+  // createdAt/updatedAt are db-only — destructured out so they don't leak into
+  // the frontend shape.
+  //
+  // `verified` DOES cross to the client: the badge is rendered from it. While it
+  // was stripped here, every card drew a hardcoded "Verified" tick regardless of
+  // what the column said.
+  //
+  // `distanceKm` stops here too. The column still exists, but it is an authored
+  // constant that was rendered as "3.2 km away" — a distance from a member whose
+  // location we have never known. It is not the client's business.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { reviewCount, reviewsList, createdAt, updatedAt, verified, ...rest } = c;
+  const { reviewCount, reviewsList, createdAt, updatedAt, distanceKm, ...rest } = c;
   return {
     ...rest,
     reviews: reviewCount,

@@ -1,9 +1,11 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { type LucideIcon } from "lucide-react";
 import { Users, CalendarHeart, ShieldCheck } from "lucide-react";
 import { stagger } from "@/lib/motion";
+import { UNLOCK_AMOUNT, applyDiscount, formatPaise } from "@/lib/money";
 
 type BenefitRow = {
   Icon: LucideIcon;
@@ -13,7 +15,7 @@ type BenefitRow = {
 const ROWS: BenefitRow[] = [
   {
     Icon: Users,
-    text: (city, total) => `Every verified profile in ${city}, all ${total}, unblurred.`,
+    text: (city, total) => `Every profile in ${city}, all ${total}, unblurred.`,
   },
   {
     Icon: CalendarHeart,
@@ -30,14 +32,21 @@ export function UnlockBenefits({
   city,
   count,
   headlineId,
+  discountPct = 0,
 }: {
   seedName: string;
   city: string;
   count: number;
   headlineId: string;
+  /** An unspent spin win. The wheel's prize is a discount on exactly this. */
+  discountPct?: number;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const total = count + 1;
+  // The same paise math the server bills on — not a rupee approximation of it.
+  const hasDiscount = discountPct > 0;
+  const fullPrice = formatPaise(UNLOCK_AMOUNT);
+  const payPrice = formatPaise(applyDiscount(UNLOCK_AMOUNT, discountPct));
 
   return (
     <div className="flex flex-col gap-4">
@@ -58,31 +67,36 @@ export function UnlockBenefits({
       {/* Item 2: Price anchor + benefit rows */}
       <div className="flex flex-col gap-3">
         <div className="relative flex items-end gap-3">
-          {/* Ghost numeral */}
+          {/* Big price — struck through when a spin win is being applied. */}
+          {hasDiscount && (
+            <span
+              className="relative leading-none font-semibold text-[var(--color-ink-muted)] line-through"
+              style={{ fontFamily: "var(--font-display)", fontSize: "1.75rem" }}
+            >
+              {fullPrice}
+            </span>
+          )}
           <span
-            aria-hidden="true"
-            className="absolute -left-1 -top-3 select-none pointer-events-none leading-none"
+            className="relative leading-none font-semibold"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "5rem",
-              color: "var(--color-azure)",
-              opacity: 0.08,
-              letterSpacing: "-0.04em",
+              fontSize: "3rem",
+              color: hasDiscount ? 'var(--color-emerald)' : 'var(--color-ink)',
             }}
           >
-            199
-          </span>
-          {/* Big price */}
-          <span
-            className="relative leading-none font-semibold text-[var(--color-ink)]"
-            style={{ fontFamily: "var(--font-display)", fontSize: "3rem" }}
-          >
-            ₹199
+            {payPrice}
           </span>
           {/* Context line */}
           <p className="pb-1 text-sm text-[var(--color-ink-muted)] leading-snug">
-            2 meetings included · worth{" "}
-            <span className="line-through">₹998</span>
+            {hasDiscount ? (
+              <span style={{ color: 'var(--color-emerald)', fontWeight: 600 }}>
+                {discountPct}% spin win applied
+              </span>
+            ) : (
+              <>
+                2 meetings included · worth <span className="line-through">₹998</span>
+              </>
+            )}
           </p>
         </div>
 

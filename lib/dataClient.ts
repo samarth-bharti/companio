@@ -14,6 +14,7 @@
 // Components import `dataClient` (the chosen singleton) and call await dc.getWallet().
 // Nothing in this file imports @prisma/client or next-auth — those live in API routes.
 
+import { emitDataChange } from './dataEvents';
 import type { Wallet, DemoUser, QuizResult } from './journeyState';
 import type {
   Booking,
@@ -47,6 +48,8 @@ export interface DataClient {
   // ── User profile ──────────────────────────────────────────────────────────
   getUser(): Promise<DemoUser | null>;
   setUser(u: DemoUser): Promise<void>;
+  /** Toggle the same-gender-only preference on its own, without a full profile write. */
+  setSameGenderOnly(v: boolean): Promise<void>;
 
   // ── Bookings ──────────────────────────────────────────────────────────────
   getBookings(): Promise<Booking[]>;
@@ -60,6 +63,12 @@ export interface DataClient {
   // ── Messages ──────────────────────────────────────────────────────────────
   getThread(companionId: string): Promise<ChatMessage[]>;
   getThreads(): Promise<Record<string, ChatMessage[]>>;
+  /** Toggle one emoji reaction on one message. Returns the updated thread. */
+  reactToMessage(
+    companionId: string,
+    messageId: string,
+    emoji: string,
+  ): Promise<ChatMessage[]>;
   appendMessage(
     companionId: string,
     msg: Omit<ChatMessage, 'id' | 'ts'>,
@@ -141,15 +150,43 @@ export function makeLocalStorageDataClient(): DataClient {
       const { setUser } = await import('./journeyState');
       setUser(u);
     },
+    async setSameGenderOnly(v) {
+      const { getUser, setUser } = await import('./journeyState');
+      const u = getUser();
+      if (u) setUser({ ...u, sameGenderOnly: v });
+    },
 
     // bookings
     async getBookings() {
       const { getBookings } = await import('./appState');
       return getBookings();
     },
+    /**
+     * Creating a booking is one operation, not three.
+     *
+     * `POST /api/bookings` spends the credit, writes the ledger row, creates the
+     * booking and notifies — all inside one transaction. The local client used
+     * to do only the third of those, leaving BookingWizard to call
+     * decrementMeeting() and addNotification() itself. Which meant that in http
+     * mode the wizard decremented the wallet a second time, client-side, on top
+     * of the server's spend.
+     *
+     * Both clients now mean the same thing by `addBooking`, so no caller has to
+     * know which one it is talking to.
+     */
     async addBooking(b) {
-      const { addBooking } = await import('./appState');
-      return addBooking(b);
+      const { addBooking, addNotification } = await import('./appState');
+      const { getWallet, decrementMeeting } = await import('./journeyState');
+      if (b.usedCredit) {
+        if (getWallet().credits <= 0) throw new Error('insufficient_credits');
+        decrementMeeting();
+      }
+      const booking = addBooking(b);
+      addNotification({
+        title: 'Meetup confirmed',
+        body: `Your ${b.activity} on ${b.dateISO} is booked. Free to cancel any time before you meet.`,
+      });
+      return booking;
     },
     async updateBooking(id, patch) {
       const { updateBooking } = await import('./appState');
@@ -178,6 +215,10 @@ export function makeLocalStorageDataClient(): DataClient {
     async appendMessage(companionId, msg) {
       const { appendMessage } = await import('./appState');
       return appendMessage(companionId, msg);
+    },
+    async reactToMessage(companionId, messageId, emoji) {
+      const { reactToMessage } = await import('./appState');
+      return reactToMessage(companionId, messageId, emoji);
     },
 
     // notifications
@@ -302,6 +343,13 @@ export function makeHttpDataClient(): DataClient {
     async setUser(u) {
       await post('/api/user', u);
     },
+    async setSameGenderOnly(v) {
+      // The route needs firstName (it is the one required field), so the
+      // preference rides along with the profile the server already has.
+      const current = await getOr<DemoUser | null>('/api/user', null);
+      if (!current) return;
+      await post('/api/user', { ...current, sameGenderOnly: v });
+    },
 
     async getBookings() {
       return getOr<Booking[]>('/api/bookings', []);
@@ -328,6 +376,9 @@ export function makeHttpDataClient(): DataClient {
     },
     async appendMessage(companionId, msg) {
       return post<ChatMessage>(`/api/messages/${companionId}`, msg);
+    },
+    async reactToMessage(companionId, messageId, emoji) {
+      return post<ChatMessage[]>(`/api/messages/${companionId}/react`, { messageId, emoji });
     },
 
     async getNotifications() {
@@ -356,6 +407,50 @@ export function makeHttpDataClient(): DataClient {
   };
 }
 
+// ── Change notification ───────────────────────────────────────────────────────
+// Every mutation announces which slice it touched, so useData() subscribers
+// re-read instead of showing a stale value until the next hard reload. Applied
+// as a decorator, once, rather than sprinkled through each method of each
+// client — otherwise the two implementations drift and one forgets to emit.
+//
+// Emission happens AFTER the underlying call resolves: in http mode that means
+// after the server confirmed the write, so a rejected mutation never triggers a
+// re-read that would just restore the old value.
+
+/** Which slices each mutation invalidates. */
+const MUTATION_EFFECTS = {
+  addCredits: ['wallet'],
+  decrementMeeting: ['wallet'],
+  setUnlocked: ['unlocked'],
+  setWelcomed: ['welcomed'],
+  setUser: ['user'],
+  // A booking may spend a credit, so the wallet is stale too.
+  addBooking: ['bookings', 'wallet'],
+  updateBooking: ['bookings'],
+  toggleFavorite: ['favorites'],
+  appendMessage: ['messages'],
+  reactToMessage: ['messages'],
+  addNotification: ['notifications'],
+  markNotificationsRead: ['notifications'],
+  setPlan: ['plan'],
+  saveApplication: ['application'],
+} as const satisfies Partial<Record<keyof DataClient, readonly DataKeyOf[]>>;
+
+type DataKeyOf = Parameters<typeof emitDataChange>[0];
+
+export function withChangeEvents(client: DataClient): DataClient {
+  const wrapped = { ...client } as Record<string, unknown>;
+  for (const [method, keys] of Object.entries(MUTATION_EFFECTS)) {
+    const original = client[method as keyof DataClient] as (...a: unknown[]) => Promise<unknown>;
+    wrapped[method] = async (...args: unknown[]) => {
+      const result = await original(...args);
+      for (const key of keys) emitDataChange(key);
+      return result;
+    };
+  }
+  return wrapped as unknown as DataClient;
+}
+
 // ── Singleton export ──────────────────────────────────────────────────────────
 // NEXT_PUBLIC_DATA_CLIENT is read at module-init time (build-time inlined by Next).
 // Default: 'local' so the app works with zero config today.
@@ -364,5 +459,6 @@ export function makeHttpDataClient(): DataClient {
 const clientMode =
   (process.env.NEXT_PUBLIC_DATA_CLIENT as 'local' | 'http' | undefined) ?? 'local';
 
-export const dataClient: DataClient =
-  clientMode === 'http' ? makeHttpDataClient() : makeLocalStorageDataClient();
+export const dataClient: DataClient = withChangeEvents(
+  clientMode === 'http' ? makeHttpDataClient() : makeLocalStorageDataClient(),
+);

@@ -1,118 +1,117 @@
 # Status & next steps
 
-_Last updated: 2026-06-26._
+_Last updated: 2026-07-13, after the de-faking pass._
 
 The single source of truth for **where the project is and what to do next**.
 Keep this current — it's the first file to read when resuming.
 **Launch plan / buying / deploy steps live in [`GO-LIVE.md`](GO-LIVE.md).**
+**Parked chat work lives in [`CHAT-ROADMAP.md`](CHAT-ROADMAP.md).**
 
-## Quality gates (all green — verified 2026-06-26)
+## The one-line summary
+
+**The software is real. The inventory is not.** Every feature on the site now does
+what it says, and the claims it makes are ones it can keep. What stands between
+this and a launch is twenty-two companions who do not exist, a Grievance Officer
+with no name, and two leaked secrets.
+
+## Quality gates (all green — verified 2026-07-13 by running them)
 
 - `npx tsc --noEmit` → **0 errors**
-- `npx vitest run` → **150 passing** (9 files)
-- prod build → **success**, all routes compile incl. 9 `/admin/*` routes
-  (`NODE_OPTIONS=--max-old-space-size=6144 npx next build`)
-- lint → our code clean; pre-existing React-19 hook warnings remain (not a regression)
+- `npx vitest run` → **368 passing** (28 files)
+- `npx eslint .` → **0 errors** (50 warnings remain)
+- `npx next build` → **success**
+- 25 public routes → **200**; `/admin` → **307** without an admin session
+- Walked in a real browser against the real Neon database, not just unit-tested:
+  sign-in, quiz, paywall, unlock, favourites, chat (both directions), spin,
+  booking, the 18+ gate, and the companion dashboard.
 
-## Built 2026-06-26 (document checks + MNC admin)
+## What was found and fixed on 2026-07-13
 
-- **Free document validation** (no vendor): `lib/idFormat.ts` (client-safe:
-  Aadhaar Verhoeff checksum, PAN format, magic-byte file integrity, masking) +
-  `lib/server/documentValidation.ts` (adds SHA-256 hashing). 18 unit tests.
-  Apply wizard wired: live ID validation, file-type rejection, lazy client OCR
-  (tesseract.js, guarded — never blocks), live camera selfie, and
-  `POST /api/application/upload` (server re-validate + duplicate-ID block 409 +
-  masked storage). Demo-mode safe (upload only fires in http mode).
-- **MNC-grade admin** — 9 routes (Overview, Users, Companions, Applications,
-  Bookings, Discounts, Reports, Payouts, Surge). Users: suspend/ban/block-msgs/
-  grant-credits/role/edit/delete. Companions: add/edit/suspend/ban/verify/
-  premium/delete. Discounts: create %/₹ codes, max-uses, expiry, toggle/delete.
-  Bookings: cancel(+credit refund)/refund(best-effort Razorpay)/complete.
-  Applications: approve(creates companion)/reject. **Every action audit-logged**
-  (`AdminAuditLog`). Actions in `app/admin/actions/*.ts`; gate re-checked each.
-- **Schema additions:** `DocVerifyStatus`/`DiscountType` enums; `refunded`
-  BookingStatus; User+Companion suspend/ban/banReason (+User.messageBlocked);
-  Booking refundedAt/refundReason/discountCode; CompanionApplication doc fields
-  (idHash/photoHash/idDocMasked/idVerifyStatus/ocrMatched/verifiedAt); new
-  `DiscountCode` + `AdminAuditLog` models. zod schemas added in
-  `lib/server/validation.ts`. Schema validates; client generated.
+The theme: **the tests were green and the product was lying.** A passing suite
+proves the code does what the code says. It says nothing about whether the screen
+tells the truth.
 
-## Team split
+1. **The site promised Aadhaar KYC, a live selfie match, and third-party
+   background checks in fourteen places — including the Terms of Service and the
+   Privacy Policy.** None of it exists. `app/api/application/upload/route.ts` has
+   always said so in its own header: it validates the *format* of an ID number and
+   the *bytes* of an image, and deliberately marks nothing as verified, because
+   only a KYC vendor querying UIDAI can prove a person owns an identity. The
+   marketing copy claimed the pipeline that file explicitly says does not exist.
+   → `lib/trust.ts` now holds the true claims behind a `KYC_VENDOR_ENABLED` flag,
+   and **`tests/trustClaims.test.ts` fails the build if the sentence comes back.**
 
-- **Us:** backend, UX/flow, data. **A collaborator:** UI (working in parallel,
-  writing an end-to-end plan). Keep our changes off pure-visual files where we
-  can, and **coordinate commits** — the backend work changed `package.json` +
-  lockfile.
+2. **Messaging was one-way.** A member could write to a companion; the companion
+   had no inbox, no endpoint and no screen, so every message landed in a thread
+   only the sender could see — under a line reading "they will see this and reply".
+   → Built `/api/companion/messages` and `CompanionDashMessages`. The
+   contact-sharing filter now also runs on the **companion's** words, which is
+   where it always belonged: they are the party with a reason to take the booking
+   off-platform.
 
-## Done
+3. **`/verify` told members to check two things that did not exist**: a "blue
+   verified tick" no profile carries, and a "4-digit meetup code" that was never
+   generated. A safety page that cannot be followed is worse than none — it teaches
+   people to ignore it, and hands an impostor a ready excuse.
+   → The meetup code is now real (`Booking.meetupCode`, CSPRNG, shown to both
+   sides). The tick paragraph is gone.
 
-- **Merge** of our account-gated onboarding flow into the shared repo, kept the
-  collaborator's design/copy. Flow verified structurally identical to the
-  `companio-frontend-3` reference.
-- **Lounge/feed** bug + UX pass (deferred for further feature work).
-- **Perf:** fixed the `TiltCard` mousemove layout-thrash (was the explore-grid
-  jank); `next/image` aspect-ratio warnings silenced.
-- **Nav:** Safety moved out of the primary links into a small shield button.
-- **Backend (complete, dormant):** full Prisma schema, the `dataClient` seam,
-  every API route, Auth.js wiring (stub provider), Razorpay order/verify/webhook,
-  seed script, and a 71-test suite. See [`BACKEND.md`](BACKEND.md).
-- **Monitoring & analytics (Stage 1, dormant):** GA4 + Consent Mode, SPA
-  pageviews, a typed event taxonomy with a central `track()`, Core Web Vitals,
-  a DPDP/GDPR consent banner, PostHog, Sentry, and Vercel Analytics / Speed
-  Insights — all env-gated and no-op until keyed, nothing fires before consent.
-  Funnel events wired (login, signup, unlock, booking). See [`ANALYTICS.md`](ANALYTICS.md).
-- **CI:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) — type-check,
-  test, and build are blocking; lint runs non-blocking (pre-existing UI hook
-  warnings tracked separately). Runs on push / PR to `main`.
-- **Transactional email (seam wired, dormant):** `lib/server/notify.ts` sends a
-  booking confirmation on booking creation and a payment receipt on first
-  settlement (idempotent — verify + webhook fire once). No-op without
-  `RESEND_API_KEY`; never throws, never blocks the response.
-- **`SECURITY.md`:** responsible-disclosure policy + posture summary.
-- **PWA + social:** generated brand assets (`public/icon-192.png`,
-  `icon-512.png` maskable, `apple-icon.png`, `og.png`) via
-  `scripts/gen-icons.mjs`; wired into `manifest.ts` + layout OG/Twitter metadata.
-- **`httpDataClient` hardened:** getters return signed-out defaults on `401`
-  (matching the local client) instead of crashing; writes still throw. Covered by
-  `tests/dataClient.test.ts` (13 tests). The remaining go-live step is migrating
-  UI call sites onto the seam — recipe in [`BACKEND.md`](BACKEND.md#wiring-the-ui-to-the-backend-the-remaining-gap).
-- **Security hardening:** `app/api/application` create branch now clamps `status`
-  to `draft`/`submitted` server-side (defense-in-depth against mass-assignment,
-  robust even if the enum is widened); update branch still strips `status`.
-  Covered by 3 route tests.
+4. **Chat reactions deleted your conversation.** `ChatPanel` called
+   `reactToMessage()` from `lib/appState` (localStorage) and passed the result
+   straight to `setThread()`, so in http mode a single tap replaced the rendered
+   server thread with an empty local one. Reactions were also **unclickable with a
+   mouse** — the bar rendered above the bubble inside a scrolling log and was
+   clipped by it, so every click landed on the sticky header behind.
 
-## Resume point / what's pending (2026-06-26)
+5. **The site called people "undefined".** next-auth form-encodes credentials, so
+   `firstName: undefined` transmitted the literal string `"undefined"`, which is
+   truthy and sailed past the `|| 'Friend'` fallback. Two accounts were stored with
+   that name, **including the admin's**.
 
-**Everything is UNCOMMITTED** (owner authorized committing the full tree). Local
-git remote is still `ninjaaaaaa7/Comp`; target is `samarth-bharti/companio`,
-commits authored **samarth / samarthsgsits23@gmail.com** only.
+6. **The quiz promised same-gender matching and never asked the member's gender**,
+   so the filter silently did nothing while the screen said "Filtering for
+   same-gender companions…".
 
-**Immediate next action (blocks deploy):** user runs the two governance overrides
-in the Claude Code terminal, then ME: set identity → commit → push to
-samarth-bharti. See [`GO-LIVE.md`](GO-LIVE.md) §A:
-`$env:CLAUDE_SKIP_IDENTITY_CHECK = '1'; $env:CLAUDE_ALLOW_OTHER_REPO = '1'`
+### The recurring bug class — check this first, always
 
-**Strategy: free-tier first, full E2E today, buy ~29 Jun** (official release).
-Auth = Google only (OTP skipped). Email/Resend skipped. KYC = free doc-checks +
-manual approve (vendor later). Full buying + env + deploy plan in
-[`GO-LIVE.md`](GO-LIVE.md).
+A component importing `lib/appState` or `lib/journeyState` **directly** instead of
+going through `dataClient`, so nothing reaches the server in http mode. Found in
+favourites (twice), the wallet (twice), notifications, and chat reactions.
 
-Backend runs the moment creds arrive: **Neon** (`DATABASE_URL`+`DIRECT_URL` →
-`prisma migrate deploy` + `db seed`), **Google OAuth** (auto-enables with
-`GOOGLE_CLIENT_ID/SECRET`), **Razorpay** test keys. Then
-`NEXT_PUBLIC_DATA_CLIENT=http` + promote account to `role='admin'` + smoke-test.
+```bash
+grep -rn "from '@/lib/appState'\|from '@/lib/journeyState'" components app | grep -v "import type"
+```
 
-## Next candidates (not started)
+Anything that is not a `import type` is a bug until proven otherwise.
 
-- Draft both real auth providers behind a one-line switch so picking one is trivial.
-- Resume lounge/feed feature work (deferred).
-- Wire footer `#sos` / `#promise` anchors (currently no target) — collaborator's
-  Footer design, confirm first.
-- DB integration tests (need Neon).
+## Testing it without any keys
 
-## Conventions
+Both are deliberately impossible in production and turn themselves off the moment
+the real keys exist.
 
-- **Strictly platonic** content rule (legal/processor/trust). No romance framing.
-- **CRLF** line endings; surgical edits only (shared repo).
-- New API routes follow the pattern in [`BACKEND.md`](BACKEND.md#api-routes-appapi):
-  session→401, zod→400, lazy Prisma import, serialize on return, `guard()` wrap.
+| Want to test | Set | What happens |
+|---|---|---|
+| **Sign-in** | nothing | With no `RESEND_API_KEY`, the code is shown **on the sign-in screen**. Production refuses to run without email at all, so no real user's code can ever be handed back. |
+| **The ₹199 unlock** | `ALLOW_TEST_CHECKOUT=true` | The unlock completes for free via `POST /api/test-checkout`, granting the benefit through `settlePurchase()` — the same function the real webhook calls. **Setting `RAZORPAY_KEY_ID` kills it dead**, flag or no flag. |
+
+## What is still not real
+
+- **The 22 companions are Unsplash stock photos of people who do not exist.** This
+  is the launch blocker. Everything else is a formality beside it.
+- `lib/photo.ts` blurs a locked portrait via Unsplash query parameters and will
+  **silently do nothing** on a non-Unsplash host — so a real face would leak on a
+  locked profile the day real photography lands. Needs a pre-blurred derivative or
+  an image proxy first.
+- The Grievance Officer's name and phone are `[[placeholders]]` in `lib/company.ts`
+  (DPDPA requirement; cannot be invented).
+- `NEXTAUTH_SECRET` and `CRON_SECRET` leaked at `07c46b1` in a public repo.
+  **Rotate them.**
+- Companions are paid ₹0 for the two included meetups (`payoutPaise: 0`). An
+  unanswered business question, not a bug.
+- No companion is `verified`. The column is operator-owned and true of nobody, and
+  the copy no longer pretends otherwise.
+
+## Next
+
+Chat is half-designed and deliberately not started — see
+[`CHAT-ROADMAP.md`](CHAT-ROADMAP.md).

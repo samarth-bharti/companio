@@ -18,6 +18,7 @@ const TABS = [
   { href: '/admin/reports', label: 'Reports' },
   { href: '/admin/payouts', label: 'Payouts' },
   { href: '/admin/surge', label: 'Surge' },
+  { href: '/admin/audit', label: 'Audit' },
 ];
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

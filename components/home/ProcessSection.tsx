@@ -3,13 +3,14 @@
 import { motion } from "framer-motion";
 import { Search, MessageSquare, MapPin, Star } from "lucide-react";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
+import { VERIFICATION_SENTENCE } from '@/lib/trust';
 
 const STEPS = [
   {
     n: "01",
     icon: Search,
-    title: "Browse verified companions",
-    body: "Filter by activity, city, and availability. Every profile is ID-verified and background-checked before going live.",
+    title: "Browse companions",
+    body: `Filter by activity, city, and availability. ${VERIFICATION_SENTENCE}`,
     color: "#2E6BFF",
     bg: "#EBF1FF",
   },
@@ -17,7 +18,7 @@ const STEPS = [
     n: "02",
     icon: MessageSquare,
     title: "Book & chat before you meet",
-    body: "Message your companion, ask questions, align on plans. Payment is held safely in escrow, released only after you meet.",
+    body: "Message your companion, ask questions, align on plans. Your first two meetings are included, so there's nothing to pay to meet.",
     color: "#7A4FE0",
     bg: "#F0EBFF",
   },

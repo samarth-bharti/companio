@@ -1,13 +1,14 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { motion, useInView } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Reveal } from "@/components/motion/Reveal";
 import { CountUp } from "@/components/motion/CountUp";
 
 export function MoneySplit() {
   const barRef = useRef<HTMLDivElement>(null);
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
 
   // Trigger bar growth when section enters view — calm tween, not bouncy
   const isInView = useInView(barRef, { once: true, amount: 0.6 });
@@ -111,7 +112,7 @@ export function MoneySplit() {
             <span className="font-semibold">
               Razorpay
             </span>{" "}
-            · Escrow released only on confirmation
+            · Full refund within 7 days
           </p>
         </Reveal>
       </div>

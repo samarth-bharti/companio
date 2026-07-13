@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { getWallet, getUnlocked } from '@/lib/journeyState';
-import { getBookings, getPlan } from '@/lib/appState';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
+import { dataClient } from '@/lib/dataClient';
+import { useData } from '@/lib/useData';
 import { getCompanion } from '@/lib/data/companions';
 import type { Booking, Plan } from '@/lib/appState';
 import { WalletCard } from './WalletCard';
@@ -18,19 +18,17 @@ const cardVariant = {
   visible:  { opacity: 1, y: 0, transition: calm.base },
 };
 
-export function OverviewPanel() {
-  const [wallet, setWallet]   = useState({ credits: 2, used: 0 });
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [unlocked, setUnlocked] = useState(false);
-  const [plan, setPlan]         = useState<Plan>(null);
-  const reduced = useReducedMotion();
+const NO_BOOKINGS: Booking[] = [];
 
-  useEffect(() => {
-    setWallet(getWallet());
-    setBookings(getBookings());
-    setUnlocked(getUnlocked());
-    setPlan(getPlan());
-  }, []);
+export function OverviewPanel() {
+  const reduced = useEffectiveReducedMotion();
+
+  // Each slice re-reads on its own change event, so cancelling a booking in
+  // another tab, or paying in this one, updates the panel without a reload.
+  const { data: wallet }   = useData('wallet', () => dataClient.getWallet(), { credits: 2, used: 0 });
+  const { data: bookings } = useData('bookings', () => dataClient.getBookings(), NO_BOOKINGS);
+  const { data: unlocked } = useData('unlocked', () => dataClient.getUnlocked(), false);
+  const { data: plan }     = useData<Plan>('plan', () => dataClient.getPlan(), null);
 
   const upcoming = bookings
     .filter((b) => b.status === 'upcoming')
@@ -54,7 +52,7 @@ export function OverviewPanel() {
       }}
     >
       <motion.div variants={cardVariant}>
-        <WalletCard wallet={wallet} plan={plan} />
+        <WalletCard wallet={wallet} />
       </motion.div>
 
       <motion.div variants={cardVariant}>

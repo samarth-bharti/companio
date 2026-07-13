@@ -1,18 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X, Lock, BadgeCheck, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { spring } from "@/lib/motion";
 import { Button } from "@/components/ui/Button";
 import { PaymentMethodTiles } from "./PaymentMethodTiles";
 import { UnlockBenefits } from "./UnlockBenefits";
-import { payWithRazorpay } from "@/lib/razorpayClient";
+import { payWithRazorpay, testCheckoutEnabled } from "@/lib/razorpayClient";
+import { UNLOCK_AMOUNT, applyDiscount, formatPaise } from "@/lib/money";
 
 type PayState = "idle" | "processing" | "success";
 const HEADLINE_ID = "unlock-sheet-headline";
 
+/**
+ * THE UNLOCK IS GRANTED BY THE SERVER, OR NOT AT ALL.
+ *
+ * This sheet used to hold a `runDemoPay()` that waited 450 ms and then called
+ * onSuccess(), which wrote the unlock flag to localStorage. It was reachable
+ * whenever payWithRazorpay() returned 'unconfigured' — and a 401 from an
+ * unauthenticated visitor once mapped to exactly that. A keyed production build
+ * would have given every visitor a free ₹199 unlock.
+ *
+ * The lesson generalises: a fallback that grants a paid benefit must not exist.
+ * When there is no gateway we say there is no gateway. `onSuccess` now fires
+ * only after `payWithRazorpay` returns 'success', which means the server
+ * verified an HMAC signature and settled the purchase itself.
+ */
 export function UnlockSheet({
   open, seedName, city, count, isGuest = false, onRequireAccount, onClose, onSuccess,
 }: {
@@ -20,9 +36,14 @@ export function UnlockSheet({
   count: number; isGuest?: boolean; onRequireAccount?: () => void;
   onClose: () => void; onSuccess: () => void;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [sel, setSel] = useState<string | null>(null);
   const [pay, setPay] = useState<PayState>("idle");
+  const [payError, setPayError] = useState<string | null>(null);
+  // An unspent spin win. The server applies it when it fixes the order amount;
+  // this only mirrors it, so the member can see the price they will actually pay
+  // before they commit. The wheel was awarding discounts nobody could spend.
+  const [discountPct, setDiscountPct] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<Element | null>(null);
   // Synchronous double-submit guard + tracked timers. setPay is async, so a fast
@@ -56,6 +77,7 @@ export function UnlockSheet({
       payTimers.current.forEach(clearTimeout);
       payTimers.current = [];
       payingRef.current = false;
+      setPayError(null);
       setTimeout(() => { setPay("idle"); setSel(null); }, 300);
     }
     return () => { document.removeEventListener("keydown", handleKey); };
@@ -64,33 +86,75 @@ export function UnlockSheet({
   // Unmount-only safety: never let a scheduled onSuccess fire after teardown.
   useEffect(() => () => { payTimers.current.forEach(clearTimeout); }, []);
 
-  // Demo animation: the original local simulation, used whenever live Razorpay
-  // isn't wired (no key / no session). Kept verbatim so demo mode is unchanged.
-  function runDemoPay() {
-    setPay("processing");
-    const t1 = setTimeout(() => {
-      setPay("success");
-      payTimers.current.push(setTimeout(onSuccess, 450));
-    }, reduced ? 0 : 900);
-    payTimers.current.push(t1);
+  // Look up the member's live spin win each time the sheet opens — it can expire.
+  useEffect(() => {
+    if (!open || isGuest) return;
+    let cancelled = false;
+    fetch('/api/spin')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled) setDiscountPct(d?.reward?.discountPct ?? 0);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [open, isGuest]);
+
+  // Exactly what the server will charge, to the paise. Quoting a rounded rupee
+  // figure here meant offering "Pay ₹159" and billing ₹159.20.
+  const payPrice = formatPaise(applyDiscount(UNLOCK_AMOUNT, discountPct));
+
+  // Whether this deployment hands the unlock out for free. Asked of the server,
+  // and shown loudly — a free unlock that looks like a paid one is how a "test"
+  // build quietly becomes the live one.
+  const [testMode, setTestMode] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void testCheckoutEnabled().then((v) => { if (!cancelled) setTestMode(v); });
+    return () => { cancelled = true; };
+  }, [open]);
+
+  function fail(message: string) {
+    payingRef.current = false;
+    setPay("idle");
+    setPayError(message);
   }
 
   async function doPay() {
     if (payingRef.current) return;
     if (!sel) return; // a payment method must be chosen first
     payingRef.current = true;
+    setPayError(null);
+    setPay("processing");
 
-    // Try the real gateway first; 'unconfigured' means demo mode — fall back.
     const result = await payWithRazorpay({ kind: "unlock" });
-    if (result === "unconfigured") { runDemoPay(); return; }
-    if (result === "success") {
-      setPay("success");
-      payTimers.current.push(setTimeout(onSuccess, 450));
-      return;
+
+    switch (result) {
+      case "success":
+        // The server verified the signature and flipped User.unlocked. Only now.
+        setPay("success");
+        payTimers.current.push(setTimeout(() => onSuccess(), 450));
+        return;
+      case "auth_required":
+        // Live gateway, but the server has no session for this visitor. Send
+        // them to sign in rather than pretending the payment worked.
+        payingRef.current = false;
+        setPay("idle");
+        onRequireAccount?.();
+        return;
+      case "dismissed":
+        payingRef.current = false;
+        setPay("idle");
+        return;
+      case "unconfigured":
+        fail("Payments are not enabled on this deployment yet, so the unlock cannot be purchased.");
+        return;
+      case "unavailable":
+        fail("Payments are temporarily unavailable. Please try again shortly.");
+        return;
+      default:
+        fail("That payment didn't go through. You have not been charged.");
     }
-    // 'dismissed' or 'failed' — re-arm so the user can retry.
-    payingRef.current = false;
-    setPay("idle");
   }
 
   // matchMedia in effect, not render — server and first client pass must agree.
@@ -140,9 +204,28 @@ export function UnlockSheet({
                   <X size={20} aria-hidden="true" />
                 </button>
               </div>
-              <UnlockBenefits seedName={seedName} city={city} count={count} headlineId={HEADLINE_ID} />
+              <UnlockBenefits seedName={seedName} city={city} count={count} headlineId={HEADLINE_ID} discountPct={discountPct} />
               {/* Guests create an account first — don't show payment UI yet, it
                   reads as "pay now" and conflicts with the account step. */}
+              {/* Loud on purpose. A free unlock that looks like a paid one is
+                  how a test build quietly becomes the live one. */}
+              {!isGuest && testMode && (
+                <div
+                  className="flex items-start gap-2 rounded-lg px-3 py-2.5 mb-3"
+                  style={{
+                    background: 'rgba(255,178,62,0.12)',
+                    border: '1px solid rgba(255,178,62,0.45)',
+                  }}
+                  role="status"
+                >
+                  <span aria-hidden="true">🧪</span>
+                  <p className="font-sans text-xs leading-relaxed" style={{ color: 'var(--color-ink)' }}>
+                    <strong>Test mode.</strong> No payment gateway is connected, so this button
+                    unlocks everything for free and no money is taken. Adding Razorpay keys
+                    switches this off automatically.
+                  </p>
+                </div>
+              )}
               {!isGuest && <PaymentMethodTiles selected={sel} onSelect={setSel} />}
               <div aria-live="polite" aria-atomic="true">
                 {isGuest ? (
@@ -151,7 +234,7 @@ export function UnlockSheet({
                   </Button>
                 ) : (
                 <Button variant="cta" size="xl" className="w-full" onClick={doPay} disabled={pay !== "idle" || !sel}>
-                  {pay === "idle" && "Pay ₹199, unlock everything."}
+                  {pay === "idle" && `Pay ${payPrice}, unlock everything.`}
                   {pay === "processing" && (
                     <span className="flex items-center gap-2">
                       {reduced
@@ -178,6 +261,11 @@ export function UnlockSheet({
                     Step 1: free account · Step 2: pay ₹199 (one-time, no subscription)
                   </p>
                 )}
+                {payError && (
+                  <p role="alert" className="mt-2 text-xs text-center" style={{ color: '#C0392B' }}>
+                    {payError}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col items-center gap-1.5">
                 <p className="text-xs text-[var(--color-ink-muted)] text-center">
@@ -187,16 +275,16 @@ export function UnlockSheet({
                   <Lock size={12} aria-hidden="true" /><span>Secured by Razorpay</span>
                 </div>
               </div>
+              {/* Only ever state what v1 actually sells. Additional paid meetups
+                  are not purchasable yet, so we do not quote a price for them. */}
               <p className="text-xs text-[var(--color-ink-muted)] text-center leading-relaxed">
-                After your 2 included meetings, each meetup is ₹499. We&rsquo;ll always show the price before you book.
+                One payment, no subscription. Your 2 included meetups never expire.
               </p>
               <div className="flex items-start gap-2 rounded-[var(--radius-md)] bg-black/[.03] p-3">
                 <BadgeCheck size={16} className="mt-0.5 shrink-0 text-[var(--color-azure)]" aria-hidden="true" />
                 <p className="text-sm text-[var(--color-ink-muted)]">
-                  <span style={{ fontFamily: "var(--font-serif)" }} className="italic">
-                    &ldquo;Verification meant my family was relaxed about it too.&rdquo;
-                  </span>
-                  {" "}, Meena T., Delhi
+                  Every companion completes government-ID verification before their profile goes
+                  live. Meetups are strictly platonic and happen in public places.
                 </p>
               </div>
             </motion.div>

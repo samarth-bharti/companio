@@ -3,21 +3,24 @@
 import { memo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { BadgeCheck, Heart, Plus, Check, MapPin, Languages } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { durations } from '@/lib/motion';
 import type { Companion } from '@/lib/data/companions';
+import { RatingBadge } from '@/components/companion/RatingBadge';
 
 /*
  * Pulse-ring keyframe lives in app/globals.css (companio-pulse-ring) — this
  * component injects zero <style> tags.
  */
 
-/** "New this week" — reviews < 45 */
-function isNew(c: Companion) { return c.reviews < 45; }
-/** "Popular" — reviews > 100 */
-function isPopular(c: Companion) { return c.reviews > 100; }
+// A companion nobody has reviewed yet is new. The old thresholds — new below 45
+// reviews, popular above 100 — sorted a catalogue in which every single profile
+// was hardcoded to 124 reviews, so every profile was "Popular" and none was new.
+function isNew(c: Companion) { return c.reviews === 0; }
+function isPopular(c: Companion) { return c.reviews >= 25; }
 
 interface CompanionCardProps {
   companion: Companion;
@@ -52,10 +55,10 @@ export const CompanionCard = memo(function CompanionCard({
   isCompared, onToggleCompare,
   quizDone,
 }: CompanionCardProps) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const {
     id, name, city, area, age, rating, reviews,
-    activities, languages, bio, photo, topMatch,
+    activities, languages, bio, photo, topMatch, verified,
   } = companion;
 
   const ease = [0.16, 1, 0.3, 1] as const;
@@ -113,7 +116,9 @@ export const CompanionCard = memo(function CompanionCard({
                 : { background: 'rgba(255,178,62,0.94)', color: '#141A2E', backdropFilter: 'blur(4px)' }
             }
           >
-            {isNew(companion) ? 'New this week' : 'Popular'}
+            {/* "New this week" claimed a join date we do not track. "New" is
+                simply what having no reviews means. */}
+            {isNew(companion) ? 'New' : 'Popular'}
           </div>
         ) : null}
 
@@ -152,8 +157,12 @@ export const CompanionCard = memo(function CompanionCard({
             <span className="text-[1.15rem] font-bold text-white leading-tight tracking-tight drop-shadow group-hover:underline decoration-white/40 underline-offset-2" style={{ fontFamily: 'var(--font-display)' }}>
               {name}{age ? <span className="font-medium opacity-80">, {age}</span> : null}
             </span>
-            <BadgeCheck size={17} className="shrink-0 drop-shadow text-white" aria-hidden="true" />
-            <span className="sr-only">Verified</span>
+            {verified && (
+              <>
+                <BadgeCheck size={17} className="shrink-0 drop-shadow text-white" aria-hidden="true" />
+                <span className="sr-only">Verified</span>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-1 text-[0.8rem] font-medium text-white/85 mt-0.5">
             <MapPin size={12} aria-hidden="true" />
@@ -166,14 +175,15 @@ export const CompanionCard = memo(function CompanionCard({
       <div className="p-3.5 flex flex-col gap-2.5">
         {/* Meta line: rating · distance · availability */}
         <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-          <span className="inline-flex items-center gap-0.5 text-sm font-bold text-ink" aria-label={`Rated ${rating} out of 5, ${reviews} reviews`}>
-            <span style={{ color: 'var(--color-gold)' }}>★</span> {rating}
-            <span className="text-xs font-normal" style={{ color: 'var(--color-ink-muted)' }}>({reviews})</span>
-          </span>
+          <RatingBadge rating={rating} reviews={reviews} />
           {isUnlockedGrid && (
             <>
+              {/* "3.2 km" used to sit here, read as a distance from you, and was
+                  an authored number in the seed file. We do not know where you
+                  are — only which city you chose — so we cannot compute a
+                  distance, and we no longer print one. The area is real. */}
               <span aria-hidden="true">·</span>
-              <span>{companion.distanceKm} km</span>
+              <span>{area}</span>
               <span aria-hidden="true">·</span>
               <span
                 className="inline-flex items-center gap-1 font-semibold"

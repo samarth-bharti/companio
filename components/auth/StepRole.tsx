@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Users, BadgeCheck } from 'lucide-react';
 import { spring, stagger } from '@/lib/motion';
 import { Reveal } from '@/components/motion/Reveal';
@@ -15,7 +16,7 @@ const CARDS = [
   {
     value:  'member'    as const,
     label:  'I want to find a companion',
-    sub:    'Browse verified companions for walks, chai, events, and more in your city.',
+    sub:    'Browse ID-checked companions for walks, chai, events, and more in your city.',
     Icon:   Users,
   },
   {
@@ -27,7 +28,7 @@ const CARDS = [
 ] as const;
 
 export function StepRole({ role, onSelect }: StepRoleProps) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   return (
     <div>
@@ -113,7 +114,7 @@ export function StepRole({ role, onSelect }: StepRoleProps) {
       </motion.div>
 
       <p className="mt-6 text-center font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-        Strictly platonic · ID-verified for safety
+        Strictly platonic · ID-checked for safety
       </p>
     </div>
   );

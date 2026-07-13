@@ -9,7 +9,7 @@ import { VerificationTimeline } from "@/components/companion/VerificationTimelin
 
 export const metadata: Metadata = {
   title: "Become a Companion, Companio",
-  description: "Join Companio as a verified companion. Set your own schedule, earn on your terms, and meet interesting people across India.",
+  description: "Join Companio as a ID-checked companion. Set your own schedule, earn on your terms, and meet interesting people across India.",
 };
 
 const BENEFITS = [
@@ -37,7 +37,7 @@ const BENEFITS = [
   {
     icon: Shield,
     title: "Safety first, always",
-    body: "In-app SOS, escrow protection, and a dedicated trust team make every booking safe for companions and members alike.",
+    body: "In-app SOS, ID-checked members, and a dedicated trust team make every booking safe for companions and members alike.",
     color: "#FFB23E",
     bg: "#FFF8EC",
   },

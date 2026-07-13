@@ -1,19 +1,50 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { SmilePlus } from 'lucide-react';
 import type { ChatMessage } from '@/lib/appState';
 import { QUICK_REACTIONS, isEmojiOnly } from '@/lib/chat/emoji';
 import { spring } from '@/lib/motion';
 
+/**
+ * How much vertical room the react bar needs above a bubble.
+ *
+ * The bar renders at -top-10, INSIDE a chat log that scrolls (overflow-y:auto).
+ * For the first message in a thread there is nothing above it, so the bar was
+ * clipped away by the log's own edge and the click landed on whatever was
+ * painted behind it — the sticky header, or the bar's own dismiss backdrop.
+ * Reactions were unclickable with a mouse, and no unit test could see it.
+ *
+ * So: measure the room between the bubble and the top of the scroll container,
+ * and flip the bar underneath the bubble when it will not fit above.
+ */
+const BAR_CLEARANCE_PX = 44;
+
 // A single chat message: text bubble, large "jumbomoji" for emoji-only text, or
 // a big sticker. Hover (desktop) or long-press (mobile) opens a quick-react bar;
 // reactions show as little pills under the bubble (tap a pill to remove).
 export function MessageBubble({ msg, onReact }: { msg: ChatMessage; onReact: (emoji: string) => void }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [barOpen, setBarOpen] = useState(false);
+  const [below, setBelow] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Open the bar, flipping it under the bubble when there is no room above. */
+  const openBar = () => {
+    const el = wrapRef.current;
+    if (el) {
+      const bubbleTop = el.getBoundingClientRect().top;
+      const log = el.closest('[data-chat-log]');
+      // Clamp to 0 so a missing container degrades to "measure against the
+      // viewport" rather than to "always flip".
+      const ceiling = log ? log.getBoundingClientRect().top : 0;
+      setBelow(bubbleTop - ceiling < BAR_CLEARANCE_PX);
+    }
+    setBarOpen(true);
+  };
 
   const mine = msg.from === 'me';
   const sticker = msg.kind === 'sticker';
@@ -25,11 +56,11 @@ export function MessageBubble({ msg, onReact }: { msg: ChatMessage; onReact: (em
   const stickerCaption = lastSpace > 0 ? msg.text.slice(0, lastSpace) : '';
   const stickerEmoji = lastSpace > 0 ? msg.text.slice(lastSpace + 1) : msg.text;
 
-  const startPress = () => { pressTimer.current = setTimeout(() => setBarOpen(true), 380); };
+  const startPress = () => { pressTimer.current = setTimeout(openBar, 380); };
   const endPress = () => { if (pressTimer.current) clearTimeout(pressTimer.current); };
 
   return (
-    <div className={`group relative flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+    <div ref={wrapRef} className={`group relative flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
       {/* Quick-react bar (hover/long-press) with click-away backdrop */}
       <AnimatePresence>
         {barOpen && (
@@ -40,7 +71,9 @@ export function MessageBubble({ msg, onReact }: { msg: ChatMessage; onReact: (em
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               transition={spring.snappy}
-              className={`absolute -top-10 z-30 flex gap-0.5 px-1.5 py-1 rounded-full shadow-lg ${mine ? 'right-0' : 'left-0'}`}
+              className={`absolute z-30 flex gap-0.5 px-1.5 py-1 rounded-full shadow-lg ${
+                below ? '-bottom-10' : '-top-10'
+              } ${mine ? 'right-0' : 'left-0'}`}
               style={{ background: 'var(--color-bg)', border: '1px solid rgba(46,107,255,0.15)' }}
             >
               {QUICK_REACTIONS.map((e) => (
@@ -61,7 +94,7 @@ export function MessageBubble({ msg, onReact }: { msg: ChatMessage; onReact: (em
 
       <div className="flex items-center gap-1" onTouchStart={startPress} onTouchEnd={endPress} onTouchMove={endPress}>
         {/* Desktop hover affordance — appears left of my messages / right of theirs */}
-        {mine && <ReactToggle onOpen={() => setBarOpen(true)} />}
+        {mine && <ReactToggle onOpen={openBar} />}
 
         {sticker ? (
           stickerIsBig ? (
@@ -102,7 +135,7 @@ export function MessageBubble({ msg, onReact }: { msg: ChatMessage; onReact: (em
           </span>
         )}
 
-        {!mine && <ReactToggle onOpen={() => setBarOpen(true)} />}
+        {!mine && <ReactToggle onOpen={openBar} />}
       </div>
 
       {/* Reaction pills */}

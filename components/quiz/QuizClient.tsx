@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { ArrowLeft, X } from 'lucide-react';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
 import { QuizQuestion } from './QuizQuestion';
@@ -13,8 +14,10 @@ import {
   QUESTIONS, QUIZ_STEPS, INITIAL_ANSWERS, STEP_ACCENTS,
   getEmpathyEcho, type QuizAnswers,
 } from './quizData';
-import { TOP_MATCH_ID } from '@/lib/data/companions';
-import { setQuiz, setUser } from '@/lib/journeyState';
+import { setQuiz, isMatchableGender, type GenderId } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
+import { useCompanions } from '@/lib/useCompanions';
+import { rankCompanions } from '@/lib/matching';
 
 type Phase = 'question' | 'echo' | 'illusion' | 'result';
 
@@ -24,12 +27,39 @@ type Phase = 'question' | 'echo' | 'illusion' | 'result';
  */
 export function QuizClient() {
   const router = useRouter();
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   const [step, setStep] = useState(0);
   const [phase, setPhase] = useState<Phase>('question');
   const [answers, setAnswers] = useState<QuizAnswers>(INITIAL_ANSWERS);
   const [echoLine, setEchoLine] = useState('');
+
+  // The real catalogue, from the database — the same list explore shows. The
+  // result screen used to be built from a hardcoded seed import, which is why it
+  // could promise "14 companions" in a city that has none.
+  const { companions } = useCompanions();
+  const [myGender, setMyGender] = useState<'male' | 'female' | 'nonbinary' | undefined>();
+
+  useEffect(() => {
+    let cancelled = false;
+    dataClient
+      .getUser()
+      .then((u) => {
+        if (!cancelled && isMatchableGender(u?.gender)) setMyGender(u!.gender as 'male' | 'female' | 'nonbinary');
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Who actually fits, in the city they actually chose, ranked by the answers
+  // they actually gave. Empty when the city has nobody — and the result screen
+  // says so instead of inventing a match.
+  const matches = useMemo(() => {
+    const inCity = companions.filter(
+      (c) => c.city.toLowerCase() === answers.city.toLowerCase(),
+    );
+    return rankCompanions(inCity, answers, myGender);
+  }, [companions, answers, myGender]);
 
   // Declared before the effect below that calls it; stable identity (useCallback []).
   const triggerEcho = useCallback((key: string, currentAnswers: QuizAnswers) => {
@@ -95,9 +125,13 @@ export function QuizClient() {
     });
   }, [triggerEcho]);
 
-  const handleComfort = useCallback((value: QuizAnswers['comfort']) => {
+  const handleComfort = useCallback((value: QuizAnswers['comfort'], gender?: GenderId) => {
+    // A gender given here is used for THIS ranking, not just saved for later:
+    // the result screen appears seconds from now, and it has to already be the
+    // filtered one.
+    if (isMatchableGender(gender)) setMyGender(gender);
     setAnswers((prev) => {
-      const next = { ...prev, comfort: value };
+      const next = { ...prev, comfort: value, ...(gender ? { gender } : {}) };
       triggerEcho('comfort', next);
       return next;
     });
@@ -114,11 +148,31 @@ export function QuizClient() {
   // ── Navigation ───────────────────────────────────────────────────────────────
 
   const handleNavigate = useCallback(() => {
-    // All localStorage writes happen here — safe in event handler
-    setQuiz({ name: answers.name, city: answers.city, matchedId: TOP_MATCH_ID });
-    setUser({ firstName: answers.name });
+    // All localStorage writes happen here — safe in event handler.
+    //
+    // The answers are stored, not just the name: explore ranks against them, so
+    // "Best match" means something. `matchedId` is now whoever actually came
+    // first, and is empty when the chosen city has nobody in it.
+    setQuiz({
+      name: answers.name,
+      city: answers.city,
+      matchedId: matches[0]?.id ?? '',
+      activities: answers.activities,
+      languages: answers.languages,
+      sameGender: answers.comfort.sameGender,
+    });
+    // The comfort answer is a promise, so it is written to the account, where
+    // the explore filter can actually honour it. Saying "same-gender companions
+    // only" and storing it nowhere is what this replaces.
+    void dataClient.setUser({
+      firstName: answers.name,
+      sameGenderOnly: answers.comfort.sameGender,
+      // Only sent when the quiz collected it — never overwrite a gender the
+      // account already holds with an absent one.
+      ...(answers.gender ? { gender: answers.gender } : {}),
+    });
     router.push('/explore?matched=1');
-  }, [answers.name, answers.city, router]);
+  }, [answers, matches, router]);
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
@@ -127,7 +181,14 @@ export function QuizClient() {
   }
 
   if (phase === 'result') {
-    return <ResultReveal name={answers.name} onNavigate={handleNavigate} />;
+    return (
+      <ResultReveal
+        name={answers.name}
+        city={answers.city}
+        matches={matches}
+        onNavigate={handleNavigate}
+      />
+    );
   }
 
   const currentQ = QUESTIONS[step];
@@ -190,6 +251,7 @@ export function QuizClient() {
               showEcho={phase === 'echo'}
               echoLine={echoLine}
               accent={accent}
+              knownGender={myGender !== undefined}
               onSingleAnswer={handleSingle}
               onMultiAnswer={handleMulti}
               onComfortAnswer={handleComfort}

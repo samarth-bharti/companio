@@ -43,10 +43,25 @@ describe('toBooking', () => {
 });
 
 describe('toMessage', () => {
+  const base = { id: 'm1', from: 'me', text: 'hi', kind: 'text', reactions: [] };
+
   it('converts BigInt ts to a number', () => {
-    const m = toMessage({ id: 'm1', from: 'me', text: 'hi', ts: BigInt(1700000000000) } as any);
-    expect(m).toEqual({ id: 'm1', from: 'me', text: 'hi', ts: 1700000000000 });
+    const m = toMessage({ ...base, ts: BigInt(1700000000000) } as any);
+    expect(m).toEqual({ ...base, ts: 1700000000000 });
     expect(typeof m.ts).toBe('number');
+  });
+
+  // A sticker that comes back as 'text' renders as a small text bubble instead
+  // of a large emoji — which is exactly what happened while the column was
+  // missing and the POST route dropped `kind` on the floor.
+  it('carries the sticker kind through', () => {
+    const m = toMessage({ ...base, kind: 'sticker', text: '🎉', ts: BigInt(1) } as any);
+    expect(m.kind).toBe('sticker');
+  });
+
+  it('carries reactions through', () => {
+    const m = toMessage({ ...base, reactions: ['❤️', '😂'], ts: BigInt(1) } as any);
+    expect(m.reactions).toEqual(['❤️', '😂']);
   });
 });
 
@@ -60,17 +75,35 @@ describe('toNotification', () => {
 });
 
 describe('toCompanion', () => {
+  const row = (over: Record<string, unknown> = {}) => ({
+    id: 'ananya', name: 'Ananya', firstName: 'Ananya', maskedName: 'Ana',
+    city: 'mumbai', area: 'Bandra', age: 28, activities: [], languages: [],
+    rating: 4.9, reviewCount: 124, ratePerMeeting: 499, bio: '', suggestions: [],
+    photo: '', accent: '#000', sameGenderNote: false, topMatch: true,
+    verified: true, availableNow: true, availability: 'Free now', distanceKm: 3,
+    matchScore: 98, reviewsList: [], createdAt: new Date(), updatedAt: new Date(),
+    ...over,
+  });
+
   it('renames reviewCount to reviews and drops db-only fields', () => {
-    const c = toCompanion({
-      id: 'ananya', name: 'Ananya', firstName: 'Ananya', maskedName: 'Ana',
-      city: 'mumbai', area: 'Bandra', age: 28, activities: [], languages: [],
-      rating: 4.9, reviewCount: 124, ratePerMeeting: 499, bio: '', suggestions: [],
-      photo: '', accent: '#000', sameGenderNote: false, topMatch: true,
-      verified: true, availableNow: true, availability: 'Free now', distanceKm: 3,
-      matchScore: 98, reviewsList: [], createdAt: new Date(), updatedAt: new Date(),
-    } as any);
+    const c = toCompanion(row() as any);
     expect(c.reviews).toBe(124);
     expect((c as any).reviewCount).toBeUndefined();
     expect((c as any).createdAt).toBeUndefined();
+  });
+
+  // It was rendered as "3.2 km away" and sorted the grid by default, and it is
+  // an authored constant — not a distance from a member we cannot locate.
+  it('does not ship distanceKm to the client', () => {
+    expect((toCompanion(row({ distanceKm: 3 }) as any) as any).distanceKm).toBeUndefined();
+  });
+
+  // The "Verified" badge renders off this field and nothing else. It was once
+  // stripped here while the cards drew a hardcoded tick, so every seeded profile
+  // claimed an ID check none of them had passed. The badge must be able to be
+  // false, and must reach the client to be false.
+  it('carries `verified` through to the client, both ways', () => {
+    expect(toCompanion(row({ verified: true }) as any).verified).toBe(true);
+    expect(toCompanion(row({ verified: false }) as any).verified).toBe(false);
   });
 });

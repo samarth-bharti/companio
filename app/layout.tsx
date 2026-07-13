@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Plus_Jakarta_Sans, Lora } from "next/font/google";
 import { LenisProvider } from "@/components/motion/LenisProvider";
 import { MotionPreferenceProvider } from "@/lib/motionPreference";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { Suspense } from "react";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { PostHogProvider } from "@/components/analytics/PostHogProvider";
@@ -27,9 +28,16 @@ const lora = Lora({
   subsets: ["latin"],
 });
 
-const TITLE = "Companio, Trusted. Verified. Companionship.";
+// Say the concrete thing first: someone arriving cold from search or a shared
+// link must know what they can actually do here before they read any poetry.
+//
+// This used to read "book a verified companion". The `verified` column is
+// operator-owned and false for every companion on the platform, and this is the
+// <title> and the search-result snippet — the very first promise Companio makes
+// to a stranger, made before they have read a single line of the site.
+const TITLE = "Companio, book a companion for the things you'd rather not do alone.";
 const DESCRIPTION =
-  "Book ID-verified companions for city guiding, events, gym, conversation, and more. Strictly platonic. Indian market.";
+  "Book an ID-checked companion for a city walk, café chat or gym session. Strictly platonic. ₹199 unlocks every profile in your city, first 2 meetings included.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -60,8 +68,13 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
+    // suppressHydrationWarning: browser extensions (Grammarly, overlay tools, …)
+    // inject attributes onto <html>/<body> before React hydrates, causing a
+    // spurious attribute mismatch. This only ignores diffs on these two elements
+    // (one level deep) — real mismatches inside the app still surface.
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${fraunces.variable} ${plusJakarta.variable} ${lora.variable} h-full antialiased`}
     >
       <head>
@@ -77,7 +90,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: jsonLd(websiteJsonLd()) }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-bg text-ink font-sans">
+      <body suppressHydrationWarning className="min-h-full flex flex-col bg-bg text-ink font-sans">
         {/* Skip link — sighted keyboard users can jump past the nav. */}
         <a
           href="#main-content"
@@ -85,9 +98,11 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <MotionPreferenceProvider>
-          <LenisProvider>{children}</LenisProvider>
-        </MotionPreferenceProvider>
+        <AuthProvider>
+          <MotionPreferenceProvider>
+            <LenisProvider>{children}</LenisProvider>
+          </MotionPreferenceProvider>
+        </AuthProvider>
         <Suspense fallback={null}>
           <AnalyticsProvider />
         </Suspense>

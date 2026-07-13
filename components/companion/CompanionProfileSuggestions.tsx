@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Sparkles } from 'lucide-react';
 import { spring, stagger } from '@/lib/motion';
 
@@ -9,7 +10,7 @@ interface Props {
 }
 
 export function CompanionProfileSuggestions({ suggestions }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   return (
     <section aria-label="What we'd do together">

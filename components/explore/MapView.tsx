@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import type { Companion } from '@/lib/data/companions';
+import { companionsInCity } from '@/lib/data/companions';
 import { getCity, CITIES } from '@/lib/data/cities';
+import { getAreaAnchor } from '@/lib/data/areas';
+import { getTileConfig } from '@/lib/map/tiles';
 import 'leaflet/dist/leaflet.css';
 
 interface MapViewProps {
@@ -28,13 +31,41 @@ interface MapViewProps {
 
 const FUZZ_RADIUS_M = 1500; // ~1.5 km privacy radius
 
-/** Deterministic per-companion offset (±~3-4 km) around the city centre. */
-function fuzzedLatLng(seed: string, lat: number, lng: number): [number, number] {
+/** FNV-1a. Stable across renders and reloads, so a companion never jumps. */
+function hash(seed: string): number {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619) >>> 0;
+  return h;
+}
+
+/**
+ * Where to draw a companion's privacy circle.
+ *
+ * Anchored on their NEIGHBOURHOOD when we have verified coordinates for it, and
+ * scattered only within it (±~0.5 km, comfortably inside the 1.5 km circle that
+ * is drawn around it). Previously every companion was scattered ±4 km around
+ * the city centre, so the area label and the pin disagreed.
+ *
+ * With no anchor — any city other than Mumbai, whose profiles are re-skinned
+ * demos anyway — we keep the old city-centre scatter rather than invent a
+ * coordinate that would look authoritative and be wrong.
+ */
+function placeCompanion(
+  companion: Companion,
+  cityId: string,
+  cityLat: number,
+  cityLng: number,
+): [number, number] {
+  const h = hash(companion.id + companion.area);
   const a = (h % 1000) / 1000;
   const b = ((h >>> 10) % 1000) / 1000;
-  return [lat + (a - 0.5) * 0.075, lng + (b - 0.5) * 0.085];
+
+  const anchor = getAreaAnchor(cityId, companion.area);
+  if (anchor) {
+    // ±0.005° ≈ ±550 m of latitude — inside the circle we draw around it.
+    return [anchor.lat + (a - 0.5) * 0.01, anchor.lng + (b - 0.5) * 0.01];
+  }
+  return [cityLat + (a - 0.5) * 0.075, cityLng + (b - 0.5) * 0.085];
 }
 
 export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, highlightId }: MapViewProps) {
@@ -70,11 +101,13 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
       });
       mapRef.current = map;
 
-      // CARTO Positron — clean, light, premium basemap (retina via {r}).
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19,
+      // Provider comes from the environment — see lib/map/tiles.ts for why the
+      // hardcoded CARTO basemap had to go (enterprise-only for commercial use).
+      const tiles = getTileConfig();
+      L.tileLayer(tiles.url, {
+        attribution: tiles.attribution,
+        ...(tiles.subdomains ? { subdomains: tiles.subdomains } : {}),
+        maxZoom: tiles.maxZoom,
       }).addTo(map);
 
       layerRef.current = L.layerGroup().addTo(map);
@@ -99,29 +132,36 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
     layer.clearLayers();
 
     // Other cities — a presence marker each, so zooming out to India shows the
-    // whole network. Tapping one switches to that city.
+    // whole picture. Radius used to scale with an invented `members` count, and
+    // the popup quoted it. It now reflects the real roster, and a city with
+    // nobody in it draws a small hollow ring that says so.
     CITIES.forEach((ct) => {
       if (ct.id === cityId) return;
-      const r = 6 + Math.min(ct.members / 250, 12);
+      const count = companionsInCity(ct.name).length;
+      const live = count > 0;
       const m = L.circleMarker([ct.lat, ct.lng], {
-        radius: r,
-        color: '#7A4FE0',
+        radius: live ? 6 + Math.min(count, 12) : 5,
+        color: live ? '#7A4FE0' : '#9AA3B2',
         weight: 1.5,
-        opacity: 0.5,
+        opacity: live ? 0.5 : 0.35,
         fillColor: '#7A4FE0',
-        fillOpacity: 0.25,
+        fillOpacity: live ? 0.25 : 0,
       }).addTo(layer);
       m.bindPopup(
         `<div style="font-family:system-ui,sans-serif">
            <div style="font-weight:700;font-size:14px;color:#141A2E">${ct.name}</div>
-           <div style="font-size:12px;color:#5A6378">${ct.members}+ members · tap to explore</div>
+           <div style="font-size:12px;color:#5A6378">${
+             live
+               ? `${count} verified ${count === 1 ? 'companion' : 'companions'} · tap to explore`
+               : 'Not live yet · tap to see'
+           }</div>
          </div>`,
       );
       m.on('click', () => onCityChange?.(ct.id));
     });
 
     companions.forEach((c) => {
-      const [lat, lng] = fuzzedLatLng(c.id + c.area, city.lat, city.lng);
+      const [lat, lng] = placeCompanion(c, cityId, city.lat, city.lng);
       const named = unlocked || c.topMatch;
       const isHi = c.id === highlightId;
       // Match weight 0..1 (only when the quiz is done) — drives size + opacity so
@@ -212,6 +252,25 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
         </div>
       </div>
 
+      {/* This note used to apologise that the profiles shown were illustrative,
+          because every city re-skinned the same Mumbai people. The grid no
+          longer does that, so the only thing left to say is that we are not
+          live here. Shown when the city has no companions at all. */}
+      {companionsInCity(city.name).length === 0 && (
+        <p
+          className="mt-3 text-xs leading-relaxed rounded-xl px-3.5 py-2.5"
+          style={{
+            background: 'rgba(255,178,62,0.10)',
+            border: '1.5px solid rgba(255,178,62,0.28)',
+            color: 'var(--color-ink-muted)',
+          }}
+          role="note"
+        >
+          Companio is live in <strong>Mumbai</strong> and <strong>Indore</strong>. No companion lists
+          in {city.name} yet, so this map is empty rather than invented.
+        </p>
+      )}
+
       {/* Area availability — keyboard/SR operable list; pressing a chip pans the map to that area. */}
       {areas.length > 0 && (
         <div className="mt-4">
@@ -232,7 +291,7 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
                     type="button"
                     onClick={() => {
                       if (!rep || !mapRef.current) return;
-                      const [lat, lng] = fuzzedLatLng(rep.id + rep.area, city.lat, city.lng);
+                      const [lat, lng] = placeCompanion(rep, cityId, city.lat, city.lng);
                       mapRef.current.flyTo([lat, lng], 13, { animate: true, duration: 0.8 });
                     }}
                     aria-label={`Pan map to ${area} — ${count} companion${count !== 1 ? 's' : ''}`}

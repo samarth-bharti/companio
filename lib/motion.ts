@@ -6,6 +6,12 @@ export const spring = {
   stamp:  { type: 'spring', stiffness: 520,  damping: 18,  mass: 0.9 } as Transition,
 } as const;
 
+/**
+ * For keyframe arrays (e.g. a `scale: [1, 1.12, 1]` pop). Springs accept only
+ * two keyframes and throw on a third, so a pop must be a tween.
+ */
+export const pop: Transition = { type: 'tween', duration: 0.26, ease: 'easeOut' };
+
 export const stagger = {
   default: 0.07,
   tight:   0.04,

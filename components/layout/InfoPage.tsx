@@ -16,16 +16,14 @@ interface InfoPageProps {
   title: string;
   intro: string;
   sections: InfoSection[];
-  /** Replaces the default footnote. Pass a real "last updated" line on binding
-   *  legal pages so they don't carry the "illustrative" demo disclaimer. */
+  /** Replaces the default footnote — e.g. a page-specific "last updated" date. */
   footnote?: string;
+  /** Rendered after the sections. Used by /contact for its form. */
+  children?: React.ReactNode;
 }
 
 /** Shared layout for legal / policy / trust pages — calm, readable, real text. */
-export function InfoPage({ eyebrow, title, intro, sections, footnote }: InfoPageProps) {
-  // First character becomes a large faint ghost behind the title block.
-  const ghost = title.charAt(0);
-
+export function InfoPage({ eyebrow, title, intro, sections, footnote, children }: InfoPageProps) {
   return (
     <>
       <Nav />
@@ -35,11 +33,7 @@ export function InfoPage({ eyebrow, title, intro, sections, footnote }: InfoPage
         className="flex-1 pb-24 md:pb-12"
         style={{ background: 'var(--color-bg)' }}
       >
-        {/*
-          Aurora header band — a radial azure tint at low opacity.
-          overflow-hidden clips the ghost glyph that overflows the box.
-          Text sits on z-1 above the z-0 ghost so legibility is unaffected.
-        */}
+        {/* Aurora header band — a radial azure tint at low opacity. */}
         <div
           className="relative overflow-hidden pt-16 md:pt-20"
           style={{
@@ -47,21 +41,7 @@ export function InfoPage({ eyebrow, title, intro, sections, footnote }: InfoPage
               'radial-gradient(ellipse 90% 120% at 50% -10%, rgba(46,107,255,0.07) 0%, transparent 65%)',
           }}
         >
-          {/* Ghost glyph — purely decorative, aria-hidden, never interactive */}
-          <span
-            aria-hidden="true"
-            className="pointer-events-none select-none absolute inset-0 flex items-center justify-center font-display leading-none"
-            style={{
-              fontSize: 'clamp(9rem, 32vw, 22rem)',
-              color: 'var(--color-ink)',
-              opacity: 0.06,
-              zIndex: 0,
-            }}
-          >
-            {ghost}
-          </span>
-
-          {/* Header content — sits above ghost via z-[1] */}
+          {/* Header content */}
           <div className="relative max-w-3xl mx-auto px-6 pb-12" style={{ zIndex: 1 }}>
             <RevealGroup>
               <Reveal delay={0}>
@@ -109,9 +89,17 @@ export function InfoPage({ eyebrow, title, intro, sections, footnote }: InfoPage
               </Reveal>
             ))}
           </div>
+
+          {children && <div className="mt-12">{children}</div>}
+
+          {/* The default footnote used to end with "This is a product
+              demonstration; policies shown are illustrative." It was printed at
+              the bottom of the Terms of Service and the Privacy Policy — the two
+              documents whose entire value is that they are not illustrative. A
+              policy that disclaims itself binds nobody, and tells a user their
+              DPDPA rights are a mock-up. */}
           <p className="font-sans text-xs mt-16 mb-8" style={{ color: 'rgba(20,26,46,0.4)' }}>
-            {footnote ??
-              'Last updated June 2026 · TRYCOMPANIOLABS LLP · This is a product demonstration; policies shown are illustrative.'}
+            {footnote ?? `Last updated July 2026 · ${'TRYCOMPANIOLABS LLP'}`}
           </p>
         </div>
       </main>

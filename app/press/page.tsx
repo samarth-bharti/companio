@@ -13,13 +13,17 @@ export default function PressPage() {
         {
           heading: 'In one line',
           body: [
-            'Companio is a safe, ID-verified marketplace for strictly platonic companionship, city walks, gym sessions, café conversations, live events, and elder company across India.',
+            'Companio is a safe, ID-checked marketplace for strictly platonic companionship, city walks, gym sessions, café conversations, live events, and elder company across India.',
           ],
         },
         {
-          heading: 'The numbers',
+          heading: 'The model',
           body: [
-            'A growing community across India\'s major cities, every companion identity-verified and background-checked, every payment held in escrow until after the meetup.',
+            // "A growing community across India's major cities" — Companio has
+            // not launched. A press page is the one page a journalist will quote
+            // back at you, so it states the model, not a community that does not
+            // exist yet and a background check nobody runs.
+            'A one-time ₹199 unlock opens every companion profile in your city and includes your first two meetings. Every companion submits a government ID that our team reviews by hand before their profile goes live.',
           ],
         },
         {

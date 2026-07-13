@@ -1,13 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Reveal } from '@/components/motion/Reveal';
 import { PassportStack } from '@/components/ui/PassportStack';
-import { type Companion, TOP_MATCH_ID } from '@/lib/data/companions';
-import { getUnlocked } from '@/lib/journeyState';
+import { type Companion } from '@/lib/data/companions';
 import { CompanionProfilePortrait } from './CompanionProfilePortrait';
 import { CompanionProfileSuggestions } from './CompanionProfileSuggestions';
 import { CompanionProfileReviews } from './CompanionProfileReviews';
@@ -17,16 +14,15 @@ interface Props {
   companion: Companion;
 }
 
+/**
+ * The paywall used to live in here: a useEffect that read localStorage and
+ * called router.replace — after the server had already sent the full bio to the
+ * browser. It is gone, because app/companion/[id]/page.tsx now refuses to render
+ * this component at all unless the viewer may see it.
+ *
+ * A component that receives a companion can trust that it is allowed to show it.
+ */
 export function CompanionProfile({ companion }: Props) {
-  const router = useRouter();
-
-  // Gate: profiles are behind the ₹199 unlock except the free preview.
-  useEffect(() => {
-    if (!getUnlocked() && companion.id !== TOP_MATCH_ID) {
-      router.replace('/explore');
-    }
-  }, [companion.id, router]);
-
   return (
     <main className="min-h-screen pb-24 md:pb-0" style={{ background: 'var(--color-bg)' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-10">

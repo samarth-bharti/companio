@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         {
           heading: 'What we collect',
           body: [
-            'Account basics (name, email, phone), verification data (ID match result, not the document itself, and a selfie match), booking history, in-app messages, device/usage analytics, and — only while you turn them on — live location for SOS/live-share. Companions additionally provide background-check consent.',
+            'Account basics (name, email, phone), booking history, in-app messages, device/usage analytics, and — only while you turn them on — live location for SOS/live-share. Companions additionally upload a government ID and a profile photo: we store a masked ID number and a one-way hash of each file, never the document image itself. They also give consent for a background check, so that we are able to run one; we do not run one today.',
             'We collect this on the lawful basis of your consent and to perform the service you ask us for (a safe, verified meetup).',
           ],
         },

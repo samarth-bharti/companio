@@ -8,7 +8,7 @@ export default function CareersPage() {
     <InfoPage
       eyebrow="Company"
       title="Build the antidote to loneliness."
-      intro="We're a small team in India building a safe, verified way for people to share everyday moments. If trust, safety, and genuinely useful products are your thing, we'd love to hear from you."
+      intro="We're a small team in India building a safe way for people to share everyday moments. If trust, safety, and genuinely useful products are your thing, we'd love to hear from you."
       sections={[
         {
           heading: 'How we work',

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Seal } from '@/components/ui/Seal';
 
 const STORE_KEY = 'companio_intro_seen';
@@ -29,7 +30,7 @@ const SHARDS = [
  * Skippable via click / Esc / first scroll.
  */
 export function IntroSequence() {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const [show, setShow] = useState(false);
 
   const dismiss = useCallback(() => setShow(false), []);
@@ -83,7 +84,7 @@ export function IntroSequence() {
           <button
             aria-label="Skip intro"
             tabIndex={0}
-            className="absolute top-6 right-6 text-xs font-sans font-semibold px-4 py-2 rounded-pill border transition-colors hover:bg-white/10 focus-visible:outline-white"
+            className="absolute top-6 right-6 inline-flex min-h-11 items-center text-xs font-sans font-semibold px-4 py-2 rounded-pill border transition-colors hover:bg-white/10 focus-visible:outline-white"
             style={{ color: 'rgba(244,242,255,0.45)', borderColor: 'rgba(244,242,255,0.14)' }}
             onClick={(e) => { e.stopPropagation(); dismiss(); }}
           >

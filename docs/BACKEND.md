@@ -1,8 +1,29 @@
 # Backend reference
 
 The backend is **fully implemented but dormant** — every route exists, is typed,
-and is tested, but the app keeps using the localStorage mock until you flip one
-env flag. Nothing in a component changes when you go live.
+and is tested.
+
+> **Updated 2026-07-10 (evening).** The gap this section used to describe is
+> mostly closed:
+>
+> - `lib/dataClient.ts` now has real importers. `Nav`, `NavUser`, `TopUpMenu`,
+>   `LoginForm`, `StepDone`, `QuizClient`, `ExploreClient` and the four dashboard
+>   panels go through it. The rest of the tree still reads `localStorage`
+>   directly — finish that sweep before flipping the flag.
+> - **Sign-in is real when configured.** `SessionProvider` is mounted and
+>   `LoginForm` calls `signIn('google')` when Google is wired. It only simulates
+>   locally when `/api/auth/capability` reports `{configured:false}`.
+> - Every mutation now emits a change event (`lib/dataEvents.ts`) so the UI
+>   re-reads instead of going stale. This works identically in `http` mode.
+>
+> **Still true: `NEXT_PUBLIC_DATA_CLIENT=http` has never been run against a real
+> database.** It is unit-tested against a stubbed `fetch`, nothing more.
+>
+> **New gates you must know about** before setting any key:
+> `MARKETPLACE_PAYMENTS_ENABLED` (leave unset — RBI), `ADMIN_EMAILS` (without it
+> `/admin` is unreachable by anyone, forever), and the fact that setting
+> `NEXT_PUBLIC_RAZORPAY_KEY_ID` **disables the demo payment path by design**.
+> See [`GO-LIVE.md`](GO-LIVE.md#vars-added-2026-07-10--read-these-before-deploying).
 
 ## The data-access seam
 
@@ -64,6 +85,13 @@ anything else `→500` (logged, no internals leaked).
 
 ## Payments
 
+> **v1 sells only the ₹199 unlock.** `CREDIT_PACKS` (`pack1`/`pack5`/`pack10`) and
+> the `plus` kind still exist in `lib/server/pricing.ts` and are fully
+> implemented, but **no UI sells them**. Charging for a meetup and paying a
+> companion out of that money is unlicensed Payment Aggregator activity under
+> RBI; they return once **Razorpay Route** (linked accounts) is wired, so that
+> Razorpay is the settling entity. `splitEarnings()` exists for that future.
+
 Payment authority is **server-side**. The client names *what* it buys
 (`kind` + `packId`); `create-order` fixes the price from `lib/server/pricing.ts`
 (the single source of truth, in paise) and records a `Purchase` row. The benefit
@@ -91,8 +119,16 @@ blocks the response.
 ## Auth
 
 `lib/auth.ts` holds `authOptions` (JWT strategy, no Prisma adapter — we own the
-`User` row, a better fit for phone-OTP). **The provider is a stub**:
-`authorize()` returns `null`. Pick a provider and implement it (see STATUS).
+`User` row, a better fit for phone-OTP). **Both providers are drafted behind an
+env switch:** Google OAuth auto-enables once `GOOGLE_CLIENT_ID` +
+`GOOGLE_CLIENT_SECRET` are set; the phone-OTP credentials form is registered but
+`verifyOtp()` returns `false` until an SMS gateway is wired. There is **no Apple
+provider** — the sign-in button for it has been removed.
+
+> **Nothing in the UI calls any of this.** `LoginForm` fakes a session by writing
+> to `localStorage`, and no `SessionProvider` is mounted. Wiring
+> `signIn('google')` and mounting the provider is step one of going live.
+
 Routes only depend on `session.user.id` via `lib/server/session.ts`, so the
 provider choice changes nothing else.
 
@@ -135,7 +171,7 @@ anything. Recommended approach (small, reversible, mergeable):
 
 ## Tests
 
-`npm test` (Vitest, 102 tests): `serialize` (BigInt/Date conversion), `validation`
+`npm test` (Vitest, **150 tests across 9 files**): `serialize` (BigInt/Date conversion), `validation`
 (every zod schema, valid/invalid/boundary), `http` (guard + helpers), `payments`
 (signature + idempotency), `routes` (handlers with mocked session + Prisma —
 401/400/404 and edge cases like wallet-at-zero and the booking IDOR guard), and

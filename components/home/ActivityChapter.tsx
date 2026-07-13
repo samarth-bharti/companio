@@ -1,27 +1,14 @@
 'use client';
 
 import { useRef } from 'react';
-import { motion, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, useTransform } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { useJsScroll } from '@/lib/useJsScroll';
 import { ActivityScene } from '@/components/home/ActivityScene';
+import { ActivityChapterMobile } from '@/components/home/ActivityChapterMobile';
+import { SCENES, GRADIENTS } from '@/components/home/activityScenes';
 import { ClipReveal } from '@/components/journey/ClipReveal';
-import { useIsMobile } from '@/lib/useIsMobile';
-
-const GRADIENTS = [
-  'linear-gradient(140deg,#FFF3E0,#FFE0B0)',
-  'linear-gradient(140deg,#EBF1FF,#CFE0FF)',
-  'linear-gradient(140deg,#FFF8EC,#F3E8D6)',
-  'linear-gradient(140deg,#1E1840,#2E1F5E)',
-  'linear-gradient(140deg,#FFF3E0,#E6F5EE)',
-];
-
-const SCENES = [
-  { eyebrow: 'Dawn', title: 'City Walk', hook: 'Start the day with a walk and someone who actually knows the lanes.', photo: { src: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=1200&q=80', alt: 'Group of friends laughing together on a city street' }, chips: ['Marine Drive loop', 'Cutting chai', 'Old-city lanes'], dark: false },
-  { eyebrow: 'Morning', title: 'Gym Buddy', hook: 'The partner who actually shows up. Every time.', photo: { src: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&q=80', alt: 'Two people working out together at a gym' }, chips: ['Spotting partner', '5k runs', 'Post-workout smoothie'], dark: false },
-  { eyebrow: 'Midday', title: 'Café Chat', hook: 'Two cups of chai, one long conversation. No rush.', photo: { src: 'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=1200&q=80', alt: 'Two friends having an animated conversation at a café' }, chips: ['Filter coffee', 'Book swap', 'People-watching'], dark: false },
-  { eyebrow: 'Evening', title: 'Events', hook: "Nobody should skip the gig just because they'd go alone.", photo: { src: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=1200&q=80', alt: 'Friends enjoying a live music concert together' }, chips: ['Live gigs', 'Stand-up nights', 'Theatre'], dark: true },
-  { eyebrow: 'Golden hour', title: 'Elder Company', hook: 'An unhurried afternoon. A patient ear. Warm, familiar company.', photo: { src: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=1200&q=80', alt: 'Two adults in a warm, supportive conversation across a table' }, chips: ['Park benches', 'Old stories', 'Evening walks'], dark: false },
-];
+import { useTouchOrNarrow } from '@/lib/useTouchOrNarrow';
 
 const ACCENT_STYLE: React.CSSProperties = {
   background: 'var(--grad-aurora)',
@@ -48,8 +35,10 @@ const IntroHeading = () => (
 
 export function ActivityChapter() {
   const sectionRef = useRef<HTMLElement>(null);
-  const shouldReduce = useReducedMotion();
-  const isMobile = useIsMobile();
+  const shouldReduce = useEffectiveReducedMotion();
+  // Touch devices and anything under lg get the carousel — including portrait
+  // tablets, which useIsMobile() (<768px) would have left on the desktop scene.
+  const isTouchOrNarrow = useTouchOrNarrow();
   const { scrollYProgress } = useJsScroll({ target: sectionRef, offset: ['start start', 'end end'] });
 
   // Horizontal row drive — dwell-and-pan, not a continuous slide.
@@ -75,9 +64,19 @@ export function ActivityChapter() {
   const g4 = useTransform(scrollYProgress, [0.65, 0.85], [0, 1]);
   const gradOpacities = [g0, g1, g2, g3, g4];
 
-  // Reduced motion OR mobile: normal vertical stack, no sticky, no orb,
-  // no translateX. (The horizontal scene clips and janks below md.)
-  if (shouldReduce || isMobile) {
+  // Phone (either motion mode): a thumb-driven, snap-scrolling carousel with the
+  // day-arc kept as a rail. The desktop 520vh horizontal scene clips and janks
+  // below md, and the old stacked fallback was ~4.8 screens of static text with
+  // each photo a full screen away from its own heading. Swiping is the user's
+  // gesture, so reduced-motion visitors keep the carousel — it just stops the
+  // gradient crossfade and the smooth dot-scroll.
+  if (isTouchOrNarrow) {
+    return <ActivityChapterMobile scenes={SCENES} gradients={GRADIENTS} reduced={shouldReduce} />;
+  }
+
+  // Desktop reduced motion: a plain vertical stack. Nothing moves, everything is
+  // present immediately.
+  if (shouldReduce) {
     return (
       <section aria-labelledby="activity-heading">
         {SCENES.map((scene, i) => (

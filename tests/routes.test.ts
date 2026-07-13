@@ -18,12 +18,18 @@ import { POST as bookingPatch } from '@/app/api/bookings/[id]/route';
 import { POST as favToggle } from '@/app/api/favorites/toggle/route';
 import { POST as subPost } from '@/app/api/subscription/route';
 import { POST as msgPost } from '@/app/api/messages/[companionId]/route';
+import { POST as msgReact } from '@/app/api/messages/[companionId]/react/route';
 import { GET as messagesGet } from '@/app/api/messages/route';
 import { POST as notifsRead } from '@/app/api/notifications/read/route';
 import { POST as applicationPost } from '@/app/api/application/route';
 import { POST as createOrder } from '@/app/api/razorpay/create-order/route';
 import { POST as verifyPayment } from '@/app/api/razorpay/verify/route';
 import { hmac } from '@/lib/server/payments';
+
+// A date that is always in the future. Frozen literals rot: this suite used
+// '2026-06-15', which silently became a past date and then failed once bookings
+// began rejecting past dates.
+const FUTURE_DATE = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
 
 function jsonReq(body?: unknown) {
   return new Request('http://test/api', {
@@ -38,7 +44,7 @@ function getReq(url = 'http://test/api') {
 }
 
 const pBooking = {
-  id: 'b1', userId: 'u1', companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+  id: 'b1', userId: 'u1', companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
   time: 'AM', place: 'Bandra', status: 'upcoming', usedCredit: false, pricePaid: 49900,
   review: null, razorpayOrderId: null, razorpayPaymentId: null,
   createdAt: new Date(), updatedAt: new Date(),
@@ -54,16 +60,29 @@ beforeEach(() => {
   prismaMock.booking = { findMany: vi.fn(), create: vi.fn(), updateMany: vi.fn(), findFirst: vi.fn() };
   prismaMock.favorite = { findUnique: vi.fn(), delete: vi.fn(), create: vi.fn(), findMany: vi.fn() };
   prismaMock.subscription = { upsert: vi.fn(), deleteMany: vi.fn() };
-  prismaMock.message = { create: vi.fn(), findMany: vi.fn() };
+  prismaMock.message = { create: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn() };
   prismaMock.notification = { updateMany: vi.fn() };
   prismaMock.purchase = { findFirst: vi.fn(), create: vi.fn() };
   prismaMock.companionApplication = { upsert: vi.fn(), findUnique: vi.fn() };
+  // Moderation gates: routes now confirm the companion is visible and that the
+  // sender isn't message-blocked before writing. Default both to "allowed", so
+  // each test opts INTO the blocked case rather than every test having to opt out.
+  prismaMock.companion = { findFirst: vi.fn().mockResolvedValue({ id: 'ananya' }) };
+  // Booking and companion applications also read dateOfBirth (18+ gate). Default
+  // to a comfortably adult DOB so each test opts INTO the underage case.
+  prismaMock.user = {
+    findUnique: vi.fn().mockResolvedValue({
+      messageBlocked: false,
+      dateOfBirth: new Date('1995-01-01'),
+    }),
+  };
 });
 
 afterEach(() => {
   delete process.env.RAZORPAY_KEY_ID;
   delete process.env.RAZORPAY_KEY_SECRET;
   delete process.env.RAZORPAY_WEBHOOK_SECRET;
+  delete process.env.MARKETPLACE_PAYMENTS_ENABLED;
 });
 
 describe('wallet', () => {
@@ -132,7 +151,7 @@ describe('bookings', () => {
   it('POST creates and returns the booking (non-credit path)', async () => {
     prismaMock.booking.create.mockResolvedValue(pBooking);
     const res = await bookingsPost(jsonReq({
-      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
       time: 'AM', place: 'Bandra', usedCredit: false,
     }));
     expect(res.status).toBe(200);
@@ -146,6 +165,19 @@ describe('bookings', () => {
     );
   });
 
+  // /verify tells members to compare a 4-digit code with their companion when
+  // they meet. It has to exist, and it has to be exactly 4 digits, or the
+  // instruction cannot be followed.
+  it('POST mints a 4-digit meetup code', async () => {
+    prismaMock.booking.create.mockResolvedValue(pBooking);
+    await bookingsPost(jsonReq({
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
+      time: 'AM', place: 'Bandra', usedCredit: false,
+    }));
+    const { data } = prismaMock.booking.create.mock.calls[0][0];
+    expect(data.meetupCode).toMatch(/^\d{4}$/);
+  });
+
   it('POST rejects a malformed dateISO with 400', async () => {
     const res = await bookingsPost(jsonReq({
       companionId: 'ananya', activity: 'Walk', dateISO: '15/06/2026',
@@ -155,10 +187,48 @@ describe('bookings', () => {
     expect(prismaMock.booking.create).not.toHaveBeenCalled();
   });
 
+  // Companio is 18+. The register wizard checks this in the browser and used to
+  // throw the date away; Google OAuth never supplies one. The server checks now.
+  it('POST refuses a booking when we have never asked for a date of birth (403)', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ dateOfBirth: null });
+    const res = await bookingsPost(jsonReq({
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
+      time: 'Morning', place: 'Cafe', usedCredit: true,
+    }));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ error: 'age_verification_required' });
+    expect(prismaMock.booking.create).not.toHaveBeenCalled();
+    expect(prismaMock.wallet.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('POST refuses a booking from someone under 18 (403)', async () => {
+    const sixteen = new Date();
+    sixteen.setFullYear(sixteen.getFullYear() - 16);
+    prismaMock.user.findUnique.mockResolvedValue({ dateOfBirth: sixteen });
+    const res = await bookingsPost(jsonReq({
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
+      time: 'Morning', place: 'Cafe', usedCredit: true,
+    }));
+    expect(res.status).toBe(403);
+    expect(prismaMock.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('POST refuses a suspended companion (404) before spending a credit', async () => {
+    prismaMock.companion.findFirst.mockResolvedValue(null); // filtered by VISIBLE_COMPANION
+    const res = await bookingsPost(jsonReq({
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
+      time: 'Morning', place: 'Cafe', usedCredit: true,
+    }));
+    expect(res.status).toBe(404);
+    expect(prismaMock.booking.create).not.toHaveBeenCalled();
+    // The credit must survive a rejected booking.
+    expect(prismaMock.wallet.updateMany).not.toHaveBeenCalled();
+  });
+
   it('POST credit path 402 when wallet is empty', async () => {
     prismaMock.wallet.updateMany.mockResolvedValue({ count: 0 });
     const res = await bookingsPost(jsonReq({
-      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
       time: 'AM', place: 'Bandra', usedCredit: true,
     }));
     expect(res.status).toBe(402);
@@ -171,7 +241,7 @@ describe('bookings', () => {
     prismaMock.creditLedger.create.mockResolvedValue({});
     prismaMock.booking.create.mockResolvedValue({ ...pBooking, usedCredit: true, pricePaid: 0 });
     const res = await bookingsPost(jsonReq({
-      companionId: 'ananya', activity: 'Walk', dateISO: '2026-06-15',
+      companionId: 'ananya', activity: 'Walk', dateISO: FUTURE_DATE,
       time: 'AM', place: 'Bandra', usedCredit: true,
     }));
     expect(res.status).toBe(200);
@@ -294,6 +364,22 @@ describe('messages', () => {
     expect((await res.json()).ts).toBe(1700000000000);
   });
 
+  // Moderation is only real if a query reads the flag. These pin that.
+  it('POST is refused (403) when the sender is message-blocked', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ messageBlocked: true });
+    const res = await msgPost(jsonReq({ from: 'me', text: 'hi' }), { params: Promise.resolve({ companionId: 'ananya' }) });
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ error: 'messaging_blocked' });
+    expect(prismaMock.message.create).not.toHaveBeenCalled();
+  });
+
+  it('POST is refused (404) when the companion is suspended or banned', async () => {
+    prismaMock.companion.findFirst.mockResolvedValue(null); // filtered by VISIBLE_COMPANION
+    const res = await msgPost(jsonReq({ from: 'me', text: 'hi' }), { params: Promise.resolve({ companionId: 'ananya' }) });
+    expect(res.status).toBe(404);
+    expect(prismaMock.message.create).not.toHaveBeenCalled();
+  });
+
   it('GET /api/messages groups all threads by companion (ts serialized)', async () => {
     prismaMock.message.findMany.mockResolvedValue([
       { id: 'm1', companionId: 'ananya', from: 'me', text: 'hi', ts: BigInt(1) },
@@ -309,6 +395,69 @@ describe('messages', () => {
   it('GET /api/messages is 401 without a session', async () => {
     sessionMock.mockResolvedValue(null);
     expect((await messagesGet()).status).toBe(401);
+  });
+
+  it('POST stores the sticker kind', async () => {
+    prismaMock.message.create.mockResolvedValue({ id: 'm1', from: 'me', text: '🎉', kind: 'sticker', reactions: [], ts: BigInt(1) });
+    await msgPost(jsonReq({ from: 'me', text: '🎉', kind: 'sticker' }), { params: Promise.resolve({ companionId: 'ananya' }) });
+    expect(prismaMock.message.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ kind: 'sticker' }) }),
+    );
+  });
+
+  it('POST defaults kind to text when it is omitted', async () => {
+    prismaMock.message.create.mockResolvedValue({ id: 'm1', from: 'me', text: 'hi', kind: 'text', reactions: [], ts: BigInt(1) });
+    await msgPost(jsonReq({ from: 'me', text: 'hi' }), { params: Promise.resolve({ companionId: 'ananya' }) });
+    expect(prismaMock.message.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ kind: 'text' }) }),
+    );
+  });
+});
+
+describe('message reactions', () => {
+  const params = { params: Promise.resolve({ companionId: 'ananya' }) };
+
+  it('is 401 without a session', async () => {
+    sessionMock.mockResolvedValue(null);
+    expect((await msgReact(jsonReq({ messageId: 'm1', emoji: '❤️' }), params)).status).toBe(401);
+  });
+
+  it('adds a reaction that is not there', async () => {
+    prismaMock.message.findFirst.mockResolvedValue({ id: 'm1', reactions: [] });
+    prismaMock.message.findMany.mockResolvedValue([]);
+    await msgReact(jsonReq({ messageId: 'm1', emoji: '❤️' }), params);
+    expect(prismaMock.message.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { reactions: ['❤️'] } }),
+    );
+  });
+
+  it('removes a reaction that is already there — the same tap toggles', async () => {
+    prismaMock.message.findFirst.mockResolvedValue({ id: 'm1', reactions: ['❤️', '😂'] });
+    prismaMock.message.findMany.mockResolvedValue([]);
+    await msgReact(jsonReq({ messageId: 'm1', emoji: '❤️' }), params);
+    expect(prismaMock.message.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { reactions: ['😂'] } }),
+    );
+  });
+
+  // The lookup is scoped by userId AND companionId, so a guessed message id from
+  // someone else's thread finds nothing — it neither writes nor confirms it exists.
+  it("cannot react to a message in someone else's thread", async () => {
+    prismaMock.message.findFirst.mockResolvedValue(null);
+    const res = await msgReact(jsonReq({ messageId: 'not-mine', emoji: '❤️' }), params);
+    expect(res.status).toBe(404);
+    expect(prismaMock.message.update).not.toHaveBeenCalled();
+  });
+
+  it('returns the whole thread, not just the changed message', async () => {
+    prismaMock.message.findFirst.mockResolvedValue({ id: 'm1', reactions: [] });
+    prismaMock.message.findMany.mockResolvedValue([
+      { id: 'm1', from: 'me', text: 'hi', kind: 'text', reactions: ['❤️'], ts: BigInt(1) },
+      { id: 'm2', from: 'them', text: 'yo', kind: 'text', reactions: [], ts: BigInt(2) },
+    ]);
+    const body = await (await msgReact(jsonReq({ messageId: 'm1', emoji: '❤️' }), params)).json();
+    expect(body).toHaveLength(2);
+    expect(body[0].reactions).toEqual(['❤️']);
   });
 });
 
@@ -368,9 +517,26 @@ describe('razorpay (payment authorization)', () => {
     expect(res.status).toBe(503);
   });
 
-  it('create-order rejects an unknown credit pack (400)', async () => {
+  // ── Marketplace gate ──────────────────────────────────────────────────────
+  // booking/credits/plus all end with Companio owing money to a companion, which
+  // needs an RBI Payment Aggregator licence. Supplying a Razorpay key must not
+  // silently arm them. Only 'unlock' may be charged until the gate is opened.
+
+  it.each(['booking', 'credits', 'plus'] as const)(
+    'create-order refuses kind=%s (503) while MARKETPLACE_PAYMENTS_ENABLED is unset',
+    async (kind) => {
+      process.env.RAZORPAY_KEY_ID = 'k';
+      process.env.RAZORPAY_KEY_SECRET = 's';
+      const res = await createOrder(jsonReq({ kind, packId: 'pack5', bookingId: 'b1' }));
+      expect(res.status).toBe(503);
+      expect(await res.json()).toMatchObject({ error: 'purchase_kind_disabled', kind });
+    },
+  );
+
+  it('create-order rejects an unknown credit pack (400) once the gate is open', async () => {
     process.env.RAZORPAY_KEY_ID = 'k';
     process.env.RAZORPAY_KEY_SECRET = 's';
+    process.env.MARKETPLACE_PAYMENTS_ENABLED = 'true';
     const res = await createOrder(jsonReq({ kind: 'credits', packId: 'nope' }));
     expect(res.status).toBe(400);
   });

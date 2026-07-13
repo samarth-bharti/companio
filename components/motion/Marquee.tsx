@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducedMotion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { cn } from '@/lib/utils';
 
 interface MarqueeProps {
@@ -19,7 +19,10 @@ interface MarqueeProps {
  * Uses CSS animation (not Framer) so it is GPU-composited with no JS per-frame cost.
  */
 export function Marquee({ children, speed = 40, reverse = false, className }: MarqueeProps) {
-  const shouldReduce = useReducedMotion();
+  // SSR-safe: framer's useReducedMotion() is false on the server but true on the
+  // client's first render, so the inline `animation` style differs across the
+  // boundary and fails hydration. This hook returns false until mounted.
+  const shouldReduce = useEffectiveReducedMotion();
 
   return (
     <div

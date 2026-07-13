@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X } from 'lucide-react';
-import { updateBooking, addNotification } from '@/lib/appState';
-import { calm, spring } from '@/lib/motion';
+import { dataClient } from '@/lib/dataClient';
+import { calm, pop, spring } from '@/lib/motion';
 import type { Booking } from '@/lib/appState';
 
 interface ReviewModalProps {
@@ -18,8 +19,9 @@ export function ReviewModal({ booking, onClose, onSaved }: ReviewModalProps) {
   const [hovered, setHovered]     = useState(0); // which star is hovered (0 = none)
   const [text, setText]           = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError]         = useState('');
   const dialogRef = useRef<HTMLDivElement>(null);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   // Focus trap + ESC + restore focus on unmount
   useEffect(() => {
@@ -51,13 +53,24 @@ export function ReviewModal({ booking, onClose, onSaved }: ReviewModalProps) {
     };
   }, [onClose]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  /**
+   * Submit through dataClient, so in http mode this hits
+   * `POST /api/bookings/:id`, which refuses a review on a booking that is not
+   * both completed and paid. It used to write straight into localStorage and
+   * then `setTimeout(…, 400)` to fake the latency of a request it never made.
+   */
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (stars === 0) return;
+    if (stars === 0 || submitting) return;
     setSubmitting(true);
-    updateBooking(booking.id, { review: { stars, text } });
-    addNotification({ title: 'Thanks for your review!', body: `Your ${stars}-star review has been saved.` });
-    setTimeout(() => { setSubmitting(false); onSaved(); }, 400);
+    setError('');
+    try {
+      await dataClient.updateBooking(booking.id, { review: { stars, text } });
+      onSaved();
+    } catch {
+      setSubmitting(false);
+      setError("We couldn't save your review. Please try again.");
+    }
   };
 
   // Highlight level: hovered takes precedence over selected
@@ -139,7 +152,7 @@ export function ReviewModal({ booking, onClose, onSaved }: ReviewModalProps) {
                       whileHover={reduced ? {} : { scale: 1.2 }}
                       whileTap={reduced ? {} : { scale: 0.88 }}
                       animate={n === stars && !reduced ? { scale: [1, 1.15, 1] } : { scale: 1 }}
-                      transition={spring.snappy}
+                      transition={pop}
                       aria-hidden="true"
                     >
                       ★
@@ -162,6 +175,12 @@ export function ReviewModal({ booking, onClose, onSaved }: ReviewModalProps) {
                 outline: 'none',
               }}
             />
+
+            {error && (
+              <p role="alert" aria-live="polite" className="mb-3 font-sans text-xs" style={{ color: '#C0392B' }}>
+                {error}
+              </p>
+            )}
 
             <motion.button
               type="submit"

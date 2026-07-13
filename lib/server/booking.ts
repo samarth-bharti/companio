@@ -43,13 +43,19 @@ async function surgeFor(prisma: PrismaClient, dateISO: string): Promise<number> 
   return s?.multiplier ?? 1;
 }
 
-/** The best (largest) unused, unexpired spin discount for this user, or null. */
-async function bestSpin(
+/**
+ * The best (largest) unused, unexpired spin discount for this user, or null.
+ *
+ * Keyed on `usedAt`, not `usedBookingId`. A win is now spendable on the unlock,
+ * which is not a booking — the old predicate could only ever describe a win
+ * spent on a booking, and bookings cannot be bought.
+ */
+export async function bestSpin(
   prisma: PrismaClient,
   userId: string,
 ): Promise<{ id: string; discountPct: number } | null> {
   return prisma.spinResult.findFirst({
-    where: { userId, usedBookingId: null, expiresAt: { gt: new Date() }, discountPct: { gt: 0 } },
+    where: { userId, usedAt: null, expiresAt: { gt: new Date() }, discountPct: { gt: 0 } },
     orderBy: { discountPct: 'desc' },
     select: { id: true, discountPct: true },
   });

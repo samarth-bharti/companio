@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useTransform, useReducedMotion } from "framer-motion";
+import { motion, useTransform } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { useJsScroll } from "@/lib/useJsScroll";
 import { Search, ShieldCheck, Star } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -21,28 +22,28 @@ const STEPS: Step[] = [
     num: "01",
     icon: Search,
     title: "Browse & pick",
-    desc: "Filter by category, city, language, and availability. Read verified reviews.",
+    desc: "Filter by category, city, language, and availability.",
     stubLabel: "Browse",
   },
   {
     num: "02",
     icon: ShieldCheck,
-    title: "Book & pay safely",
-    desc: "₹ held in escrow. Released to your companion only after you both confirm the meetup.",
+    title: "Book safely",
+    desc: "Your first two meetings are included. You're never charged to meet.",
     stubLabel: "Book",
   },
   {
     num: "03",
     icon: Star,
     title: "Meet, enjoy, rate",
-    desc: "Meet in a public place. After your experience, leave a verified review.",
+    desc: "Meet in a public place. Afterwards, rate the meetup — only people who actually met can.",
     stubLabel: "Meet",
   },
 ];
 
 export function HowItWorks() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
 
   const { scrollYProgress } = useJsScroll({
     target: sectionRef,

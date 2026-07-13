@@ -15,21 +15,22 @@ export default function TermsPage() {
         {
           heading: '1. What Companio is',
           body: [
-            'Companio connects members with ID-verified companions for shared activities, city walks, gym sessions, café conversations, live events, elder company, and everyday help.',
+            'Companio connects members with ID-checked companions for shared activities, city walks, gym sessions, café conversations, live events, elder company, and everyday help.',
             'Companio is a neutral intermediary that hosts companion profiles; it is not the employer of companions and is not a party to the meetup itself. Companio is not a dating, romance, or intimacy service of any kind. Any solicitation of romantic or sexual services results in an immediate permanent ban and, where applicable, a report to authorities.',
           ],
         },
         {
           heading: '2. Eligibility',
           body: [
-            'You must be 18 or older to use Companio. Companions additionally complete identity verification (ID match, selfie match) and a background check before their profile goes live.',
+            'You must be 18 or older to use Companio. Companions additionally submit a government ID, which our team reviews by hand before their profile goes live. We do not currently run an automated Aadhaar KYC check, a biometric selfie match, or a third-party criminal background check, and this clause will be updated when we do. Companio does not warrant the character or conduct of any companion, and meeting one is at your own risk.',
           ],
         },
         {
           heading: '3. Bookings, payments & fees',
           body: [
-            'All payments run through the platform (via Razorpay) and are held in escrow until your meetup has happened. Companions are paid after the session completes. Paying or accepting payment off-platform breaks these terms and removes every protection we offer.',
-            'Companion rates are set per companion and shown before you book. Companio charges the companion a platform commission on each completed booking (a lower rate applies to Companio Plus members). Applicable taxes (including GST, once we are registered) are shown at checkout. Meetup credits never expire.',
+            'Companio currently charges a single one-time fee of ₹199, which unlocks every ID-checked companion profile in your city and includes your first two meetings. You are not charged to book or attend those meetings. If you have not found anyone you would like to meet, you may request a full refund of the ₹199 within 7 days of payment.',
+            'Payments are processed by Razorpay. Companio does not currently collect, hold, or settle any payment between you and a companion. Companions are compensated by Companio directly. Paying or accepting payment off-platform breaks these terms and removes every protection we offer.',
+            'Paid meetups beyond your two included meetings are not yet available. When they launch, the price will always be shown before you book, and these terms will be updated before any such charge is made. Applicable taxes (including GST, once we are registered) will be shown at checkout. Included meetings never expire.',
           ],
         },
         {

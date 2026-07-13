@@ -8,7 +8,7 @@ import { safeRedirect } from '@/lib/safeRedirect';
 export const metadata: Metadata = {
   title: 'Sign In, Companio',
   description:
-    'Sign in to your Companio account to browse verified companions and manage your bookings.',
+    'Sign in to your Companio account to browse ID-checked companions and manage your bookings.',
 };
 
 export default async function LoginPage({

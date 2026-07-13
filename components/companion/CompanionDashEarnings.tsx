@@ -1,43 +1,62 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { CountUp } from '@/components/motion/CountUp';
 import { calm } from '@/lib/motion';
+import { useCompanionDashboard } from '@/lib/useCompanionDashboard';
 
-// Demo figures shown on the public preview (signed out / not a companion).
-const DEMO = [
-  { label: 'Today', value: 0 },
-  { label: 'This week', value: 1996 },
-  { label: 'This month', value: 7485 },
-] as const;
+// There used to be a PREVIEW array here — ₹1,996 owed, ₹7,485 paid out, ₹9,481
+// lifetime — shown to any signed-out visitor. Money figures are not decoration.
+// A companion who signed in on a second device and hit a 403 for a moment saw
+// earnings they had not made. Every state but `live` now shows a dash.
 
-interface RealEarnings {
-  pendingPaise: number;
-  paidPaise: number;
-  totalPaise: number;
+function Card({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div
+      className="rounded-2xl p-5"
+      style={{ background: 'var(--color-surface)', border: '1.5px solid rgba(46,107,255,0.1)', boxShadow: 'var(--shadow-1)' }}
+    >
+      <p className="font-sans text-xs font-medium mb-2" style={{ color: 'var(--color-ink-muted)' }}>
+        {label}
+      </p>
+      <p
+        className="font-display font-bold leading-none"
+        style={{ fontSize: 'clamp(1.6rem, 3vw, 2.25rem)', color: 'var(--color-ink)' }}
+      >
+        {children}
+      </p>
+    </div>
+  );
 }
 
 export function CompanionDashEarnings() {
-  // null = still loading or no real data (fall back to demo); object = real.
-  const [real, setReal] = useState<RealEarnings | null>(null);
+  const state = useCompanionDashboard();
 
-  useEffect(() => {
-    fetch('/api/companion/earnings')
-      .then(async (r) => {
-        if (!r.ok) return; // 401 signed out / 403 not a companion → keep demo
-        const d = await r.json();
-        setReal({ pendingPaise: d.pendingPaise, paidPaise: d.paidPaise, totalPaise: d.totalPaise });
-      })
-      .catch(() => {});
-  }, []);
+  if (state.status === 'error') {
+    return (
+      <section aria-labelledby="earnings-heading">
+        <h2 id="earnings-heading" className="font-sans font-bold text-base mb-4" style={{ color: 'var(--color-ink)' }}>
+          Earnings
+        </h2>
+        <p
+          role="alert"
+          className="rounded-2xl p-5 font-sans text-sm"
+          style={{ background: 'rgba(192,57,43,0.06)', border: '1.5px solid rgba(192,57,43,0.2)', color: '#C0392B' }}
+        >
+          {state.message}
+        </p>
+      </section>
+    );
+  }
 
-  const cards = real
-    ? [
-        { label: 'Owed to you', value: Math.round(real.pendingPaise / 100) },
-        { label: 'Paid out', value: Math.round(real.paidPaise / 100) },
-        { label: 'Lifetime', value: Math.round(real.totalPaise / 100) },
-      ]
-    : DEMO.map((c) => ({ label: c.label, value: c.value }));
+  // Never render a number we do not have. A skeleton is honest; a zero is not.
+  const cards =
+    state.status === 'live'
+      ? [
+          { label: 'Owed to you', value: Math.round(state.data.earnings.pendingPaise / 100) },
+          { label: 'Paid out', value: Math.round(state.data.earnings.paidPaise / 100) },
+          { label: 'Lifetime', value: Math.round(state.data.earnings.totalPaise / 100) },
+        ]
+      : null;
 
   return (
     <section aria-labelledby="earnings-heading">
@@ -45,22 +64,25 @@ export function CompanionDashEarnings() {
         Earnings
       </h2>
       <div className="grid grid-cols-3 gap-4">
-        {cards.map((c) => (
-          <div
-            key={c.label}
-            className="rounded-2xl p-5"
-            style={{ background: 'var(--color-surface)', border: '1.5px solid rgba(46,107,255,0.1)', boxShadow: 'var(--shadow-1)' }}
-          >
-            <p className="font-sans text-xs font-medium mb-2" style={{ color: 'var(--color-ink-muted)' }}>
-              {c.label}
-            </p>
-            <p className="font-display font-bold leading-none" style={{ fontSize: 'clamp(1.6rem, 3vw, 2.25rem)', color: 'var(--color-ink)' }}>
-              ₹
-              <CountUp value={c.value} duration={calm.slow.duration as number} className="tabular-nums" />
-            </p>
-          </div>
-        ))}
+        {cards === null
+          ? ['Owed to you', 'Paid out', 'Lifetime'].map((label) => (
+              <Card key={label} label={label}>
+                <span aria-hidden="true" style={{ opacity: 0.25 }}>₹—</span>
+                <span className="sr-only">Loading</span>
+              </Card>
+            ))
+          : cards.map((c) => (
+              <Card key={c.label} label={c.label}>
+                ₹
+                <CountUp value={c.value} duration={calm.slow.duration as number} className="tabular-nums" />
+              </Card>
+            ))}
       </div>
+      {state.status === 'live' && state.data.earnings.pendingPaise > 0 && !state.data.profile.payoutUpi && (
+        <p className="mt-3 font-sans text-xs" style={{ color: '#B5791F' }}>
+          You have earnings owed but no payout method. Add a UPI id below so we can pay you.
+        </p>
+      )}
     </section>
   );
 }

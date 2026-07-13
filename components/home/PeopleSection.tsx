@@ -32,97 +32,86 @@ function PhotoCard({ src, alt, label, offset }: { src: string; alt: string; labe
   );
 }
 
-/* Unsplash placeholder photos — platonic activity moments only */
+/**
+ * The activity gallery.
+ *
+ * Three of these are owned files in public/ rather than Unsplash hotlinks — a gym
+ * spot, a pottery table, a rooftop conversation. Owning them matters: an Unsplash
+ * URL can change or rate-limit underneath us.
+ *
+ * The rest of the owned set was deliberately left out. Every photo here has one
+ * job: to show two people who are NOT on a date. A man feeding a woman cake off
+ * his fork, a couple holding hands through a museum in black tie, a pair in
+ * matching hoodies with his arm around her, two people sharing a tent overnight —
+ * those say the opposite of "strictly platonic", which is the promise this whole
+ * product, and its Terms of Service, rest on. On a paid-companionship site in
+ * India, that inference is not a branding problem. It is an existential one.
+ *
+ * The test for a photo on this page: could you show it to the companion's mother?
+ */
 const PHOTOS = [
   {
-    src: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=480&q=80",
-    alt: "Group of friends laughing together on a city street",
+    src: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=85",
+    alt: "Friends laughing together on a city street",
     label: "City Walk",
   },
   {
-    src: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=480&q=80",
-    alt: "Two people working out together at a gym",
+    // Owned. She is holding his feet while he does sit-ups: a spot, not a date.
+    src: "/gym-buddy.jpg",
+    alt: "Two gym partners laughing, one holding the other's feet during sit-ups",
     label: "Gym Buddy",
   },
   {
-    src: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=480&q=80",
-    alt: "Two friends having an animated conversation at a café",
-    label: "Café Chat",
+    src: "https://images.unsplash.com/photo-1543269865-cbf427effbad?w=600&q=85",
+    alt: "Two friends in an animated conversation at a cafe",
+    label: "Cafe Chat",
   },
   {
-    src: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=480&q=80",
-    alt: "Friends enjoying a live music concert together",
-    label: "Live Concert",
+    src: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600&q=85",
+    alt: "Friends enjoying live music together",
+    label: "Live Events",
   },
   {
-    src: "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=480&q=80",
-    alt: "Group of people hiking a trail together",
-    label: "Hiking Trail",
+    src: "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=600&q=85",
+    alt: "A group of people hiking a trail together",
+    label: "Weekend Trek",
   },
   {
-    src: "https://images.unsplash.com/photo-1523301343968-6a6ebf63c672?w=480&q=80",
-    alt: "Friends socialising at a rooftop gathering",
+    // Owned. Standing apart, mid-conversation, both laughing at the same thing.
+    src: "/rooftop-social.jpg",
+    alt: "Two people talking and laughing on a rooftop above the city",
     label: "Rooftop Social",
   },
   {
-    src: "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=480&q=80",
+    src: "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=600&q=85",
     alt: "A gallery wall of classical paintings at an art museum",
-    label: "Museum Tour",
+    label: "Museum",
   },
   {
-    src: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=480&q=80",
-    alt: "Two friends cooking a meal together in a home kitchen",
-    label: "Cooking Together",
+    // Owned. Both are looking at the clay, not at each other. That is the test.
+    src: "/arts-crafts.jpg",
+    alt: "Two people shaping pottery together at a craft table",
+    label: "Arts & Crafts",
   },
   {
-    src: "https://images.unsplash.com/photo-1471478331149-c72f17e33c73?w=480&q=80",
-    alt: "Person playing an acoustic guitar",
+    src: "https://images.unsplash.com/photo-1471478331149-c72f17e33c73?w=600&q=85",
+    alt: "Someone playing an acoustic guitar",
     label: "Jam Session",
   },
   {
-    src: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=480&q=80",
-    alt: "A full cinema audience watching a film together",
-    label: "Movie Night",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=480&q=80",
+    src: "https://images.unsplash.com/photo-1610890716171-6b1bb98ffd09?w=600&q=85",
     alt: "A board game mid-play on a table",
-    label: "Game Night",
+    label: "Board Games",
   },
   {
-    src: "https://images.unsplash.com/photo-1571188654248-7a89213915f7?w=480&q=80",
-    alt: "A cyclist riding a scenic mountain road",
-    label: "Cycling",
+    src: "https://images.unsplash.com/photo-1571188654248-7a89213915f7?w=600&q=85",
+    alt: "A cyclist riding a scenic road",
+    label: "Morning Run",
   },
   {
-    src: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=480&q=80",
-    alt: "A swimmer doing laps in a pool",
-    label: "Swim & Sport",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=480&q=80",
-    alt: "A basketball dropping through the hoop at a game",
-    label: "Game Day",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=480&q=80",
-    alt: "Paintbrushes and colours on a canvas at an art session",
-    label: "Art & Crafts",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=480&q=80",
-    alt: "A weekend campsite tent looking out onto a forest",
-    label: "Weekend Camping",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1543807535-eceef0bc6599?w=480&q=80",
-    alt: "Three friends laughing together on a city street",
-    label: "City Hangout",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1506869640319-fe1a24fd76dc?w=480&q=80",
-    alt: "A group of friends celebrating on a hilltop at sunset",
-    label: "Sunset Trek",
+    src: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=600&q=85",
+    alt: "Two friends cooking a meal together",
+    label: "Street Food Tour",
   },
 ] as const;
 
@@ -166,7 +155,7 @@ export function PeopleSection() {
           <Reveal delay={0.16}>
             <p className="text-lead max-w-xl" style={{ color: "rgba(244,242,255,0.65)" }}>
               From a dawn city walk to a weekend hike, every activity is better with
-              someone warm beside you. Companio connects you with verified companions
+              someone warm beside you. Companio connects you with ID-checked companions
               who share your city and your energy.
             </p>
           </Reveal>

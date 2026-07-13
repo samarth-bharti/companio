@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { ShieldCheck, Fingerprint, Lock, Siren, Flag } from 'lucide-react';
 import { ClipReveal } from '@/components/journey/ClipReveal';
 import { Reveal, RevealGroup } from '@/components/motion/Reveal';
@@ -24,10 +25,10 @@ const ACCENT_STYLE: React.CSSProperties = {
 type Pillar = { icon: React.ElementType; title: string; body: string; color: string; id?: string };
 
 const PILLARS: Pillar[] = [
-  { icon: Fingerprint, title: 'Aadhaar & KYC verified',   color: '#2E6BFF',
-    body: "Every companion's identity is verified via Aadhaar before their profile is activated. No exceptions, no shortcuts." },
-  { icon: Lock,        title: '₹ held in escrow',          color: '#7A4FE0',
-    body: 'Your payment is locked in escrow until after you meet. No meeting, no charge, your money is always protected.' },
+  { icon: Fingerprint, title: 'ID checked, human-reviewed', color: '#2E6BFF',
+    body: 'No one lists without uploading a government ID. We check it, confirm the photo and the document are two different images, and a person reviews every application by hand. Automated Aadhaar KYC and background checks are not live yet, and we say so on our Trust page rather than implying otherwise.' },
+  { icon: Lock,        title: '7-day refund promise',      color: '#7A4FE0',
+    body: "Your first two meetings are included, and you're never charged to meet. Didn't find anyone you'd like to meet? Ask for a full refund within 7 days." },
   { icon: Siren,       title: 'SOS & live-share',          color: '#FFB23E', id: 'sos',
     body: 'One tap activates emergency contact sharing and location broadcast during any active booking.' },
   { icon: ShieldCheck, title: 'Strictly platonic promise', color: '#1FAE6B', id: 'promise',
@@ -36,14 +37,18 @@ const PILLARS: Pillar[] = [
     body: 'Flag any concern during or after a session. Our trust team reviews within 24 hours.' },
 ];
 
+// "100% Aadhaar-verified companions" was the headline number on the safety page,
+// and it was false in both halves: no companion is Aadhaar-verified, and none is
+// verified at all. What IS true of every companion is that they submitted a
+// government ID and that a human approved them by hand — so that is the number.
 const STATS = [
-  { value: 100, suffix: '%', prefix: '',  label: 'Aadhaar-verified companions' },
+  { value: 100, suffix: '%', prefix: '',  label: 'Companions ID-checked and reviewed by a person' },
   { value: 24,  suffix: 'h', prefix: '',  label: 'Trust-team review window' },
   { value: 0,   suffix: '',  prefix: '',  label: 'Tolerance for non-platonic conduct' },
 ];
 
 export function SafetyJourney() {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   // Track seal visibility so the CSS spin only runs when on-screen.
   const sealRef = useRef<HTMLDivElement>(null);
   const [sealInView, setSealInView] = useState(false);

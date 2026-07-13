@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import Link from 'next/link';
 import { ShieldCheck, Smartphone, BellRing, CalendarPlus } from 'lucide-react';
 import { calm } from '@/lib/motion';
@@ -52,7 +53,7 @@ function buildIcs(activity: string, firstName: string, iso: string, time: string
     `DTEND:${end}`,
     `SUMMARY:${esc(`${activity} with ${firstName}`)}`,
     `LOCATION:${esc(place)}`,
-    `DESCRIPTION:${esc('Your Companio meetup. Strictly platonic, ID-verified, meet in public first.')}`,
+    `DESCRIPTION:${esc('Your Companio meetup. Strictly platonic, ID-checked, meet in public first.')}`,
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');
@@ -64,7 +65,7 @@ interface Props {
 }
 
 export function BookingConfirmed({ companion, booking }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const dateLabel = formatDate(booking.dateISO);
 
   function addToCalendar() {
@@ -148,7 +149,7 @@ export function BookingConfirmed({ companion, booking }: Props) {
                   {companion.name}
                 </p>
                 <p className="font-sans text-xs" style={{ color: 'var(--color-azure-deep)' }}>
-                  ID-verified · {companion.area}
+                  ID-checked · {companion.area}
                 </p>
               </div>
 
@@ -191,18 +192,43 @@ export function BookingConfirmed({ companion, booking }: Props) {
                 </p>
               </div>
 
+              {/* The meetup code. /verify has always told members to compare a
+                  4-digit code with their companion when they meet; until now the
+                  code did not exist, so the instruction could not be followed. */}
+              {booking.meetupCode && (
+                <div
+                  className="rounded-md p-3 mt-1"
+                  style={{ background: 'rgba(31,174,107,0.08)', border: '1px solid rgba(31,174,107,0.25)' }}
+                >
+                  <p
+                    className="font-sans text-xs uppercase tracking-widest font-bold mb-1"
+                    style={{ color: '#157A4A' }}
+                  >
+                    Meetup code
+                  </p>
+                  <p
+                    className="font-display font-bold tabular-nums leading-none mb-1.5"
+                    style={{ fontSize: '2rem', letterSpacing: '0.16em', color: 'var(--color-ink)' }}
+                  >
+                    {booking.meetupCode}
+                  </p>
+                  <p className="font-sans text-xs leading-relaxed" style={{ color: 'var(--color-ink-muted)' }}>
+                    {companion.firstName} has the same four digits. Ask for them when you meet — if
+                    they do not match, do not go ahead, and report it to us.
+                  </p>
+                </div>
+              )}
+
               {/* Price */}
               <div
                 className="rounded-md p-2.5 mt-1"
                 style={{ background: 'var(--color-azure-tint)' }}
               >
                 <p className="font-sans font-bold text-sm" style={{ color: 'var(--color-azure-deep)' }}>
-                  {booking.usedCredit
-                    ? '₹0 today, included meeting used'
-                    : '₹499 · UPI (demo)'}
+                  ₹0 today, included meeting used
                 </p>
                 <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-                  ₹ held in escrow until you meet
+                  Free to cancel any time before you meet
                 </p>
               </div>
             </div>
@@ -218,7 +244,7 @@ export function BookingConfirmed({ companion, booking }: Props) {
           aria-label="Booking reassurances"
         >
           {[
-            { icon: ShieldCheck, text: '₹ in escrow until you meet' },
+            { icon: ShieldCheck, text: 'Verified companion' },
             { icon: Smartphone, text: 'SOS one tap away' },
             { icon: BellRing, text: `${companion.firstName} has been notified` },
           ].map(({ icon: Icon, text }) => (

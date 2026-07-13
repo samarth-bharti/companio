@@ -3,15 +3,25 @@
 // POST /api/application/upload — multipart/form-data
 //
 // Accepts: photo (File), id (File), idDocType, idDocNumber, ocrMatched?
-// Guards:  session required, DB required.
-// Does:    file-integrity check, ID-format validation, duplicate-hash rejection,
-//          masked-number storage, application row update.
+// Guards:  session required, DB required, rate limited.
 //
-// Stays dormant (401 / 503) when no session or no DATABASE_URL — same pattern
-// as every other protected route in this codebase.
+// WHAT THIS PROVES, precisely:
+//   • the ID NUMBER is well-formed (Aadhaar Verhoeff / PAN structure)
+//   • both FILES are really images (magic bytes, not the forgeable MIME header)
+//   • the selfie is not simply the ID photo submitted twice
+//   • neither file has been used by a different applicant before
+//
+// WHAT IT DOES NOT PROVE: that this person owns this identity. Only a KYC vendor
+// querying UIDAI / the Income Tax database can do that. So NOTHING here is ever
+// marked `verified` — that status is reserved for a real check. Everything lands
+// as `pending` and waits for a human. The manual admin approve is not a backstop
+// to these checks; these checks are a filter in front of the human.
+//
+// Stays dormant (401 / 503) when no session or no DATABASE_URL.
 
 import { getSessionUserId } from '@/lib/server/session';
 import { json, unauthorized, badRequest, guard } from '@/lib/server/http';
+import { rateLimit, clientKey } from '@/lib/server/rateLimit';
 import { hasDatabase } from '@/lib/env';
 import {
   validateFileIntegrity,
@@ -29,6 +39,11 @@ export async function POST(req: Request) {
     const userId = await getSessionUserId();
     if (!userId) return unauthorized();
     if (!hasDatabase()) return json({ error: 'db_not_configured' }, 503);
+
+    // Uploads are expensive (10 MB × 2, hashing) and a prime abuse target for
+    // brute-forcing which documents already exist in the system.
+    const rl = await rateLimit({ key: clientKey(req, 'doc-upload'), limit: 10, windowMs: 600_000 });
+    if (!rl.ok) return json({ error: 'rate_limited', retryAfter: rl.retryAfter }, 429);
 
     // ── 2. Parse FormData ─────────────────────────────────────────────────────
     let formData: FormData;
@@ -60,6 +75,11 @@ export async function POST(req: Request) {
 
     const photoCheck = validateFileIntegrity(photoBytes);
     if (!photoCheck.valid) return badRequest({ _errors: [`photo: ${photoCheck.reason}`] });
+    // A PDF is a legitimate scan of an ID. It is never a selfie — accepting one
+    // here means the admin reviews a document where they expect a face.
+    if (photoCheck.type === 'pdf') {
+      return badRequest({ _errors: ['photo: must be a photo of you, not a PDF'] });
+    }
 
     const idCheck = validateFileIntegrity(idBytes);
     if (!idCheck.valid) return badRequest({ _errors: [`id file: ${idCheck.reason}`] });
@@ -68,32 +88,53 @@ export async function POST(req: Request) {
     const photoHash = hashBuffer(photoBytes);
     const idHash    = hashBuffer(idBytes);
 
+    // The single cheapest fraud check available: uploading the same file twice
+    // means there is no selfie, only an ID. Byte-identical is all we can catch
+    // for free — a re-encode defeats it — but it costs one comparison.
+    if (photoHash === idHash) {
+      return badRequest({ _errors: ['photo and id must be two different images'] });
+    }
+
     // ── 6. Duplicate-document check ───────────────────────────────────────────
     const { prisma } = await import('@/lib/prisma');
+    // Both fingerprints, not just the ID: one person's selfie appearing under
+    // several names is exactly the pattern a ring of fake profiles produces.
     const duplicate = await prisma.companionApplication.findFirst({
-      where: { idHash, NOT: { userId } },
+      where: {
+        NOT: { userId },
+        OR: [{ idHash }, { photoHash }],
+      },
       select: { id: true },
     });
     if (duplicate) {
       return json({ error: 'document_already_used' }, 409);
     }
 
-    // ── 7. Persist to the user's application row ──────────────────────────────
+    // ── 7. Persist ────────────────────────────────────────────────────────────
+    //
+    // `ocrMatched` is computed by tesseract.js IN THE APPLICANT'S BROWSER
+    // (components/companion/WizardStepVerify.tsx) and posted here. It is a
+    // convenience hint, not evidence: anyone can send `ocrMatched=true` with a
+    // photo of their cat. We store it so the admin can see what the applicant's
+    // own device reported, and the admin UI labels it as self-reported.
+    //
+    // Nothing is marked `verified`. That status means "an authority confirmed
+    // this identity", and no authority has. The application waits for a human,
+    // who stamps `manual` on approval.
     const ocrMatched = ocrRaw === 'true' ? true : ocrRaw === 'false' ? false : null;
     const idDocMasked = maskIdNumber(docType, idDocNumber);
-    const now = new Date();
 
     await prisma.companionApplication.update({
       where: { userId },
       data: {
-        idDocType:        docType,
+        idDocType:         docType,
         idDocMasked,
         idHash,
         photoHash,
-        idVerifyStatus:   'verified',
-        photoVerifyStatus: 'verified',
+        idVerifyStatus:    'pending',
+        photoVerifyStatus: 'pending',
         ocrMatched,
-        verifiedAt: now,
+        verifiedAt: null,
         idUploaded: true,
       },
     });

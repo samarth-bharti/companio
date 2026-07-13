@@ -1,12 +1,13 @@
 // app/admin/bookings/page.tsx — view all bookings; cancel / refund / complete.
 
 import { prisma } from '@/lib/prisma';
+import { ActionForm } from '@/components/admin/ActionForm';
 import { cancelBooking, refundBooking, markBookingComplete } from '../actions/bookings';
 
 export const dynamic = 'force-dynamic';
 
-const btn = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--color-ink)]/20 text-[var(--color-ink)] hover:bg-[var(--color-ink)]/5';
-const btnRed = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-rose-300 text-rose-600 hover:bg-rose-50';
+const btn = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--color-ink)]/20 text-[var(--color-ink)] hover:bg-[var(--color-ink)]/5 disabled:opacity-50 disabled:cursor-wait';
+const btnRed = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-wait';
 const inp = 'h-8 px-2 text-xs rounded-lg border border-[var(--color-ink)]/15';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -58,20 +59,26 @@ export default async function AdminBookings() {
               </div>
 
               {!closed && (
-                <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--color-ink)]/5">
-                  <form action={cancelBooking}>
+                <div className="flex flex-wrap items-start gap-2 pt-2 border-t border-[var(--color-ink)]/5">
+                  <ActionForm
+                    action={cancelBooking}
+                    submitLabel={`Cancel${b.usedCredit ? ' + refund credit' : ''}`}
+                    submitClassName={btn}
+                  >
                     <input type="hidden" name="id" value={b.id} />
-                    <button className={btn}>Cancel{b.usedCredit ? ' + refund credit' : ''}</button>
-                  </form>
-                  <form action={refundBooking} className="flex gap-1.5 items-center">
+                  </ActionForm>
+                  <ActionForm
+                    action={refundBooking}
+                    submitLabel="Refund"
+                    submitClassName={btnRed}
+                    confirm="Refund this booking? This calls Razorpay and cannot be undone."
+                  >
                     <input type="hidden" name="id" value={b.id} />
                     <input name="reason" placeholder="Refund reason" className={inp} style={{ width: 130 }} />
-                    <button className={btnRed}>Refund</button>
-                  </form>
-                  <form action={markBookingComplete}>
+                  </ActionForm>
+                  <ActionForm action={markBookingComplete} submitLabel="Mark complete" submitClassName={btn}>
                     <input type="hidden" name="id" value={b.id} />
-                    <button className={btn}>Mark complete</button>
-                  </form>
+                  </ActionForm>
                 </div>
               )}
             </div>

@@ -1,5 +1,47 @@
 # Companio — Launch Audit + ₹5,000 Plan (2026-06-25)
 
+> ## ⚠️ Historical. Partly superseded — re-verified 2026-07-10.
+>
+> **Fixed since this audit:** B1 (free cash bookings — cash bookings now create
+> as `pending_payment`), B4 (`/feed` + `/lounge` now `notFound()`, and are
+> deliberately deferred until after launch), B5's spin wheel (the unwinnable
+> `plus_month` jackpot is gone; the wheel mirrors the real 85%-nothing table),
+> B6 (`/contact` exists), M3 (wallet upsert before decrement), the spoofable
+> rate-limit key (`clientKey` now prefers `x-vercel-forwarded-for`), and the
+> `.comp2-revert-backup/` dead directory.
+>
+> **B5's other half is fixed too:** "₹ held in escrow" has been removed from all
+> **18** places it appeared — this audit only caught three of them, and missed
+> that it had reached the **Terms of Service**.
+>
+> **B2 is half-fixed:** LLPIN, registered address and the `@trycompanio.com`
+> mailboxes are real, and `COMPANY_DISPLAY` stops raw `[[placeholders]]`
+> rendering. The **Grievance Officer name + phone are still placeholders.**
+>
+> **B3 is now FIXED (2026-07-10 evening).** `SessionProvider` is mounted and
+> `LoginForm` calls `signIn('google')` when Google is configured, simulating only
+> when it is not.
+>
+> **The audit missed the most severe bug in the codebase.** `payWithRazorpay()`
+> mapped a `401` to `'unconfigured'`, which both checkout sheets treated as
+> "demo mode" and answered by granting the paid benefit locally. Because sign-in
+> was fake, no visitor ever had a server session — so a **keyed production build
+> would have given every single visitor a free ₹199 unlock**. Fixed in `ad47df4`.
+>
+> It also missed that `suspended` / `bannedAt` / `messageBlocked` were written by
+> the admin panel and read by **no query at all**, and that `/admin` was
+> unreachable by anyone on a fresh database.
+>
+> **Still open:** the tail of the `dataClient` migration (the core components are
+> done; §"THE BIG ENGINEERING TASK" below is now only half true), CSP
+> `Report-Only`, and the Razorpay Route / RBI payment aggregator point — which is
+> why **v1 sells the ₹199 unlock only**, now enforced by
+> `MARKETPLACE_PAYMENTS_ENABLED`. See [`STATUS.md`](STATUS.md) for the current
+> picture.
+>
+> The cost table below is also outdated: **Neon Launch has no monthly minimum**
+> (not ₹1,650), and **Vercel Pro is billed per seat**. See [`GO-LIVE.md`](GO-LIVE.md).
+
 Senior multi-discipline review: security, correctness, UX/journey, and
 best-in-class standards research. Live site run at :3003, all routes 200.
 

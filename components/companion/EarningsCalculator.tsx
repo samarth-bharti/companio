@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useId } from 'react';
-import { animate, useReducedMotion } from 'framer-motion';
+import { animate } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { cn } from '@/lib/utils';
 
 const RATE = 499;
@@ -13,7 +14,7 @@ interface Props {
 
 export function EarningsCalculator({ className }: Props) {
   const [meetups, setMeetups] = useState(6);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const sliderId = useId();
   const displayRef = useRef<HTMLSpanElement>(null);
   const prevRef = useRef<number | null>(null);
@@ -50,15 +51,6 @@ export function EarningsCalculator({ className }: Props) {
       className={cn('relative overflow-hidden rounded-2xl p-8 md:p-10', className)}
       style={{ background: 'var(--color-surface)', boxShadow: 'var(--shadow-2)' }}
     >
-      {/* Ghost numeral */}
-      <span
-        aria-hidden="true"
-        className="absolute -bottom-4 -right-4 font-display leading-none select-none pointer-events-none"
-        style={{ fontSize: '9rem', color: 'var(--color-azure)', opacity: 0.06, letterSpacing: '-0.04em' }}
-      >
-        ₹
-      </span>
-
       <p
         className="font-sans text-sm font-semibold uppercase tracking-widest mb-2 relative z-10"
         style={{ color: 'var(--color-ink-muted)' }}

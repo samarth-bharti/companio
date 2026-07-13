@@ -1,6 +1,8 @@
 // Quiz question definitions + empathy-echo copy bank.
 // No JSX — safe to import from both server and client.
 
+import type { GenderId } from '@/lib/journeyState';
+
 export type QuestionType = 'city' | 'multi' | 'single' | 'comfort' | 'name-input';
 
 export interface QuizOption {
@@ -109,6 +111,16 @@ export interface QuizAnswers {
   listen: string;
   languages: string[];
   comfort: { sameGender: boolean; publicPlaces: boolean };
+  /**
+   * The member's own gender, asked only when they ask for a same-gender
+   * companion and the account does not already know it.
+   *
+   * Without it the promise cannot be kept: matching compares their gender to the
+   * companion's, so an unknown gender means no filter runs. The quiz used to
+   * accept the tick anyway, announce "Filtering for same-gender companions…",
+   * and then show everyone.
+   */
+  gender?: GenderId;
   name: string;
 }
 

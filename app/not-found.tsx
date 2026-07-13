@@ -33,7 +33,7 @@ export default function NotFound() {
               We couldn&apos;t find that page.
             </h1>
             <p className="text-lead mb-10" style={{ color: "var(--color-ink-muted)" }}>
-              The link may be broken or the page may have moved. Let&apos;s get you back on track, verified companions are waiting.
+              The link may be broken or the page may have moved. Let&apos;s get you back on track, ID-checked companions are waiting.
             </p>
             <div className="flex items-center justify-center gap-4 flex-wrap">
               <Link

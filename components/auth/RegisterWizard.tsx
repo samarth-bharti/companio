@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import type { Variants } from 'framer-motion';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
 import { spring, calm } from '@/lib/motion';
-import { getQuiz } from '@/lib/journeyState';
+import { getQuiz, type GenderId } from '@/lib/journeyState';
 import { StepRole } from './StepRole';
 import { StepAboutYou } from './StepAboutYou';
 import { StepVerify } from './StepVerify';
@@ -15,18 +16,20 @@ export interface RegFormData {
   role: 'member' | 'companion' | '';
   firstName: string;
   email: string;
-  password: string;
   dob: string;
-  gender: string;
+  /** A `GenderId`, or '' before the member picks. Persisted by StepDone. */
+  gender: GenderId | '';
+  /** Only meaningful when `gender === 'self_described'`. */
+  genderSelfDescribed: string;
   city: string;
-  phone: string;
+  /** True once the emailed code was exchanged for a real session. */
   otpVerified: boolean;
   termsAccepted: boolean;
 }
 
 const EMPTY: RegFormData = {
-  role: '', firstName: '', email: '', password: '',
-  dob: '', gender: '', city: '', phone: '',
+  role: '', firstName: '', email: '',
+  dob: '', gender: '', genderSelfDescribed: '', city: '',
   otpVerified: false, termsAccepted: false,
 };
 
@@ -60,7 +63,7 @@ export function RegisterWizard({
   presetRole?: 'member' | 'companion';
   gate?: string;
 }) {
-  const reduced   = useReducedMotion();
+  const reduced   = useEffectiveReducedMotion();
   const cardRef   = useRef<HTMLDivElement>(null);
   // When a role is preset (e.g. arriving from "Apply as companion"), skip the
   // role-picker step and start on "About you".

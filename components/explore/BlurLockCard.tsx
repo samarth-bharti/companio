@@ -1,8 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Lock, BadgeCheck } from 'lucide-react';
+import { blurredPhoto } from '@/lib/photo';
 import { cn } from '@/lib/utils';
 import { TiltCard } from '@/components/motion/TiltCard';
 import { spring } from '@/lib/motion';
@@ -26,12 +28,14 @@ export function BlurLockCard({
   companion: Companion;
   onUnlockClick: (c: Companion) => void;
 }) {
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
 
-  // Privacy: fetch a tiny, server-blurred version (Unsplash transform) so the
-  // full-resolution photo never reaches the browser — a CSS-only blur of the
-  // real image can be removed in DevTools. A light CSS blur just smooths it.
-  const lockedSrc = `${companion.photo}${companion.photo.includes('?') ? '&' : '?'}w=64&blur=1000&q=30`;
+  // The API already hands a locked viewer a blurred URL (lib/server/redact.ts).
+  // This re-applies the same transform rather than appending another set of
+  // query parameters to it: the card must never be the only thing standing
+  // between a locked profile and its face, but it must not undo the server's
+  // work either. blurredPhoto() rebuilds the query, so it is idempotent.
+  const lockedSrc = blurredPhoto(companion.photo);
 
   return (
     <TiltCard maxDeg={4}>
@@ -99,13 +103,18 @@ export function BlurLockCard({
             >
               {companion.maskedName}
             </span>
-            <BadgeCheck size={16} className="text-azure shrink-0" aria-hidden="true" />
-            <span className="sr-only">Verified</span>
+            {companion.verified && (
+              <>
+                <BadgeCheck size={16} className="text-azure shrink-0" aria-hidden="true" />
+                <span className="sr-only">Verified</span>
+              </>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-1.5">
             <Chip>{companion.area} · {companion.city}</Chip>
-            <Chip>★ {companion.rating} ({companion.reviews})</Chip>
+            {/* A locked card must not promise a 4.9. Unreviewed reads as New. */}
+            <Chip>{companion.reviews > 0 ? `★ ${companion.rating.toFixed(1)} (${companion.reviews})` : 'New'}</Chip>
             {companion.activities.slice(0, 1).map((act) => (
               <Chip key={act}>{act}</Chip>
             ))}

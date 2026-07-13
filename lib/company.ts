@@ -16,12 +16,12 @@ export const COMPANY = {
   registeredAddress:
     'DPT 808B, F 79–80, 8th Floor, DLF Prime Tower, Okhla Industrial Area Phase-I, New Delhi – 110020, Delhi, India',
   // Contact — confirm these mailboxes exist and are monitored:
-  supportEmail: 'support@trycompanio.in',
-  privacyEmail: 'privacy@trycompanio.in',
+  supportEmail: 'support@trycompanio.com',
+  privacyEmail: 'privacy@trycompanio.com',
   // DPDPA / IT Act Grievance Officer — MUST be a real, reachable person:
   grievanceOfficer: {
     name: '[[Grievance Officer full name]]',
-    email: 'grievance@trycompanio.in',
+    email: 'grievance@trycompanio.com',
     phone: '[[Grievance Officer phone]]',
   },
   // Legal venue for disputes:

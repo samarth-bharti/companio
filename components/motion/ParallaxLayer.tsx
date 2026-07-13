@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef, useEffect, useState } from 'react';
-import { motion, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, useTransform } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { useJsScroll } from '@/lib/useJsScroll';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +23,7 @@ interface ParallaxLayerProps {
  */
 export function ParallaxLayer({ children, depth = 0.2, className }: ParallaxLayerProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const shouldReduce = useReducedMotion();
+  const shouldReduce = useEffectiveReducedMotion();
   const [isWide, setIsWide] = useState(true);
 
   useEffect(() => {

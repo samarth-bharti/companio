@@ -1,27 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { getBookings, updateBooking, addNotification } from '@/lib/appState';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
+import { dataClient } from '@/lib/dataClient';
+import { useData } from '@/lib/useData';
 import { getCompanion } from '@/lib/data/companions';
 import type { Booking } from '@/lib/appState';
 import { ReviewModal } from './ReviewModal';
 import { UpcomingCard, PastCard, cardVariant } from './BookingCard';
 import { calm, stagger } from '@/lib/motion';
 
+const NO_BOOKINGS: Booking[] = [];
+
 export function BookingsPanel() {
-  const [bookings, setBookings]         = useState<Booking[]>([]);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [reviewTarget, setReviewTarget] = useState<Booking | null>(null);
 
-  useEffect(() => { setBookings(getBookings()); }, []);
-  const refresh = () => setBookings(getBookings());
+  // `refresh` is still handed to the children that mutate a booking directly
+  // (ReviewModal). Every dataClient mutation also emits, so a cancel from
+  // another tab, or an admin refund once http mode is live, lands here too.
+  const { data: bookings, refresh } = useData('bookings', () => dataClient.getBookings(), NO_BOOKINGS);
 
-  const doCancel = (id: string) => {
-    updateBooking(id, { status: 'cancelled' });
-    addNotification({ title: 'Booking cancelled', body: 'Your meetup was cancelled. Full refund within 7 days.' });
+  const doCancel = async (id: string) => {
+    await dataClient.updateBooking(id, { status: 'cancelled' });
+    await dataClient.addNotification({
+      title: 'Booking cancelled',
+      body: 'Your meetup was cancelled. Full refund within 7 days.',
+    });
     setCancelTarget(null);
-    refresh();
   };
 
   const upcoming = bookings.filter((b) => b.status === 'upcoming').sort((a, b) => a.dateISO.localeCompare(b.dateISO));
@@ -90,7 +97,7 @@ export function BookingsPanel() {
 
 // Section: renders title + stagger container for child cards
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   return (
     <section>
       <h2 className="font-sans font-semibold text-sm mb-3 tracking-wide" style={{ color: 'var(--color-ink-muted)' }}>

@@ -3,6 +3,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+import { notFound } from "next/navigation";
 import { Nav } from "@/components/layout/Nav";
 import { Button } from "@/components/ui/Button";
 import { PassportCard } from "@/components/ui/PassportCard";
@@ -45,6 +46,10 @@ function Section({
 }
 
 export default function Styleguide() {
+  // Internal design-system reference. noindex alone still leaves it reachable by
+  // URL in production; 404 it there so only local/preview builds can open it.
+  if (process.env.NODE_ENV === "production") notFound();
+
   return (
     <>
       <Nav />
@@ -112,7 +117,7 @@ export default function Styleguide() {
             <div>
               <p className="label-eyebrow text-ink-muted mb-1">Lead, Plus Jakarta</p>
               <p className="font-sans text-lead text-ink-muted">
-                Book ID-verified companions for any activity, strictly platonic.
+                Book ID-checked companions for any activity, strictly platonic.
               </p>
             </div>
             <div>

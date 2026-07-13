@@ -14,13 +14,43 @@ const dateOnly = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD')
   .refine((s) => !Number.isNaN(Date.parse(s)), 'invalid calendar date');
 
+/**
+ * A `dateOnly` that has not already happened. A meetup is a future event: a
+ * booking for last Tuesday is meaningless, and the cron auto-completes any
+ * `upcoming` booking whose date has passed — so a back-dated booking could be
+ * created and completed in the same day, skipping the meetup entirely.
+ *
+ * Compared against today in UTC. Every Indian timezone is ahead of UTC, so a
+ * user booking their own "today" always passes; the only slack is that a date
+ * up to one day stale may be accepted near midnight UTC. Erring toward
+ * accepting is right — rejecting a user's valid "today" would be worse.
+ */
+const futureDate = dateOnly.refine(
+  (s) => s >= new Date().toISOString().slice(0, 10),
+  'date cannot be in the past',
+);
+
 export const addCreditsBody = z.object({ count: z.number().int().positive() });
 
 export const boolValueBody = z.object({ value: z.boolean() });
 
+export const genderEnum = z.enum([
+  'male',
+  'female',
+  'nonbinary',
+  'self_described',
+  'prefer_not_to_say',
+]);
+
 export const userBody = z.object({
   firstName: z.string().min(1),
   city: z.string().optional(),
+  /** `YYYY-MM-DD`. Validated for adulthood in the route, not here. */
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD').optional(),
+  gender: genderEnum.optional(),
+  /** Meaningful only alongside `gender: 'self_described'`; ignored otherwise. */
+  genderSelfDescribed: z.string().trim().min(1).max(60).optional(),
+  sameGenderOnly: z.boolean().optional(),
 });
 
 const reviewBody = z.object({ stars: z.number().int().min(1).max(5), text: z.string() });
@@ -31,7 +61,7 @@ const reviewBody = z.object({ stars: z.number().int().min(1).max(5), text: z.str
 export const bookingCreateBody = z.object({
   companionId: z.string().min(1),
   activity: z.string().min(1),
-  dateISO: dateOnly,
+  dateISO: futureDate,
   time: z.string().min(1),
   place: z.string().min(1),
   usedCredit: z.boolean(),
@@ -43,7 +73,7 @@ export const bookingCreateBody = z.object({
 // usedCredit are set at create time and never mutable by the client.
 export const bookingPatchBody = z.object({
   activity: z.string().optional(),
-  dateISO: dateOnly.optional(),
+  dateISO: futureDate.optional(),
   time: z.string().optional(),
   place: z.string().optional(),
   status: z.literal('cancelled').optional(),
@@ -55,6 +85,23 @@ export const favoriteToggleBody = z.object({ companionId: z.string().min(1) });
 export const messageAppendBody = z.object({
   from: z.enum(['me', 'them']),
   text: z.string().min(1),
+  kind: z.enum(['text', 'sticker']).optional(),
+});
+
+/** A companion's reply, from their inbox. Same shape as a member's message. */
+export const companionReplyBody = z.object({
+  text: z.string().min(1).max(2000),
+  kind: z.enum(['text', 'sticker']).optional(),
+});
+
+/**
+ * A reaction is one emoji. The cap is generous in code points but tight in
+ * length: it must not become a second message channel that bypasses the
+ * contact-sharing filter on `text`.
+ */
+export const messageReactBody = z.object({
+  messageId: z.string().min(1),
+  emoji: z.string().min(1).max(8),
 });
 
 export const notificationBody = z.object({
@@ -75,8 +122,24 @@ export const orderCreateBody = z.object({
 export const applicationBody = z.object({
   name: z.string().min(1),
   city: z.string().min(1),
+  /**
+   * Required to be matchable. The same-gender filter is a comfort promise to
+   * members, and a companion with no gender is shown to nobody who asked for
+   * one — so an applicant who skips this is invisible to the members most
+   * likely to book them. Optional in the schema only because a draft may not
+   * have reached that question yet.
+   */
+  gender: genderEnum.optional(),
   activities: z.array(z.string()),
-  rate: z.number().int().nonnegative(),
+  /**
+   * PAISE, not rupees. The apply wizard's slider is in rupees and multiplies on
+   * submit — it used to send its rupee value straight into this paise column, so
+   * every applicant's rate was stored a hundred times too small.
+   *
+   * Bounded to the band the wizard offers (₹299–₹999) so a hand-rolled request
+   * cannot register a ₹0 or ₹50,000 companion.
+   */
+  rate: z.number().int().min(29900).max(99900),
   bio: z.string(),
   idUploaded: z.boolean(),
   backgroundConsent: z.boolean(),
@@ -100,14 +163,29 @@ export const adminBanBody = z.object({
   reason: z.string().max(280).optional(),
 });
 
+// The editable surface of a companion profile. This deliberately covers every
+// field that drives the explore grid, the map and matching — the old schema
+// exposed only name/city/hourlyRate/bio, which meant an admin could create a
+// companion but never give them activities, languages, a photo or an area, and
+// the card rendered blank.
 export const adminEditCompanionBody = z.object({
   name: z.string().min(1).optional(),
   city: z.string().min(1).optional(),
+  area: z.string().min(1).optional(),
+  age: z.number().int().min(18).max(100).optional(),
   hourlyRate: z.number().int().min(0).optional(), // paise
   premium: z.boolean().optional(),
   bio: z.string().optional(),
+  photo: z.string().url().optional(),
+  accent: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'must be a #rrggbb hex colour').optional(),
+  activities: z.array(z.string().min(1)).max(12).optional(),
+  languages: z.array(z.string().min(1)).max(12).optional(),
+  suggestions: z.array(z.string().min(1)).max(6).optional(),
+  availability: z.string().max(80).optional(),
   availableNow: z.boolean().optional(),
+  matchScore: z.number().int().min(0).max(100).optional(),
   verified: z.boolean().optional(),
+  topMatch: z.boolean().optional(),
 });
 
 export const adminEditUserBody = z.object({
@@ -115,6 +193,9 @@ export const adminEditUserBody = z.object({
   lastName: z.string().optional(),
   city: z.string().optional(),
   role: z.enum(['user', 'companion', 'admin']).optional(),
+  // Date of birth is set-once for the user themselves. An admin can correct a
+  // genuine mistake — otherwise "contact support" has no mechanism behind it.
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD').optional(),
 });
 
 export const discountCreateBody = z.object({

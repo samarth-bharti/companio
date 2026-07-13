@@ -19,12 +19,47 @@ export const CREDIT_PACKS = {
 
 export type PackId = keyof typeof CREDIT_PACKS;
 
-export const UNLOCK_AMOUNT = 19900;  // ₹199 one-time full unlock
+// Re-exported from lib/money so the UI and the server cannot compute a different
+// price from each other — they did, and a member was quoted ₹159 and charged
+// ₹159.20.
+export { UNLOCK_AMOUNT, applyDiscount } from '@/lib/money';
+
 export const PLUS_AMOUNT = 29900;    // ₹299 one-time — Companio Plus (no recurring billing)
 export const MEETING_AMOUNT = 49900; // ₹499 — a meeting beyond the free credits
 
 export function isPackId(v: string | undefined): v is PackId {
   return !!v && Object.prototype.hasOwnProperty.call(CREDIT_PACKS, v);
+}
+
+// ── Which purchase kinds may actually take money ────────────────────────────
+//
+// v1 sells the ₹199 unlock ONLY. `booking`, `credits` and `plus` all end with
+// Companio collecting a user's money and owing part of it to a companion
+// (settlePurchase writes a CompanionPayout). Pooling and settling funds on
+// behalf of a third party is exactly what the RBI's Payment Aggregator rules
+// licence — ₹15 crore net worth to apply, ₹25 crore within three years.
+//
+// Until that licence exists (or payouts move to Razorpay Route linked
+// accounts, where Razorpay is the aggregator of record), those kinds must be
+// unreachable. Supplying a Razorpay key must NOT silently arm them.
+//
+// Set MARKETPLACE_PAYMENTS_ENABLED=true only when the licence/Route wiring is
+// genuinely in place.
+
+/** Kinds that are always sellable — no third-party money is held. */
+const ALWAYS_ALLOWED_KINDS: readonly PurchaseKind[] = ['unlock'];
+
+/** Kinds that pool funds owed to a companion, and so need the licence gate. */
+const MARKETPLACE_KINDS: readonly PurchaseKind[] = ['booking', 'credits', 'plus'];
+
+export function marketplacePaymentsEnabled(): boolean {
+  return process.env.MARKETPLACE_PAYMENTS_ENABLED === 'true';
+}
+
+/** True when this purchase kind may legally be charged in the current config. */
+export function isPurchaseKindEnabled(kind: PurchaseKind): boolean {
+  if (ALWAYS_ALLOWED_KINDS.includes(kind)) return true;
+  return MARKETPLACE_KINDS.includes(kind) && marketplacePaymentsEnabled();
 }
 
 // ── Variable per-companion pricing ──────────────────────────────────────────
@@ -70,12 +105,6 @@ export const GST_BPS = 1800; // 18% GST (applied once registration is live)
 export function applySurge(basePaise: number, multiplier: number): number {
   const m = Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1;
   return Math.round(basePaise * m);
-}
-
-/** Subtract a 0–100% discount from an amount (clamped, never negative). */
-export function applyDiscount(amountPaise: number, pct: number): number {
-  const p = Math.min(Math.max(Math.round(pct), 0), 100);
-  return Math.round((amountPaise * (100 - p)) / 100);
 }
 
 /** The GST component contained within a GST-inclusive amount. */

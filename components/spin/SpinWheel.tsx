@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Gift, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -27,7 +28,7 @@ const PRIZE_SEGMENT: Record<string, number> = {
   none: 1,
 };
 
-type Status = 'loading' | 'ready' | 'spinning' | 'done' | 'cooldown' | 'signedout';
+type Status = 'loading' | 'ready' | 'spinning' | 'done' | 'cooldown' | 'signedout' | 'nothingtowin';
 
 interface SpinState {
   status: Status;
@@ -41,7 +42,7 @@ const WHEEL_TRANSITION = { duration: 4, ease: [0.16, 1, 0.3, 1] as const };
 const WHEEL_TRANSITION_REDUCED = { duration: 0.4, ease: 'easeOut' as const };
 
 export function SpinWheel() {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [s, setS] = useState<SpinState>({ status: 'loading', rotation: 0, resultLabel: null, nextSpinAt: null });
   const isWin = s.status === 'done' && s.resultLabel !== null && !s.resultLabel.startsWith('No win');
 
@@ -52,7 +53,7 @@ export function SpinWheel() {
         const d = await r.json();
         setS((p) => ({
           ...p,
-          status: d.canSpin ? 'ready' : 'cooldown',
+          status: d.nothingToWin ? 'nothingtowin' : d.canSpin ? 'ready' : 'cooldown',
           nextSpinAt: d.nextSpinAt,
           resultLabel: d.reward ? labelFor(d.reward.prize) : null,
         }));
@@ -127,7 +128,8 @@ export function SpinWheel() {
       {/* Honest odds disclosure — most spins win nothing; no hidden jackpot. */}
       <p className="text-xs text-center text-[var(--color-ink-muted)] max-w-xs">
         One spin a week. Most spins win nothing — about 1 in 10 wins 10% off and
-        1 in 25 wins 20% off your next meetup. Discounts only; no cash prizes.
+        1 in 25 wins 20% off the one-time ₹199 unlock. Discounts only; no cash
+        prizes. A win lasts 7 days.
       </p>
     </div>
   );
@@ -163,6 +165,22 @@ function SpinStatus({ state, onSpin }: { state: SpinState; onSpin: () => void })
     );
   }
 
+  // Nothing left to discount. Saying this plainly beats letting someone spend
+  // their weekly spin on a prize that could never be redeemed.
+  if (state.status === 'nothingtowin')
+    return (
+      <div className="flex flex-col items-center gap-2 text-center">
+        <p className="text-[var(--color-ink-muted)] text-sm max-w-xs">
+          You&apos;ve already unlocked Companio, and a spin only ever discounts that
+          one-time ₹199 unlock. There is nothing here for you to win right now, so we
+          won&apos;t spend your spin on it.
+        </p>
+        <p className="text-xs text-[var(--color-ink-muted)]">
+          When extra meetups go on sale, this comes back.
+        </p>
+      </div>
+    );
+
   if (state.status === 'cooldown')
     return (
       <div className="flex flex-col items-center gap-2 text-center">
@@ -181,7 +199,7 @@ function SpinStatus({ state, onSpin }: { state: SpinState; onSpin: () => void })
 }
 
 function labelFor(prize: string): string {
-  if (prize === 'discount10') return '10% off your next meetup';
-  if (prize === 'discount20') return '20% off your next meetup';
+  if (prize === 'discount10') return '10% off your ₹199 unlock';
+  if (prize === 'discount20') return '20% off your ₹199 unlock';
   return 'No win this week';
 }

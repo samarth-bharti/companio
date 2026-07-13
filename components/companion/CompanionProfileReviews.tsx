@@ -1,7 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Reveal } from '@/components/motion/Reveal';
 import { spring, stagger } from '@/lib/motion';
@@ -32,7 +33,7 @@ function StarRow({
   size?: number;
   animated?: boolean;
 }) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const path = 'M8 1.5l1.85 3.74 4.12.6-2.98 2.9.7 4.1L8 10.8l-3.69 1.94.7-4.1L2.03 5.84l4.12-.6L8 1.5z';
 
   return (
@@ -128,7 +129,7 @@ function ReviewCard({ r }: { r: Review }) {
  * Reduced motion: snaps instantly, drag spring disabled.
  */
 export function CompanionProfileReviews({ reviews, rating, reviewCount }: Props) {
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
   const [current, setCurrent] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -138,16 +139,55 @@ export function CompanionProfileReviews({ reviews, rating, reviewCount }: Props)
   const prev = () => setCurrent((c) => clamp(c - 1));
   const next = () => setCurrent((c) => clamp(c + 1));
 
-  // Card width = 100% of the track (one card visible at a time on mobile),
-  // or up to 340px on wider viewports — calculated at paint time.
-  // We use percentages via translateX so no ResizeObserver needed.
   const CARD_GAP = 16; // px — gap between cards
-  // We scroll by 100% of the card width + gap.
-  // Because cards are 100% wide the percentage offset = index × (100% + gap).
-  // Since framer-motion `x` works in pixels we keep it simple:
-  // cardW ≈ trackRef.current?.offsetWidth or fall back to 300.
-  const cardW = trackRef.current?.offsetWidth ?? 300;
+
+  // Cards are 100% of the track wide, and framer's `x` is in pixels, so we need
+  // the track's measured width. Reading trackRef.current during render both
+  // breaks the rules of React and silently didn't work: the ref is null on the
+  // first render, so every card was laid out against a hardcoded 300px until
+  // something else happened to re-render — and it never responded to a resize
+  // or an orientation change at all. Measure after paint, and keep measuring.
+  const [cardW, setCardW] = useState(300);
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const measure = () => setCardW(el.offsetWidth || 300);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const offset = -(current * (cardW + CARD_GAP));
+
+  // An unreviewed companion. The carousel used to render three invented reviews
+  // here, from members who did not exist, under a 4.9 star row. Saying "no
+  // reviews yet" costs a little conversion and buys the only thing this product
+  // actually sells.
+  if (total === 0) {
+    return (
+      <section aria-label="Member reviews">
+        <h2
+          className="font-sans font-bold text-sm uppercase tracking-widest mb-4"
+          style={{ color: 'var(--color-ink-muted)' }}
+        >
+          Reviews
+        </h2>
+        <div
+          className="rounded-lg p-6"
+          style={{ background: 'var(--color-surface)', border: '1px solid rgba(20,26,46,0.08)' }}
+        >
+          <p className="font-sans font-semibold text-sm mb-1" style={{ color: 'var(--color-ink)' }}>
+            No reviews yet.
+          </p>
+          <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--color-ink-muted)' }}>
+            Reviews appear here after a meetup is completed, and only from the member who was there.
+            Nobody has met this companion through Companio so far.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section aria-label="Member reviews">
@@ -167,7 +207,7 @@ export function CompanionProfileReviews({ reviews, rating, reviewCount }: Props)
             {rating.toFixed(1)}
           </span>
           <span className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
-            ({reviewCount} reviews)
+            ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
           </span>
         </span>
       </div>

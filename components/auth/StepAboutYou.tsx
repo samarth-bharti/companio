@@ -2,47 +2,41 @@
 
 import { useState, useId } from 'react';
 import type { ReactNode } from 'react';
-import { Eye, EyeOff, ChevronLeft } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { spring } from '@/lib/motion';
+import { ChevronLeft } from 'lucide-react';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { CITIES } from '@/lib/data/cities';
+import type { GenderId } from '@/lib/journeyState';
 import { Reveal } from '@/components/motion/Reveal';
+import { ageInYears, parseDateOfBirth, maxAdultDob, MIN_AGE } from '@/lib/age';
 import { FieldStatus, ShakeWrapper } from './FieldStatus';
 import type { RegFormData } from './RegisterWizard';
 
-const GENDERS = [
-  'Woman',
-  'Man',
-  'Non-binary',
-  'Prefer to self-describe',
-  'Prefer not to say',
-];
-
-const PW_RULES = [
-  { label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
-  { label: 'One uppercase letter',  test: (p: string) => /[A-Z]/.test(p) },
-  { label: 'One lowercase letter',  test: (p: string) => /[a-z]/.test(p) },
-  { label: 'One number',            test: (p: string) => /[0-9]/.test(p) },
+// The label the member reads, and the value the database stores. These used to
+// be labels only: the answer was never sent, and the column stayed null for
+// everyone. The same-gender filter runs on this, so it has to be a real value.
+//
+// The last two are deliberately not matchable — see lib/journeyState.
+const GENDERS: { id: GenderId; label: string }[] = [
+  { id: 'female', label: 'Woman' },
+  { id: 'male', label: 'Man' },
+  { id: 'nonbinary', label: 'Non-binary' },
+  { id: 'self_described', label: 'Prefer to self-describe' },
+  { id: 'prefer_not_to_say', label: 'Prefer not to say' },
 ];
 
 function isEmail(v: string) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
+// Age rules come from lib/age.ts — the same module the server enforces with
+// (via lib/server/age.ts). This file used to carry its own private calcAge(),
+// which is exactly how a client check and a server check drift apart.
 function calcAge(dob: string): number | null {
-  if (!dob) return null;
-  const birth = new Date(dob);
-  if (isNaN(birth.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age;
+  const parsed = parseDateOfBirth(dob);
+  return parsed ? ageInYears(parsed) : null;
 }
 
 // Computed at render-time inside the component (avoids SSR/client mismatch via suppressHydrationWarning)
 function getMaxDob(): string {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - 18);
-  return d.toISOString().split('T')[0];
+  return maxAdultDob();
 }
 
 const FIELD_INPUT_BASE = 'w-full h-12 px-4 rounded-xl font-sans text-sm';
@@ -104,8 +98,7 @@ interface Props {
 
 export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Props) {
   const id      = useId();
-  const reduced = useReducedMotion();
-  const [showPw, setShowPw] = useState(false);
+  const reduced = useEffectiveReducedMotion();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const maxDob = getMaxDob();
 
@@ -114,14 +107,14 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
   const [emailShakeKey,     setEmailShakeKey]     = useState(0);
 
   const age     = calcAge(form.dob);
-  const under18 = age !== null && age < 18;
+  const under18 = age !== null && age < MIN_AGE;
 
   // Derived validity
   const firstNameValid = form.firstName.trim().length > 0;
   const emailValid     = isEmail(form.email);
-  const pwValid        = PW_RULES.every(r => r.test(form.password));
-  const dobValid       = !!form.dob && (age ?? -1) >= 18;
-  const genderValid    = !!form.gender;
+  const dobValid       = !!form.dob && (age ?? -1) >= MIN_AGE;
+  const selfDescribing = form.gender === 'self_described';
+  const genderValid    = !!form.gender && (!selfDescribing || form.genderSelfDescribed.trim().length > 0);
   const cityValid      = !!form.city;
 
   function validate(): boolean {
@@ -134,14 +127,14 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
       e.email = 'Please enter a valid email address.';
       setEmailShakeKey(k => k + 1);
     }
-    if (!PW_RULES.every(r => r.test(form.password)))
-      e.password = 'Password must meet all four requirements below.';
     if (!form.dob)
       e.dob = 'Please enter your date of birth.';
     else if (under18)
-      e.dob = 'You must be 18 or older to join Companio.';
+      e.dob = `You must be ${MIN_AGE} or older to join Companio.`;
     if (!form.gender)
       e.gender = 'Please select a gender identity.';
+    else if (selfDescribing && !form.genderSelfDescribed.trim())
+      e.gender = 'Please tell us how you describe your gender.';
     if (!form.city)
       e.city = 'Please select your city.';
     setErrors(e);
@@ -161,7 +154,8 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
               : 'About you'}
           </h1>
           <p className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
-            Your information stays private.
+            Your information stays private. We&apos;ll email a code to confirm your address, so
+            there is no password to choose.
           </p>
         </div>
       </Reveal>
@@ -215,73 +209,6 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
           </Field>
         </ShakeWrapper>
 
-        {/* Password — emerald border when all rules pass; rules list handles detail */}
-        <Field label="Password" error={errors.password} id={`${id}-pw`}>
-          <div className="relative">
-            <input
-              id={`${id}-pw`}
-              type={showPw ? 'text' : 'password'}
-              autoComplete="new-password"
-              value={form.password}
-              onChange={e => patch({ password: e.target.value })}
-              placeholder="Choose a strong password"
-              className={`${FIELD_INPUT_BASE} pr-11`}
-              style={{ ...FIELD_INPUT_STYLE, border: `1.5px solid ${fieldBorder(pwValid, !!errors.password)}` }}
-              aria-describedby={`${id}-pw-rules`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPw(s => !s)}
-              aria-label={showPw ? 'Hide password' : 'Show password'}
-              className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center rounded"
-              style={{ color: 'var(--color-ink-muted)', width: 44, height: 44 }}
-            >
-              {showPw
-                ? <EyeOff size={16} aria-hidden="true" />
-                : <Eye    size={16} aria-hidden="true" />}
-            </button>
-          </div>
-          <ul id={`${id}-pw-rules`} className="mt-2 flex flex-col gap-1" aria-label="Password requirements">
-            {PW_RULES.map(r => {
-              const ok = r.test(form.password);
-              return (
-                <li
-                  key={r.label}
-                  className="flex items-center gap-1.5 font-sans text-xs"
-                  style={{ color: ok ? '#157A4A' : 'var(--color-ink-muted)' }}
-                >
-                  {/* Stamp pop when rule passes; empty circle when not */}
-                  {ok ? (
-                    <motion.span
-                      key="filled"
-                      aria-hidden="true"
-                      className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] shrink-0"
-                      initial={reduced ? false : { scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={reduced ? { duration: 0 } : spring.stamp}
-                      style={{ background: '#157A4A', color: '#fff', flexShrink: 0 }}
-                    >
-                      ✓
-                    </motion.span>
-                  ) : (
-                    <span
-                      aria-hidden="true"
-                      className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] shrink-0"
-                      style={{
-                        background: 'transparent',
-                        border: '1.5px solid rgba(20,26,46,0.2)',
-                        color: '#fff',
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
-                  {r.label}
-                </li>
-              );
-            })}
-          </ul>
-        </Field>
-
         {/* Date of birth — emerald border when valid age */}
         <Field label="Date of birth" error={errors.dob} id={`${id}-dob`}>
           <input
@@ -297,23 +224,39 @@ export function StepAboutYou({ form, patch, onBack, onNext, prefilledName }: Pro
           />
           {under18 && !errors.dob && (
             <p className="mt-1 font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-              Companio is for adults aged 18 and over. We&apos;d love to welcome you when you&apos;re ready.
+              Companio is for adults aged {MIN_AGE} and over. We&apos;d love to welcome you when you&apos;re ready.
             </p>
           )}
         </Field>
 
-        {/* Gender — emerald border when selected */}
+        {/* Gender — emerald border when selected. Used by the same-gender filter,
+            which is why we say what it is for rather than just asking. */}
         <Field label="Gender identity" error={errors.gender} id={`${id}-gen`}>
           <select
             id={`${id}-gen`}
             value={form.gender}
-            onChange={e => patch({ gender: e.target.value })}
+            onChange={e => patch({ gender: e.target.value as GenderId | '', genderSelfDescribed: '' })}
             className={FIELD_INPUT_BASE}
             style={{ ...FIELD_INPUT_STYLE, border: `1.5px solid ${fieldBorder(genderValid, !!errors.gender)}` }}
           >
             <option value="">Select…</option>
-            {GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
+            {GENDERS.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
           </select>
+          {selfDescribing && (
+            <input
+              type="text"
+              value={form.genderSelfDescribed}
+              onChange={e => patch({ genderSelfDescribed: e.target.value })}
+              placeholder="How do you describe your gender?"
+              maxLength={60}
+              aria-label="Describe your gender"
+              className={`${FIELD_INPUT_BASE} mt-2`}
+              style={{ ...FIELD_INPUT_STYLE, border: `1.5px solid ${fieldBorder(genderValid, !!errors.gender)}` }}
+            />
+          )}
+          <p className="mt-1 font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
+            Lets you ask to see only companions of your own gender. You can change it later.
+          </p>
         </Field>
 
         {/* City — emerald border when selected */}

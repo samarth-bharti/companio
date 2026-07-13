@@ -1,12 +1,12 @@
 'use client';
 
-import { useRef } from 'react';
-import { motion, useTransform, useReducedMotion, cubicBezier } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { motion, useTransform, cubicBezier } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { useJsScroll } from '@/lib/useJsScroll';
 import { HeroCopyState0, HeroCopyState1, HeroCopyState2 } from './phone/HeroCopy';
-import { SparkleCluster } from './SparkleCluster';
 import { useIsMobile } from '@/lib/useIsMobile';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 
 // Smooth in-out used for every scroll-linked dissolve so transitions ease into
 // and out of each beat instead of tracking the scrollbar linearly.
@@ -21,22 +21,82 @@ const SCRIM =
 // Soft white halo behind the dark copy so it stays legible over busy footage.
 const COPY_HALO = '0 1px 18px rgba(251,252,255,0.6)';
 
+// Bottom fade into the dark panel colour (--color-ink-dark-panel = #14122A) that
+// follows the hero. Doubles as a soft shadow. The first (radial) layer adds a
+// little extra darkness in the bottom-right corner, where the source video's
+// watermark sits, so it disappears without over-darkening the whole band.
+const BOTTOM_FADE =
+  'radial-gradient(60% 90% at 90% 100%, rgba(20,18,42,0.72) 0%, rgba(20,18,42,0.28) 55%, rgba(20,18,42,0) 100%),' +
+  'linear-gradient(to top,' +
+  ' rgba(20,18,42,0.96) 0%,' +
+  ' rgba(20,18,42,0.86) 18%,' +
+  ' rgba(20,18,42,0.48) 46%,' +
+  ' rgba(20,18,42,0.14) 74%,' +
+  ' rgba(20,18,42,0) 100%)';
+
+// Still fallback painted under (and instead of) the video. Approximates the
+// footage's tone so the hero never flashes an empty box while it loads, and
+// stands on its own when the video is deliberately skipped.
+const VIDEO_FALLBACK =
+  'linear-gradient(160deg, #EBF1FF 0%, #F4EEFF 42%, #FFF3E0 100%)';
+
+/**
+ * True when we should actually download and play the 2.5 MB hero footage.
+ *
+ * Skipped for: reduced-motion users (the project's motion contract forbids
+ * looping video), Data Saver, and 2G/3G connections — the hero is decorative,
+ * and on a mid-range Indian phone the download is the single slowest thing on
+ * the page. Everyone else gets the video, mounted after first paint so it can
+ * never delay LCP.
+ */
+function useHeroVideoEnabled(): boolean {
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    // Read the preference straight from matchMedia rather than via
+    // useEffectiveReducedMotion(): that hook reports false until it has mounted,
+    // which is correct for render (hydration) but would let the 2.5 MB download
+    // start before it flips to true. Inside an effect there is no SSR to match,
+    // so reading the media query directly is both safe and immediate.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const conn = (navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    }).connection;
+    if (conn?.saveData) return;
+    if (conn?.effectiveType && /(^|-)2g$|3g/.test(conn.effectiveType)) return;
+    // Defer past first paint so the video never competes with the LCP text.
+    const id = window.setTimeout(() => setAllowed(true), 0);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  return allowed;
+}
+
 function VideoBackground() {
+  const showVideo = useHeroVideoEnabled();
+
   return (
     <>
-      <video
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ zIndex: 0 }}
-        src="/hero.mp4"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        aria-hidden="true"
-      />
+      <div aria-hidden="true" className="absolute inset-0" style={{ zIndex: 0, background: VIDEO_FALLBACK }} />
+      {showVideo && (
+        <video
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ zIndex: 1 }}
+          src="/hero.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+        />
+      )}
       <div aria-hidden="true" className="absolute inset-0" style={{ zIndex: 10, background: SCRIM }} />
-      <SparkleCluster />
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0"
+        style={{ zIndex: 12, height: 'min(42%, 340px)', background: BOTTOM_FADE }}
+      />
     </>
   );
 }
@@ -59,7 +119,11 @@ function AmbientBlobs() {
  */
 export function PhoneJourneyHero() {
   const sectionRef = useRef<HTMLElement>(null);
-  const shouldReduce = useReducedMotion();
+  // Must be the SSR-safe hook, NOT framer's useReducedMotion(): framer reads
+  // matchMedia on the client's first render but yields false on the server, so
+  // branching *markup* on it renders a different tree on each side and fails
+  // hydration. useEffectiveReducedMotion() returns false until mounted.
+  const shouldReduce = useEffectiveReducedMotion();
   const isMobile = useIsMobile();
 
   const { scrollYProgress } = useJsScroll({
@@ -167,10 +231,11 @@ export function PhoneJourneyHero() {
           style={{ opacity: opCue }}
           className="absolute bottom-7 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-1"
         >
-          <span className="text-xs font-sans tracking-wide" style={{ color: 'var(--color-ink-muted)' }}>
+          {/* Light-on-dark: the bottom fade darkens this corner of the hero. */}
+          <span className="text-xs font-sans tracking-wide" style={{ color: 'rgba(244,242,255,0.75)' }}>
             Scroll
           </span>
-          <ChevronDown size={18} className="animate-bounce" style={{ color: 'var(--color-ink-muted)' }} aria-hidden="true" />
+          <ChevronDown size={18} className="animate-bounce" style={{ color: 'rgba(244,242,255,0.75)' }} aria-hidden="true" />
         </motion.div>
       </div>
     </section>

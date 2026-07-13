@@ -100,6 +100,29 @@ describe('settlePurchase', () => {
       update: {},
       create: { companionId: 'c1', bookingId: 'b1', amountPaise: 35000 },
     });
-    expect(tx.spinResult.update).toHaveBeenCalledWith({ where: { id: 's1' }, data: { usedBookingId: 'b1' } });
+    // `usedAt` is what marks a win spent. It used to be `usedBookingId` alone,
+    // which could only ever describe a win spent on a booking — and bookings
+    // cannot be sold, so no win was spendable at all.
+    expect(tx.spinResult.update).toHaveBeenCalledWith({
+      where: { id: 's1' },
+      data: expect.objectContaining({ usedBookingId: 'b1', usedAt: expect.any(Date), usedPurchaseId: 'pu1' }),
+    });
+  });
+
+  it('burns the redeemed spin on an unlock — the only purchase a win can apply to', async () => {
+    const { prisma, tx } = makePrisma({ id: 'pu2', userId: 'u1', kind: 'unlock', bookingId: null, spinResultId: 's2', credits: 0, status: 'created', razorpayPaymentId: null });
+    await settlePurchase(prisma, { orderId: 'o2', paymentId: 'p2' });
+    expect(tx.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { unlocked: true } });
+    expect(tx.spinResult.update).toHaveBeenCalledWith({
+      where: { id: 's2' },
+      data: expect.objectContaining({ usedAt: expect.any(Date), usedPurchaseId: 'pu2' }),
+    });
+  });
+
+  it('settles an unlock with no spin win without touching spin state', async () => {
+    const { prisma, tx } = makePrisma({ id: 'pu3', userId: 'u1', kind: 'unlock', bookingId: null, spinResultId: null, credits: 0, status: 'created', razorpayPaymentId: null });
+    await settlePurchase(prisma, { orderId: 'o3', paymentId: 'p3' });
+    expect(tx.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { unlocked: true } });
+    expect(tx.spinResult.update).not.toHaveBeenCalled();
   });
 });

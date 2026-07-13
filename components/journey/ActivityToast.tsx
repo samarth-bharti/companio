@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X } from 'lucide-react';
 import { spring } from '@/lib/motion';
 
@@ -31,7 +32,7 @@ export function ActivityToast() {
   const [visible, setVisible] = useState(false);
   // Picked in effect, not initializer — server and client renders must agree.
   const [message, setMessage] = useState<string>(MESSAGES[0]);
-  const reduced = useReducedMotion();
+  const reduced = useEffectiveReducedMotion();
 
   // Session guard + show after delay
   useEffect(() => {

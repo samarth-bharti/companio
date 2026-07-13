@@ -150,7 +150,7 @@ export function WizardStepVerify({ data, onChange }: Props) {
       {/* Consent checkboxes */}
       <div className="space-y-4">
         <CheckRow id="wiz-bg-consent" checked={data.backgroundConsent} onChange={(v) => onChange({ backgroundConsent: v })} required>
-          I consent to a background-check as part of verification.{' '}
+          I consent to Companio running a background check on me, now or later.{' '}
           <Link href="/safety" className="underline underline-offset-4" style={{ color: 'var(--color-azure-deep)' }}>
             Learn about safety
           </Link>

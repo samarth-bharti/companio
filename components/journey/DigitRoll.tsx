@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { motion, useReducedMotion, useSpring, useTransform } from 'framer-motion';
+import { motion, useSpring, useTransform } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { cn } from '@/lib/utils';
 
 interface DigitRollProps {
@@ -65,7 +66,10 @@ export function DigitRoll({
   className,
   'aria-label': ariaLabel,
 }: DigitRollProps) {
-  const reduced = useReducedMotion();
+  // SSR-safe: framer's useReducedMotion() is false on the server but true on the
+  // client's first render, so branching markup on it fails hydration. This hook
+  // returns false until mounted.
+  const reduced = useEffectiveReducedMotion();
   const str = String(value);
 
   if (reduced) {

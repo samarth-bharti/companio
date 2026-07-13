@@ -1,7 +1,8 @@
 'use client';
 
 import { useRef } from 'react';
-import { motion, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, useTransform } from 'framer-motion';
+import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { useJsScroll } from '@/lib/useJsScroll';
 import { cn } from '@/lib/utils';
 
@@ -40,7 +41,10 @@ export function ColorMorphBridge({
   className,
 }: ColorMorphBridgeProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const shouldReduce = useReducedMotion();
+  // SSR-safe: framer's useReducedMotion() is false on the server but true on the
+  // client's first render, so branching markup on it fails hydration. This hook
+  // returns false until mounted.
+  const shouldReduce = useEffectiveReducedMotion();
 
   const { scrollYProgress } = useJsScroll({
     target: ref,

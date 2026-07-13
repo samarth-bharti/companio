@@ -25,15 +25,15 @@ export default function SpinPage() {
             </h1>
             <p className="text-[var(--color-ink-muted)]" style={{ fontSize: 'var(--text-lead)' }}>
               One spin a week. Most spins win nothing — but a lucky few get a real
-              discount on their next meetup. No purchase needed.
+              discount on the one-time ₹199 unlock. No purchase needed.
             </p>
           </div>
 
           <SpinWheel />
 
           <p className="text-xs text-[var(--color-ink-muted)] max-w-sm">
-            Prizes are discounts only and expire 7 days after you win them. Rewards
-            apply automatically at checkout. See our{' '}
+            Prizes are discounts on the ₹199 unlock only, and expire 7 days after you
+            win them. A win applies automatically at checkout. See our{' '}
             <a href="/terms#spin" className="underline underline-offset-2">spin terms</a>.
           </p>
         </div>

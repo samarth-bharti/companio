@@ -23,6 +23,101 @@ export interface CompanionEarnings {
   completedBookings: number;
 }
 
+export interface CompanionMeetup {
+  id: string;
+  activity: string;
+  dateISO: string;
+  time: string;
+  place: string;
+  status: string;
+  /** The 4 digits the member is also holding. Absent on pre-existing bookings. */
+  meetupCode?: string;
+  /** First name only — a companion never needs the member's full identity. */
+  memberFirstName: string;
+}
+
+export interface CompanionProfileSummary {
+  id: string;
+  name: string;
+  firstName: string;
+  city: string;
+  area: string;
+  bio: string;
+  activities: string[];
+  photo: string;
+  hourlyRate: number;
+  rating: number;
+  reviewCount: number;
+  verified: boolean;
+  premium: boolean;
+  availableNow: boolean;
+  availability: string;
+  payoutUpi: string | null;
+  suspended: boolean;
+}
+
+export interface CompanionDashboard {
+  profile: CompanionProfileSummary;
+  earnings: CompanionEarnings;
+  upcoming: CompanionMeetup[];
+}
+
+/**
+ * Everything the companion dashboard needs, in one round trip.
+ *
+ * Before this existed the dashboard was hardcoded: it greeted every companion as
+ * "Priya S.", listed two invented booking requests, showed a bank account ending
+ * 4521 that belonged to nobody, and — worst — displayed ₹7,485 of "earnings"
+ * whenever the earnings fetch failed. A real companion could read that as money
+ * they were owed.
+ */
+export async function getCompanionDashboard(
+  prisma: PrismaClient,
+  companionId: string,
+): Promise<CompanionDashboard | null> {
+  const companion = await prisma.companion.findUnique({
+    where: { id: companionId },
+    select: {
+      id: true, name: true, firstName: true, city: true, area: true, bio: true,
+      activities: true, photo: true, hourlyRate: true, rating: true, reviewCount: true,
+      verified: true, premium: true, availableNow: true, availability: true,
+      payoutUpi: true, suspended: true,
+    },
+  });
+  if (!companion) return null;
+
+  const [earnings, bookings] = await Promise.all([
+    getCompanionEarnings(prisma, companionId),
+    prisma.booking.findMany({
+      where: { companionId, status: 'upcoming' },
+      orderBy: { dateISO: 'asc' },
+      take: 20,
+      select: {
+        id: true, activity: true, dateISO: true, time: true, place: true, status: true,
+        meetupCode: true,
+        user: { select: { firstName: true } },
+      },
+    }),
+  ]);
+
+  return {
+    profile: companion,
+    earnings,
+    upcoming: bookings.map((b) => ({
+      id: b.id,
+      activity: b.activity,
+      dateISO: b.dateISO,
+      time: b.time,
+      place: b.place,
+      status: b.status,
+      // The companion needs the same four digits the member is holding, or the
+      // check is one-sided and proves nothing.
+      meetupCode: b.meetupCode || undefined,
+      memberFirstName: b.user.firstName,
+    })),
+  };
+}
+
 /** Aggregate a companion's payout + booking counts from the source-of-truth rows. */
 export async function getCompanionEarnings(
   prisma: PrismaClient,
