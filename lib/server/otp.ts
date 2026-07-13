@@ -41,8 +41,17 @@ export const MAX_SENDS_PER_HOUR = 5;
 
 export type SendOutcome =
   | { ok: true; delivery: 'email' }
-  /** Dev/staging only: the code was written to the server log, not emailed. */
-  | { ok: true; delivery: 'console' }
+  /**
+   * Dev/staging only: the code was written to the server log, not emailed.
+   *
+   * `code` rides along so the sign-in screen can simply show it. That is only
+   * safe because this branch is unreachable in production — an unconfigured
+   * RESEND_API_KEY is refused outright there (see sendSignInCode), so there is no
+   * deployment where a real user's code could be handed to whoever asked for it.
+   * Without this, testing sign-in means reading the server's terminal, which
+   * nobody but the person running `next dev` can do.
+   */
+  | { ok: true; delivery: 'console'; code: string }
   | { ok: false; reason: 'email_unconfigured' | 'too_many_requests' | 'send_failed' };
 
 export type VerifyOutcome =
@@ -119,7 +128,11 @@ export async function sendSignInCode(email: string): Promise<SendOutcome> {
         `│  RESEND_API_KEY is unset, so this was not emailed.\n` +
         `└─────────────────────────────────────────────────\n`,
     );
-    return { ok: true, delivery: 'console' };
+    // Belt and braces: production cannot reach here (it returns
+    // email_unconfigured above), but never let a code leave the server if it
+    // somehow did.
+    if (process.env.NODE_ENV === 'production') return { ok: true, delivery: 'email' };
+    return { ok: true, delivery: 'console', code };
   }
 
   const { subject, html, text } = otpEmail({ code });

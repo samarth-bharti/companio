@@ -15,6 +15,7 @@ import { Reveal } from '@/components/motion/Reveal';
 import { FieldStatus, ShakeWrapper } from './FieldStatus';
 import { CodeInput, EMPTY_CODE } from './CodeInput';
 import { useEmailCode } from './useEmailCode';
+import { DevCodeCard } from './DevCodeCard';
 
 // Inline SVG brand icon (lucide-react doesn't include Google)
 function GoogleIcon() {
@@ -50,7 +51,7 @@ export function LoginForm({ next }: { next: string }) {
   const router = useRouter();
   const reduced = useEffectiveReducedMotion();
   const auth = useAuthCapability();
-  const { send, verify, sending, verifying, delivery, error, setError } = useEmailCode();
+  const { send, verify, sending, verifying, delivery, devCode, error, setError } = useEmailCode();
 
   const [stage, setStage] = useState<'email' | 'code'>('email');
   const [email, setEmail] = useState('');
@@ -162,7 +163,11 @@ export function LoginForm({ next }: { next: string }) {
       <Reveal>
         <div className="text-center mb-7">
           <p className="label-eyebrow mb-3" style={{ color: 'var(--color-azure)' }}>
-            {stage === 'email' ? 'Welcome back' : 'Check your inbox'}
+            {stage === 'email'
+              ? 'Welcome back'
+              : delivery === 'console'
+                ? 'Test mode'
+                : 'Check your inbox'}
           </p>
           <h1
             id="login-heading"
@@ -175,11 +180,16 @@ export function LoginForm({ next }: { next: string }) {
             {stage === 'email'
               ? 'Your bookings, companions, and meetups, all here.'
               : delivery === 'console'
-                ? 'Email is not configured on this deployment, so the code was printed to the server console.'
+                ? 'No email is configured on this deployment, so nothing was sent. Your code is below.'
                 : `We sent a 6-digit code to ${email}. It expires in 10 minutes.`}
           </p>
         </div>
       </Reveal>
+
+      {/* The code, on screen, when there is no inbox for it to go to. It used to
+          be printed to the server terminal and nowhere else, so the only person
+          who could sign in was the one watching `next dev` scroll past. */}
+      {stage === 'code' && devCode && <DevCodeCard code={devCode} />}
 
       {stage === 'email' ? (
         <>

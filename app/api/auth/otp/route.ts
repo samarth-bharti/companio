@@ -50,7 +50,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.reason }, { status });
   }
 
-  // `delivery` tells a developer running without RESEND_API_KEY to look at the
-  // server log. It leaks nothing: it describes our configuration, not the user.
-  return NextResponse.json({ ok: true, delivery: result.delivery });
+  // `delivery` describes our configuration, not the user, so it leaks nothing.
+  //
+  // When it is 'console' the code rides along and the screen shows it: no email
+  // is going anywhere, and the alternative is that only the person watching the
+  // `next dev` terminal can sign in. sendSignInCode() refuses outright in
+  // production when email is unconfigured, so this branch cannot exist on a
+  // deployment where the code belongs to a real user.
+  return NextResponse.json(
+    result.delivery === 'console'
+      ? { ok: true, delivery: 'console', code: result.code }
+      : { ok: true, delivery: 'email' },
+  );
 }

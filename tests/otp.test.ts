@@ -98,8 +98,34 @@ describe('sendSignInCode', () => {
 
   it('reports console delivery when email is not configured, rather than claiming it sent one', async () => {
     const out = await sendSignInCode('sam@x.com');
-    expect(out).toEqual({ ok: true, delivery: 'console' });
+    expect(out).toMatchObject({ ok: true, delivery: 'console' });
     expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  // With no email service, the code went to the server's terminal and nowhere
+  // else — so the only person who could sign in to a test build was whoever was
+  // watching `next dev` scroll past. It now rides back to the screen.
+  it('returns the code itself when there is no inbox to send it to', async () => {
+    const out = await sendSignInCode('sam@x.com');
+    expect(out).toMatchObject({ ok: true, delivery: 'console' });
+    expect((out as { code: string }).code).toMatch(/^\d{6}$/);
+  });
+
+  /**
+   * The one that matters. A real user's sign-in code must never be handed back to
+   * whoever asked for it. Production refuses to run without email at all, so this
+   * branch is unreachable there — this test is the guard on that staying true.
+   */
+  it('never returns a code in production', async () => {
+    const prev = process.env.NODE_ENV;
+    // NODE_ENV is readonly in the types; the runtime does not care.
+    (process.env as Record<string, string>).NODE_ENV = 'production';
+    try {
+      const out = await sendSignInCode('sam@x.com');
+      expect(out).not.toHaveProperty('code');
+    } finally {
+      (process.env as Record<string, string>).NODE_ENV = prev ?? 'test';
+    }
   });
 });
 

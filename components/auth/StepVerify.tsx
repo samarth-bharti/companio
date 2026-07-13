@@ -5,6 +5,7 @@ import { ChevronLeft, Mail } from 'lucide-react';
 import { Reveal } from '@/components/motion/Reveal';
 import { CodeInput, EMPTY_CODE } from './CodeInput';
 import { useEmailCode } from './useEmailCode';
+import { DevCodeCard } from './DevCodeCard';
 import type { RegFormData } from './RegisterWizard';
 
 const RESEND_SECONDS = 30;
@@ -28,7 +29,7 @@ interface Props {
  * reads the answer. That is the whole difference from what it replaced.
  */
 export function StepVerify({ form, patch, onBack, onNext }: Props) {
-  const { send, verify, sending, verifying, delivery, error, setError } = useEmailCode();
+  const { send, verify, sending, verifying, delivery, devCode, error, setError } = useEmailCode();
 
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState<string[]>([...EMPTY_CODE]);
@@ -83,12 +84,15 @@ export function StepVerify({ form, patch, onBack, onNext }: Props) {
           <p className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
             {sent
               ? delivery === 'console'
-                ? 'Email is not configured on this deployment, so the code was printed to the server console.'
+                ? 'No email is configured on this deployment, so nothing was sent. Your code is below.'
                 : `We sent a 6-digit code to ${form.email}. It expires in 10 minutes.`
               : `We'll send a 6-digit code to ${form.email} to confirm it's yours. Companio has no passwords.`}
           </p>
         </div>
       </Reveal>
+
+      {/* Same as the sign-in screen: with no inbox to send to, show the code. */}
+      {sent && devCode && <DevCodeCard code={devCode} />}
 
       {!sent ? (
         <div className="flex flex-col gap-5">

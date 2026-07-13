@@ -33,6 +33,8 @@ export function useEmailCode() {
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [delivery, setDelivery] = useState<Delivery | null>(null);
+  /** The code itself, when this deployment has no email and printed it instead. */
+  const [devCode, setDevCode] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   const send = useCallback(async (email: string): Promise<boolean> => {
@@ -47,6 +49,7 @@ export function useEmailCode() {
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         delivery?: Delivery;
+        code?: string;
         error?: string;
       };
       if (!res.ok || !data.ok) {
@@ -54,6 +57,10 @@ export function useEmailCode() {
         return false;
       }
       setDelivery(data.delivery ?? 'email');
+      // Only ever present when the server has no email configured, which it
+      // refuses to be in production. Showing it beats making the tester read the
+      // `next dev` terminal.
+      setDevCode(data.code ?? null);
       return true;
     } catch {
       setError('Network error. Check your connection and try again.');
@@ -99,5 +106,5 @@ export function useEmailCode() {
     [],
   );
 
-  return { send, verify, sending, verifying, delivery, error, setError };
+  return { send, verify, sending, verifying, delivery, devCode, error, setError };
 }
