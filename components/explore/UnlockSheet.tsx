@@ -44,6 +44,14 @@ export function UnlockSheet({
   // this only mirrors it, so the member can see the price they will actually pay
   // before they commit. The wheel was awarding discounts nobody could spend.
   const [discountPct, setDiscountPct] = useState(0);
+  // Discount code state. `codeAmountPaise` is what the SERVER said the price
+  // becomes — never computed here, so a tampered client cannot invent a price.
+  // create-order looks the code up again anyway and ignores whatever we think.
+  const [codeInput, setCodeInput] = useState('');
+  const [appliedCode, setAppliedCode] = useState<string | null>(null);
+  const [codeAmountPaise, setCodeAmountPaise] = useState<number | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [codeChecking, setCodeChecking] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const prevFocusRef = useRef<Element | null>(null);
   // Synchronous double-submit guard + tracked timers. setPay is async, so a fast
@@ -101,7 +109,12 @@ export function UnlockSheet({
 
   // Exactly what the server will charge, to the paise. Quoting a rounded rupee
   // figure here meant offering "Pay ₹159" and billing ₹159.20.
-  const payPrice = formatPaise(applyDiscount(UNLOCK_AMOUNT, discountPct));
+  // Price after the spin win, then after a discount code. The server recomputes
+  // both when it fixes the order amount — this only mirrors them so the member
+  // can see what they will actually pay before committing.
+  const spinPrice = applyDiscount(UNLOCK_AMOUNT, discountPct);
+  const finalPaise = codeAmountPaise ?? spinPrice;
+  const payPrice = formatPaise(finalPaise);
 
   // Whether this deployment hands the unlock out for free. Asked of the server,
   // and shown loudly — a free unlock that looks like a paid one is how a "test"
@@ -120,6 +133,51 @@ export function UnlockSheet({
     setPayError(message);
   }
 
+  /**
+   * Ask the server what this code does to the price. Preview only — it reserves
+   * nothing and spends nothing, and create-order re-validates the code from the
+   * database when the real order is made. Nothing here is trusted.
+   */
+  async function applyCode() {
+    const code = codeInput.trim();
+    if (!code || codeChecking) return;
+    setCodeChecking(true);
+    setCodeError(null);
+    try {
+      const res = await fetch('/api/discounts/validate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        code?: string;
+        amountPaise?: number;
+        message?: string;
+      };
+      if (!res.ok || !data.ok || typeof data.amountPaise !== 'number') {
+        setAppliedCode(null);
+        setCodeAmountPaise(null);
+        setCodeError(data.message ?? "That code isn't valid.");
+        return;
+      }
+      setAppliedCode(data.code ?? code.toUpperCase());
+      setCodeAmountPaise(data.amountPaise);
+      setCodeError(null);
+    } catch {
+      setCodeError('We could not check that code. Please try again.');
+    } finally {
+      setCodeChecking(false);
+    }
+  }
+
+  function clearCode() {
+    setAppliedCode(null);
+    setCodeAmountPaise(null);
+    setCodeError(null);
+    setCodeInput('');
+  }
+
   async function doPay() {
     if (payingRef.current) return;
     if (!sel) return; // a payment method must be chosen first
@@ -127,7 +185,12 @@ export function UnlockSheet({
     setPayError(null);
     setPay("processing");
 
-    const result = await payWithRazorpay({ kind: "unlock" });
+    // The code goes to the server as a STRING. The server prices it; we never
+    // send an amount.
+    const result = await payWithRazorpay({
+      kind: "unlock",
+      ...(appliedCode ? { discountCode: appliedCode } : {}),
+    });
 
     switch (result) {
       case "success":
@@ -151,6 +214,13 @@ export function UnlockSheet({
         return;
       case "unavailable":
         fail("Payments are temporarily unavailable. Please try again shortly.");
+        return;
+      case "discount_invalid":
+        // The code was fine when we previewed it and is not fine now — it expired,
+        // or someone else took its last use. Clear it so the member sees the real
+        // price rather than a discount that no longer exists.
+        clearCode();
+        fail("That discount code is no longer valid. The price has been updated — you have not been charged.");
         return;
       default:
         fail("That payment didn't go through. You have not been charged.");
@@ -224,6 +294,57 @@ export function UnlockSheet({
                     unlocks everything for free and no money is taken. Adding Razorpay keys
                     switches this off automatically.
                   </p>
+                </div>
+              )}
+              {/* Discount code. /admin/discounts could already mint codes; until now
+                  nothing on the site would accept one. Guests never see it — a code
+                  is applied to an order, and a guest has no order. */}
+              {!isGuest && (
+                <div className="mb-3">
+                  {appliedCode ? (
+                    <div className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm"
+                         style={{ background: 'rgba(31,174,107,0.08)', color: '#157A4A' }}>
+                      <span>
+                        Code <strong>{appliedCode}</strong> applied — you pay {payPrice}.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={clearCode}
+                        className="text-xs font-semibold underline underline-offset-2 shrink-0"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={codeInput}
+                        onChange={(e) => setCodeInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void applyCode(); } }}
+                        placeholder="Discount code"
+                        aria-label="Discount code"
+                        autoComplete="off"
+                        maxLength={32}
+                        className="flex-1 min-w-0 h-11 px-3 rounded-xl border text-sm uppercase"
+                        style={{ borderColor: 'rgba(0,0,0,0.12)' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void applyCode()}
+                        disabled={!codeInput.trim() || codeChecking}
+                        className="h-11 px-4 rounded-xl text-sm font-semibold shrink-0 disabled:opacity-40"
+                        style={{ background: 'rgba(46,107,255,0.08)', color: 'var(--color-azure-deep)' }}
+                      >
+                        {codeChecking ? 'Checking…' : 'Apply'}
+                      </button>
+                    </div>
+                  )}
+                  {codeError && (
+                    <p role="status" className="mt-1.5 text-xs" style={{ color: 'var(--color-danger)' }}>
+                      {codeError}
+                    </p>
+                  )}
                 </div>
               )}
               {!isGuest && <PaymentMethodTiles selected={sel} onSelect={setSel} />}

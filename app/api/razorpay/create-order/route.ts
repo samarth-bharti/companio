@@ -21,6 +21,7 @@ import {
   PLUS_AMOUNT,
 } from '@/lib/server/pricing';
 import { quoteBooking, bestSpin } from '@/lib/server/booking';
+import { resolveDiscount, discountFailureMessage } from '@/lib/server/discounts';
 import { envValue } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
 
     const parsed = orderCreateBody.safeParse(await readJsonBody(req));
     if (!parsed.success) return badRequest(parsed.error.flatten());
-    const { kind, packId, bookingId } = parsed.data;
+    const { kind, packId, bookingId, discountCode } = parsed.data;
 
     // Refuse any kind that would leave us holding a companion's money without
     // an RBI Payment Aggregator licence. 503, so the client shows "temporarily
@@ -58,6 +59,7 @@ export async function POST(req: Request) {
     let amount: number;
     let credits = 0;
     let spinResultId: string | null = null;
+    let appliedCode: string | null = null;
     if (kind === 'unlock') {
       // A spin win discounts the unlock — the only thing v1 sells, and so the
       // only thing a win can be spent on. The wheel used to award "% off your
@@ -79,6 +81,26 @@ export async function POST(req: Request) {
           spinResultId = spin.id;
         }
         // reserved.count === 0 ⇒ a concurrent order already took it. Full price.
+      }
+
+      // A discount code, if one was typed. Applied to the price AFTER a spin win,
+      // so the two stack rather than one silently overwriting the other.
+      //
+      // Nothing is spent here: `usedCount` is incremented in settlePurchase, when
+      // money has actually moved. An abandoned checkout must not burn a use of a
+      // limited code.
+      if (discountCode) {
+        const verdict = await resolveDiscount(prisma, discountCode, amount);
+        if (!verdict.ok) {
+          // The order is NOT created with a bad code silently ignored — that
+          // would charge full price to someone who believes they have a discount.
+          return json(
+            { error: 'discount_invalid', reason: verdict.reason, message: discountFailureMessage(verdict.reason) },
+            400,
+          );
+        }
+        amount = verdict.amountPaise;
+        appliedCode = verdict.code;
       }
     } else if (kind === 'plus') {
       amount = PLUS_AMOUNT;
@@ -166,6 +188,9 @@ export async function POST(req: Request) {
         credits,
         bookingId: kind === 'booking' ? bookingId : null,
         spinResultId,
+        // Recorded, not spent. settlePurchase reads it back and increments the
+        // code's usedCount only once the payment is real.
+        discountCode: appliedCode,
         razorpayOrderId: order.id,
       },
     });

@@ -12,6 +12,12 @@ export type RazorpayIntent = {
   kind: 'unlock' | 'plus' | 'credits' | 'booking';
   packId?: string;
   bookingId?: string;
+  /**
+   * A discount code, as typed. Only ever a string: the server looks it up and
+   * recomputes the price. The client cannot send an amount or a percentage, so a
+   * tampered request buys nothing.
+   */
+  discountCode?: string;
 };
 
 /**
@@ -30,6 +36,11 @@ export type PayResult =
   | 'failed'
   | 'auth_required'
   | 'unavailable'
+  // The discount code was rejected when the order was priced. The sheet previews
+  // the code before this point, so reaching here means it lapsed in between —
+  // it expired, or someone else took the last use. Distinct from 'failed' so the
+  // member is told to check the code rather than "something went wrong".
+  | 'discount_invalid'
   | 'unconfigured';
 
 // Razorpay injects this global once checkout.js loads.
@@ -94,7 +105,13 @@ function loadScript(): Promise<boolean> {
   });
 }
 
-type OrderResponse = { orderId?: string; amount?: number; currency?: string; keyId?: string };
+type OrderResponse = {
+  orderId?: string;
+  amount?: number;
+  currency?: string;
+  keyId?: string;
+  error?: string;
+};
 type VerifyResponse = { ok?: boolean };
 
 async function postJson<T>(url: string, body: unknown): Promise<{ status: number; data: T | null }> {
@@ -136,6 +153,9 @@ export async function payWithRazorpay(intent: RazorpayIntent): Promise<PayResult
   // demo path from here — that would hand out the paid benefit for free.
   if (order.status === 401) return 'auth_required';
   if (order.status === 503) return 'unavailable';
+  // The server priced the order and refused the code. It never silently charges
+  // full price to someone who believes they have a discount.
+  if (order.status === 400 && order.data?.error === 'discount_invalid') return 'discount_invalid';
   if (order.status !== 200 || !order.data?.orderId) return 'failed';
 
   const { orderId, amount, currency, keyId } = order.data;
