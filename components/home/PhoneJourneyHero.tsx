@@ -73,14 +73,73 @@ function useHeroVideoEnabled(): boolean {
   return allowed;
 }
 
+/**
+ * Start the footage, and keep asking until it actually starts.
+ *
+ * The autoplay attribute is a request, not a guarantee. It is refused on a
+ * backgrounded tab, refused while the tab is still loading on some devices, and
+ * refused outright by Chrome's heuristics often enough to matter. Nothing here
+ * ever called play(), and nothing handled a refusal — so a single "no" left the
+ * hero frozen on its poster for the entire visit. That is what "the video only
+ * plays sometimes" actually is: a coin-flip on the first autoplay attempt.
+ *
+ * The muted race is the other half. React applies `muted` as a DOM property
+ * rather than an HTML attribute, and it can land after the element is already in
+ * the document — so the browser occasionally evaluates autoplay against a video
+ * it still believes has sound, refuses it as unmuted autoplay, and never
+ * reconsiders. Setting muted on the element before asking removes the race.
+ */
+function useAutoplay(ref: React.RefObject<HTMLVideoElement | null>, active: boolean) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!active || !el) return;
+
+    // Before anything is asked of it: this video is silent, whatever React did.
+    el.muted = true;
+    el.defaultMuted = true;
+
+    let cancelled = false;
+    const attempt = () => {
+      if (cancelled || !el.paused) return;
+      // A rejected play() is normal (policy, or not enough data yet) and is not
+      // an error worth surfacing — one of the listeners below will try again.
+      void el.play().catch(() => {});
+    };
+
+    attempt();
+
+    // Each of these is a moment the browser may have changed its mind: more data
+    // arrived, the tab came to the foreground, or the visitor touched the page —
+    // and a real interaction satisfies the autoplay policy unconditionally.
+    const onVisible = () => { if (document.visibilityState === 'visible') attempt(); };
+    el.addEventListener('loadeddata', attempt);
+    el.addEventListener('canplay', attempt);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pointerdown', attempt, { passive: true });
+    window.addEventListener('keydown', attempt);
+
+    return () => {
+      cancelled = true;
+      el.removeEventListener('loadeddata', attempt);
+      el.removeEventListener('canplay', attempt);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pointerdown', attempt);
+      window.removeEventListener('keydown', attempt);
+    };
+  }, [ref, active]);
+}
+
 function VideoBackground() {
   const showVideo = useHeroVideoEnabled();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useAutoplay(videoRef, showVideo);
 
   return (
     <>
       <div aria-hidden="true" className="absolute inset-0" style={{ zIndex: 0, background: VIDEO_FALLBACK }} />
       {showVideo && (
         <video
+          ref={videoRef}
           className="absolute inset-0 w-full h-full object-cover"
           style={{ zIndex: 1 }}
           src="/hero.mp4"
