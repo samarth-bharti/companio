@@ -19,11 +19,14 @@ function makePrisma() {
     companionApplication: { deleteMany: vi.fn() },
     companionPayout: { deleteMany: vi.fn() },
     user: { delete: vi.fn(), updateMany: vi.fn() },
-    companion: { delete: vi.fn() },
+    companion: { delete: vi.fn(), update: vi.fn() },
   };
   const prisma: any = {
     ...tx,
     booking: { ...tx.booking, count: vi.fn() },
+    // eraseUser reads the login's companionId before opening the transaction.
+    // Default: an ordinary member who owns no companion profile.
+    user: { ...tx.user, findUnique: vi.fn().mockResolvedValue({ companionId: null }) },
     $transaction: vi.fn(async (fn: any) => fn(tx)),
   };
   return { prisma, tx };
@@ -66,9 +69,36 @@ describe('eraseUser', () => {
     const { prisma, tx } = makePrisma();
     await eraseUser(prisma, 'u1');
     expect(tx.user.delete).toHaveBeenCalledWith({ where: { id: 'u1' } });
-    for (const table of ['wallet', 'purchase', 'booking', 'favorite', 'message', 'notification', 'subscription', 'companionApplication']) {
+    for (const table of ['wallet', 'booking', 'favorite', 'message', 'notification', 'subscription', 'companionApplication']) {
       expect(tx[table].deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } });
     }
     expect(tx.creditLedger.deleteMany).toHaveBeenCalledWith({ where: { wallet: { userId: 'u1' } } });
+  });
+
+  it('does NOT delete the payment record', async () => {
+    // The privacy policy promises payment and tax records survive erasure, and
+    // the company needs its own accounting trail. purchases.userId is SET NULL by
+    // the database instead: the payment stays, the person is severed from it.
+    const { prisma, tx } = makePrisma();
+    await eraseUser(prisma, 'u1');
+    expect(tx.purchase.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('suspends the marketplace profile when a companion erases their login', async () => {
+    // Otherwise their photo, bio and name stay published on /explore and remain
+    // bookable — with nobody able to sign in to the account behind them.
+    const { prisma, tx } = makePrisma();
+    prisma.user.findUnique.mockResolvedValue({ companionId: 'ananya' });
+    await eraseUser(prisma, 'u1');
+    expect(tx.companion.update).toHaveBeenCalledWith({
+      where: { id: 'ananya' },
+      data: { suspended: true },
+    });
+  });
+
+  it('touches no companion profile for an ordinary member', async () => {
+    const { prisma, tx } = makePrisma();
+    await eraseUser(prisma, 'u1');
+    expect(tx.companion.update).not.toHaveBeenCalled();
   });
 });

@@ -462,3 +462,20 @@ const clientMode =
 export const dataClient: DataClient = withChangeEvents(
   clientMode === 'http' ? makeHttpDataClient() : makeLocalStorageDataClient(),
 );
+
+/**
+ * True when this build talks to the real API and the data lives in Postgres.
+ * The account panel needs it: "download a copy of your data" means an export
+ * from the server in http mode, and a dump of this browser's localStorage in
+ * local demo mode — and telling a demo visitor we hold data we do not would be
+ * a lie in the one place the law cares about.
+ */
+export function isServerBacked(): boolean {
+  return clientMode === 'http';
+}
+
+/** Every localStorage key this app owns. Used by the local-mode data wipe. */
+export function localStorageKeys(): string[] {
+  if (typeof window === 'undefined') return [];
+  return Object.keys(localStorage).filter((k) => k.startsWith('companio'));
+}

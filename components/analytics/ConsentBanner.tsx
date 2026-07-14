@@ -10,34 +10,70 @@
 // Self-contained styling (no shared Button import) to stay low-risk in the
 // shared repo and render correctly regardless of design-token drift.
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { getConsent, setConsent, onConsentChange } from '@/lib/consent';
 
 const isUndecided = () => getConsent() === 'unset';
 const serverSnapshot = () => false; // never render on the server → no flash
 
+// useLayoutEffect warns during SSR; this component renders nothing on the server,
+// but the import is still evaluated there.
+const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+
 export function ConsentBanner() {
   const show = useSyncExternalStore(onConsentChange, isUndecided, serverSnapshot);
+  const ref = useRef<HTMLDivElement>(null);
+
+  /**
+   * Reserve the banner's height at the bottom of the document while it is up.
+   *
+   * This is a floating, fixed-position card, so it covers whatever page content
+   * happens to sit underneath it — and on /book, what sat underneath it was the
+   * wizard's **Continue** button. `document.elementFromPoint()` at the centre of
+   * that button returned the banner's own paragraph: a first-time visitor, who by
+   * definition has not answered the banner yet, could not start a booking. They
+   * would click and nothing would happen, because they were clicking the banner.
+   *
+   * The button lives at the end of the document, so no amount of scrolling moved
+   * it clear. Padding the body by the banner's height creates the room to scroll
+   * it out from under, and it costs nothing once the banner is dismissed.
+   */
+  useIsomorphicLayoutEffect(() => {
+    if (!show) return;
+    const el = ref.current;
+    if (!el) return;
+
+    const apply = () => {
+      // 16px so the content clears the banner rather than kissing its edge.
+      document.body.style.paddingBottom = `${el.offsetHeight + 16}px`;
+    };
+    apply();
+
+    // The banner wraps to a different height on a narrow screen and on rotate.
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+
+    return () => {
+      ro.disconnect();
+      document.body.style.paddingBottom = '';
+    };
+  }, [show]);
+
   if (!show) return null;
 
+  // setConsent() now pushes the Consent Mode update itself, so the banner and the
+  // dashboard's opt-out switch cannot drift into disagreeing about what gtag was told.
   function choose(value: 'granted' | 'denied') {
     setConsent(value); // dispatches the consent event → this component re-hides
-    if (value === 'granted' && typeof window !== 'undefined' && window.gtag) {
-      window.gtag('consent', 'update', {
-        analytics_storage: 'granted',
-        ad_storage: 'denied',
-        ad_user_data: 'denied',
-        ad_personalization: 'denied',
-      });
-    }
   }
 
   return (
     <div
+      ref={ref}
       role="dialog"
       aria-label="Cookie consent"
-      className="fixed inset-x-3 bottom-20 z-40 mx-auto max-w-xl rounded-2xl border border-black/10 bg-white/95 p-4 shadow-2xl backdrop-blur sm:inset-x-auto sm:left-4 sm:right-auto sm:bottom-4"
+      className="fixed inset-x-3 bottom-4 z-40 mx-auto max-w-xl rounded-2xl border border-black/10 bg-white/95 p-4 shadow-2xl backdrop-blur sm:inset-x-auto sm:left-4 sm:right-auto sm:bottom-4"
     >
       <p className="text-sm leading-relaxed text-neutral-700">
         We use privacy-friendly analytics to understand what works and improve
