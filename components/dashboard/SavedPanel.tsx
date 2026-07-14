@@ -7,6 +7,7 @@ import { Heart } from 'lucide-react';
 import { RatingBadge } from '@/components/companion/RatingBadge';
 import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
+import { useViewerReady } from '@/lib/useViewerReady';
 import type { Companion } from '@/lib/data/companions';
 import { calm, spring, stagger } from '@/lib/motion';
 
@@ -19,6 +20,8 @@ const cardVariant = {
 const NO_FAVOURITES: Companion[] = [];
 
 export function SavedPanel() {
+  // A guest previewing the dashboard has no rows to read; asking anyway is 401s.
+  const signedIn = useViewerReady();
   const reduced = useEffectiveReducedMotion();
 
   // Resolve ids to profiles inside the reader, so hearting a companion on
@@ -30,7 +33,7 @@ export function SavedPanel() {
     return resolved.filter((c): c is Companion => !!c);
   }, []);
 
-  const { data: favorites } = useData('favorites', read, NO_FAVOURITES);
+  const { data: favorites } = useData('favorites', read, NO_FAVOURITES, signedIn);
 
   const unsave = (id: string) => {
     void dataClient.toggleFavorite(id);

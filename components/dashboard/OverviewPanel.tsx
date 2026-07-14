@@ -4,8 +4,10 @@ import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
+import { useViewerReady } from '@/lib/useViewerReady';
 import { getCompanion } from '@/lib/data/companions';
 import type { Booking, Plan } from '@/lib/appState';
+import type { Wallet } from '@/lib/journeyState';
 import { WalletCard } from './WalletCard';
 import { NextMeetupCard } from './NextMeetupCard';
 import { StampShelf } from './StampShelf';
@@ -21,14 +23,28 @@ const cardVariant = {
 const NO_BOOKINGS: Booking[] = [];
 
 export function OverviewPanel() {
+  // A guest previewing the dashboard has no rows to read; asking anyway is 401s.
+  const signedIn = useViewerReady();
   const reduced = useEffectiveReducedMotion();
 
   // Each slice re-reads on its own change event, so cancelling a booking in
   // another tab, or paying in this one, updates the panel without a reload.
-  const { data: wallet }   = useData('wallet', () => dataClient.getWallet(), { credits: 2, used: 0 });
-  const { data: bookings } = useData('bookings', () => dataClient.getBookings(), NO_BOOKINGS);
-  const { data: unlocked } = useData('unlocked', () => dataClient.getUnlocked(), false);
-  const { data: plan }     = useData<Plan>('plan', () => dataClient.getPlan(), null);
+  // The fallback is null — "we do not know yet" — not `{ credits: 2 }`.
+  //
+  // A hard-coded 2 is the number a brand-new account happens to start with, and
+  // useData returns the fallback until the real read lands. So a member who had
+  // already spent both included meetings was shown "2 meetings remaining, worth
+  // ₹998" on every dashboard load, for as long as the request took, before it
+  // silently corrected itself to 0. Telling someone they hold ₹998 of credit
+  // they do not have is not a loading state; it is a wrong balance.
+  const { data: wallet, loading: walletLoading } =
+    useData<Wallet | null>('wallet', () => dataClient.getWallet(), null, signedIn);
+  const { data: bookings } = useData('bookings', () => dataClient.getBookings(), NO_BOOKINGS, signedIn);
+  const { data: unlocked } = useData('unlocked', () => dataClient.getUnlocked(), false, signedIn);
+  const { data: plan }     = useData<Plan>('plan', () => dataClient.getPlan(), null, signedIn);
+  // Read for the milestone shelf: the first stamp was awarded to everyone,
+  // signed out included. Age confirmation is something a member actually does.
+  const { data: user }     = useData('user', () => dataClient.getUser(), null, signedIn);
 
   const upcoming = bookings
     .filter((b) => b.status === 'upcoming')
@@ -52,7 +68,11 @@ export function OverviewPanel() {
       }}
     >
       <motion.div variants={cardVariant}>
-        <WalletCard wallet={wallet} />
+        {wallet && !walletLoading ? (
+          <WalletCard wallet={wallet} />
+        ) : (
+          <WalletCardSkeleton />
+        )}
       </motion.div>
 
       <motion.div variants={cardVariant}>
@@ -64,7 +84,7 @@ export function OverviewPanel() {
       </motion.div>
 
       <motion.div variants={cardVariant}>
-        <StampShelf bookings={bookings} unlocked={unlocked} />
+        <StampShelf bookings={bookings} unlocked={unlocked} dateOfBirth={user?.dateOfBirth ?? null} />
       </motion.div>
 
       {rebookCandidate && rebookCompanion && (
@@ -73,6 +93,25 @@ export function OverviewPanel() {
         </motion.div>
       )}
     </motion.div>
+  );
+}
+
+/**
+ * Placeholder shown while the real balance is in flight. Deliberately shows no
+ * number at all: any number here would be a guess, and a guessed balance is
+ * indistinguishable from a real one to the person reading it.
+ */
+function WalletCardSkeleton() {
+  return (
+    <div
+      className="rounded-lg p-6 min-h-[168px] animate-pulse"
+      style={{ background: 'var(--color-surface, #fff)', border: '1px solid rgba(0,0,0,0.06)' }}
+      aria-hidden="true"
+    >
+      <div className="h-3 w-24 rounded bg-black/10" />
+      <div className="h-8 w-40 rounded bg-black/10 mt-4" />
+      <div className="h-3 w-56 rounded bg-black/5 mt-4" />
+    </div>
   );
 }
 

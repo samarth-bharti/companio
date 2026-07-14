@@ -8,6 +8,7 @@ import { Seal } from "@/components/ui/Seal";
 import { NavUser } from "@/components/layout/NavUser";
 import { dataClient } from "@/lib/dataClient";
 import { useData } from "@/lib/useData";
+import { useViewerReady } from "@/lib/useViewerReady";
 import { cn } from "@/lib/utils";
 
 interface NavProps {
@@ -37,7 +38,10 @@ export function Nav({ heroMode = false }: NavProps) {
   // client render agree. useData also re-reads when the user signs in or out in
   // this tab or any other, which the old [pathname] effect only caught on a
   // navigation.
-  const { data: user } = useData('user', () => dataClient.getUser(), null);
+  // Nav is in the root layout, so this read runs on every public page. In http
+  // mode a guest has no session and /api/user answers 401 — skip it.
+  const viewerReady = useViewerReady();
+  const { data: user } = useData('user', () => dataClient.getUser(), null, viewerReady);
   const signedIn = user !== null;
 
   useEffect(() => {

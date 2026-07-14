@@ -7,8 +7,9 @@ import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { dataClient } from '@/lib/dataClient';
 import { emitDataChange } from '@/lib/dataEvents';
 import { track } from '@/lib/analytics';
-import { topMatchIdFor, freeNowCountIn } from '@/lib/data/companions';
+import { topMatchIdFor, freeNowCountIn, getCompanion } from '@/lib/data/companions';
 import type { Companion } from '@/lib/data/companions';
+import { CITIES } from '@/lib/data/cities';
 import { ExploreHeader } from './ExploreHeader';
 import { ExploreFilters } from './ExploreFilters';
 import type { ViewMode } from './ExploreFilters';
@@ -17,6 +18,7 @@ import { UnlockSheet } from './UnlockSheet';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
 import { ParticleField } from '@/components/journey/ParticleField';
 import { ActivityToast } from '@/components/journey/ActivityToast';
+import { useViewerReady, useViewerResolved } from '@/lib/useViewerReady';
 import { useExploreFilters } from './useExploreFilters';
 import { WelcomeOverlay } from './WelcomeOverlay';
 import { CompareTray } from './CompareTray';
@@ -107,19 +109,45 @@ export function ExploreClient() {
   // owns. These were read from localStorage, which the real sign-in never writes:
   // a member who had just registered was still seen as a guest, so the unlock
   // sheet offered to create the account they were already signed into.
+  // Explore is a public page. In http mode both endpoints require a session, so
+  // for a guest the answer is already known — signed out, not unlocked — and
+  // asking would only 401. Re-runs when a session resolves.
+  const viewerReady = useViewerReady();
+  const viewerResolved = useViewerResolved();
+
+  // `lockKnown` is false until we actually know whether this visitor has paid.
+  // Until then the grid stays in its loading state rather than defaulting to
+  // "locked" — otherwise every reload flashes the paywall at a member who has
+  // already bought the unlock.
+  const [lockKnown, setLockKnown] = useState(false);
+
   useEffect(() => {
+    if (!viewerResolved) return; // still unknown — paint nothing, decide nothing
+
+    if (!viewerReady) {
+      // Definitely a guest: signed out, not unlocked. No request needed.
+      setSignedIn(false);
+      setLockKnown(true);
+      return;
+    }
+
     let cancelled = false;
     Promise.all([dataClient.getUser(), dataClient.getUnlocked()])
       .then(([user, isUnlocked]) => {
         if (cancelled) return;
         setSignedIn(user !== null);
         if (isUnlocked) setUnlocked(true);
+        setLockKnown(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        // A failed read must not strand the grid in a skeleton forever. Fail
+        // closed: locked is the safe default once we have actually tried.
+        if (!cancelled) setLockKnown(true);
+      });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [viewerReady, viewerResolved]);
 
   // The "N of M unlocked" chip counts the city actually on screen. It used to
   // count COMPANIONS.length — every companion everywhere — which meant Jaipur
@@ -133,6 +161,36 @@ export function ExploreClient() {
     setSheetOpen(true);
     track('unlock_intent', { companionId: c.id });
   }, []);
+
+  /**
+   * `/explore?unlock=<companionId>` — arrive with the unlock sheet already open,
+   * seeded with the companion the member was trying to book.
+   *
+   * The booking wizard's review step sends them here when they have no included
+   * meetings because they have never unlocked. Without this the button would have
+   * to dump them on a grid and hope they tap the right card — and a query
+   * parameter that nothing reads is exactly the bug that left `?welcome=1` inert
+   * for the entire life of the app. One-shot: it must not re-open if they close it.
+   */
+  const unlockParam = params.get('unlock');
+  const unlockSeededRef = useRef(false);
+  useEffect(() => {
+    if (unlockSeededRef.current || !unlockParam || unlocked) return;
+
+    // Look the companion up in the WHOLE catalogue, not just the selected city.
+    // Explore defaults to a city the member may never have chosen (Mumbai, for an
+    // account with no city set), so scoping this to `cityCompanions` silently
+    // found nothing whenever the companion they were booking lived anywhere else
+    // — which is most of them. Switch the city to where the companion actually is,
+    // so the sheet's "and N more in <city>" is true as well.
+    const target = getCompanion(unlockParam);
+    if (!target) return;
+
+    unlockSeededRef.current = true;
+    const cityMatch = CITIES.find((c) => c.name === target.city);
+    if (cityMatch && cityMatch.id !== cityId) setCityId(cityMatch.id);
+    openSheet(target);
+  }, [unlockParam, unlocked, cityId, setCityId, openSheet]);
 
   // Unlock-sequence timers — tracked so unmount mid-sequence cancels them.
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -261,7 +319,10 @@ export function ExploreClient() {
             highlightId={highlightId}
             cityName={selectedCity.name}
             cityIsEmpty={cityCompanions.length === 0}
-            loading={loading}
+            // Stay in the skeleton until the lock state is known, not just until
+            // the catalogue arrives: rendering the grid earlier means rendering it
+            // locked, and flashing a paywall at someone who has already paid.
+            loading={loading || !lockKnown}
             loadError={loadError}
           />
         ) : (

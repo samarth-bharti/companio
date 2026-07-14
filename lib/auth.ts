@@ -133,9 +133,49 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token.uid) {
-        (session.user as { id?: string }).id = token.uid as string;
+      const uid = token.uid as string | undefined;
+      if (!session.user || !uid) return session;
+
+      /**
+       * Does this id still name an account?
+       *
+       * The JWT is self-contained and lives for thirty days. Delete the User row —
+       * the member erases their account, or an admin removes them — and the token
+       * stays cryptographically valid the whole time. The browser went on believing
+       * it was signed in, `useSession()` kept reporting `authenticated`, and every
+       * API call it made came back 401, because the server resolves the caller
+       * against a row that is not there. The member is left in a broken,
+       * half-logged-in app instead of simply being signed out.
+       *
+       * So the id is resolved against the database here, and a token naming an
+       * account that no longer exists yields no session at all.
+       *
+       * A SUSPENDED or BANNED user deliberately still gets a session. That is not
+       * an oversight: lib/server/session.ts blocks them from every ordinary route,
+       * but they remain legally entitled to export and erase their data, and those
+       * routes need a session to identify them by. Only deletion — where there is
+       * genuinely no account left to be signed in to — kills the session.
+       */
+      if (envValue('DATABASE_URL')) {
+        try {
+          const { prisma } = await import('@/lib/prisma');
+          const row = await prisma.user.findUnique({
+            where: { id: uid },
+            select: { id: true },
+          });
+          // `{}` — NOT null. An empty object is exactly what /api/auth/session
+          // returns natively when there is no session, and the next-auth client
+          // maps it to `unauthenticated`. Returning a literal null instead makes
+          // that client throw CLIENT_FETCH_ERROR ("Cannot convert undefined or
+          // null to object") on every page.
+          if (!row) return {} as typeof session;
+        } catch {
+          // A database blip must not sign everybody out. Fail closed on the API
+          // side (getSessionUserId already returns null), not on the session.
+        }
       }
+
+      (session.user as { id?: string }).id = uid;
       return session;
     },
   },
