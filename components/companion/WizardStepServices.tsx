@@ -1,8 +1,13 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, useMemo } from 'react';
 import { CITIES } from '@/lib/data/cities';
+import { companionsInCity } from '@/lib/data/companions';
+import { COMPANION_SHARE_PCT } from '@/lib/money';
 import { cn } from '@/lib/utils';
+
+/** Fewer than this many companions in a city and there is no "most" to speak of. */
+const MIN_PEERS_FOR_A_RANGE = 3;
 
 const ACTIVITIES = [
   'City Walk',
@@ -34,6 +39,16 @@ export function WizardStepServices({ data, onChange }: Props) {
   const sliderId = useId();
   const cityName = CITIES.find((c) => c.id === data.city)?.name ?? 'your city';
   const fillPct = ((data.rate - RATE_MIN) / (RATE_MAX - RATE_MIN)) * 100;
+
+  // The real spread of what companions in this city charge — or nothing at all,
+  // when there are too few of them for the word "most" to mean anything.
+  const peerRange = useMemo(() => {
+    const rates = companionsInCity(cityName)
+      .map((c) => c.ratePerMeeting)
+      .filter((r) => Number.isFinite(r) && r > 0);
+    if (rates.length < MIN_PEERS_FOR_A_RANGE) return null;
+    return { min: Math.min(...rates), max: Math.max(...rates) };
+  }, [cityName]);
 
   const toggleActivity = (a: string) => {
     const next = data.activities.includes(a)
@@ -95,8 +110,28 @@ export function WizardStepServices({ data, onChange }: Props) {
             ₹{data.rate}
           </span>
         </label>
+        {/* Was: "Most companions in {cityName} charge ₹449-549" — the same invented
+            range for every city, presented to an applicant as a fact about their
+            local peers. It is the fake-statistic pattern this codebase has already
+            stripped out of the home page, and this one was steering how much a real
+            person decides to charge. The range is now read off the actual companions
+            in that city, and simply not shown when there are too few to say "most". */}
+        {peerRange && (
+          <p className="font-sans text-xs mb-1" style={{ color: 'var(--color-ink-muted)' }}>
+            {peerRange.min === peerRange.max
+              ? `Companions in ${cityName} charge ₹${peerRange.min}`
+              : `Companions in ${cityName} charge ₹${peerRange.min}–₹${peerRange.max}`}
+          </p>
+        )}
+        {/* What actually reaches them. The slider sets the fee a member pays; the
+            platform keeps a commission out of it, and an applicant deciding their
+            rate should be told the difference rather than discovering it later. */}
         <p className="font-sans text-xs mb-4" style={{ color: 'var(--color-ink-muted)' }}>
-          Most companions in {cityName} charge ₹449-549
+          You keep {COMPANION_SHARE_PCT}% —{' '}
+          <strong style={{ color: 'var(--color-ink)' }}>
+            ₹{Math.round((data.rate * COMPANION_SHARE_PCT) / 100)}
+          </strong>{' '}
+          per meetup, once paid bookings open.
         </p>
 
         <div className="relative h-5 flex items-center">

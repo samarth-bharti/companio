@@ -68,7 +68,16 @@ export function CompanionDashEarnings() {
           ? ['Owed to you', 'Paid out', 'Lifetime'].map((label) => (
               <Card key={label} label={label}>
                 <span aria-hidden="true" style={{ opacity: 0.25 }}>₹—</span>
-                <span className="sr-only">Loading</span>
+                {/* "Loading" was announced for BOTH the loading and the preview
+                    state, so a visitor who is not a companion — and never will have
+                    figures here — was told the page was still loading, forever. A
+                    screen reader repeated it indefinitely. The two states are not
+                    the same thing and must not read the same. */}
+                <span className="sr-only">
+                  {state.status === 'preview'
+                    ? 'No figure — you are not a companion yet'
+                    : 'Loading'}
+                </span>
               </Card>
             ))
           : cards.map((c) => (

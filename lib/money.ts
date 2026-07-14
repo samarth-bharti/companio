@@ -15,6 +15,23 @@
 /** ₹199 one-time full unlock, in paise. */
 export const UNLOCK_AMOUNT = 19900;
 
+// ── Commission split ─────────────────────────────────────────────────────────
+// These live HERE, not in lib/server/pricing.ts, for the same reason everything
+// else in this file does: the home page's "Transparency" section printed a split
+// of 85/15 — headline, animated bar, counters and screen-reader label, all
+// hard-coded — while the server took 30%. The one section of the site whose
+// entire subject is not lying about money was the section lying about money.
+// Basis points (1% = 100 bps) avoid floating-point drift.
+
+/** Platform's cut of a booking, in basis points. */
+export const COMMISSION_STD_BPS = 3000;  // 30% — standard members
+export const COMMISSION_PLUS_BPS = 1000; // 10% — Companio Plus members
+
+/** The companion's share, as a whole percentage. Derived — never typed twice. */
+export const COMPANION_SHARE_PCT = (100 * (10_000 - COMMISSION_STD_BPS)) / 10_000;      // 70
+export const COMPANION_SHARE_PLUS_PCT = (100 * (10_000 - COMMISSION_PLUS_BPS)) / 10_000; // 90
+export const PLATFORM_SHARE_PCT = 100 - COMPANION_SHARE_PCT;                             // 30
+
 /** Subtract a 0–100% discount from an amount (clamped, never negative). */
 export function applyDiscount(amountPaise: number, pct: number): number {
   const p = Math.min(Math.max(Math.round(pct), 0), 100);

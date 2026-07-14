@@ -23,7 +23,18 @@ const BENEFITS = [
   {
     icon: Wallet,
     title: "Transparent earnings",
-    body: "Set your own rate. Payments are released to you directly after each completed session via Razorpay.",
+    // Was: "Payments are released to you directly after each completed session
+    // via Razorpay." Two things wrong with that, on a page recruiting real people
+    // to do real work for money:
+    //   1. Nothing is released automatically. A payout is RECORDED when a paid
+    //      booking settles, and an admin transfers it by hand to the UPI id in the
+    //      companion dashboard (see /admin/payouts).
+    //   2. Paid bookings are not open yet — MARKETPLACE_PAYMENTS_ENABLED is
+    //      deliberately unset — so the only meetups that can happen today are the
+    //      two included in a member's unlock, and a credit-funded booking creates
+    //      no payout row at all. A companion joining today earns nothing yet.
+    // Saying so costs a signup. Not saying so costs someone their time.
+    body: "Set your own rate. Paid bookings are not open yet — the first meetups are the two included in a member's unlock — so treat this as early access, not income. When paid bookings open, you keep 70% of your rate and we pay it to your UPI id.",
     color: "#7A4FE0",
     bg: "#F0EBFF",
   },

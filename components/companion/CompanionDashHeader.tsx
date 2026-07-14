@@ -30,7 +30,14 @@ export function CompanionDashHeader() {
           }}
           role="note"
         >
-          Preview, this is what companions see. The figures below are illustrative.{' '}
+          {/* Was: "The figures below are illustrative." They are not — the invented
+              preview numbers (₹1,996 owed, ₹7,485 paid out, a 4.9 rating from 41
+              reviews) were deleted in an earlier round precisely because money and
+              ratings are not decoration. Every figure on this page is now a dash
+              until it is real, so the banner was left describing numbers that no
+              longer exist. */}
+          Preview, this is the dashboard companions get. Your own figures appear here once
+          you are approved.{' '}
           <Link href="/become-a-companion" className="underline underline-offset-2 font-semibold">
             Apply to become one →
           </Link>
