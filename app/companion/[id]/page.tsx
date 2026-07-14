@@ -62,10 +62,13 @@ export default async function CompanionPage({ params }: Props) {
     <>
       <Nav />
       <BackBar backHref="/explore" label="Explore" />
-      <CompanionProfile companion={companion} />
-      <div className="max-w-2xl mx-auto px-4 pb-10 flex justify-center">
-        <ReportButton companionId={companion.id} companionName={companion.firstName} />
-      </div>
+      {/* Target of the layout's "Skip to content" link, and the page's main landmark. */}
+      <main id="main-content">
+        <CompanionProfile companion={companion} />
+        <div className="max-w-2xl mx-auto px-4 pb-10 flex justify-center">
+          <ReportButton companionId={companion.id} companionName={companion.firstName} />
+        </div>
+      </main>
       <Footer />
     </>
   );

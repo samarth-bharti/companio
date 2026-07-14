@@ -12,5 +12,12 @@ export const metadata: Metadata = {
  * Linked from Nav, the hero secondary CTA, and /explore.
  */
 export default function QuizPage() {
-  return <QuizClient />;
+  // QuizClient swaps its root element per phase (question / echo / result), so the
+  // landmark lives here — the layout's "Skip to content" link targets #main-content
+  // and must resolve whatever the quiz is currently showing.
+  return (
+    <main id="main-content">
+      <QuizClient />
+    </main>
+  );
 }

@@ -9,6 +9,8 @@ import { prisma } from '@/lib/prisma';
 import { rupees } from '@/lib/server/admin';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { linkCompanion, unlinkCompanion } from '../actions';
+
+export const metadata = { title: "Companions" };
 import {
   createCompanion,
   editCompanion,
@@ -200,7 +202,12 @@ export default async function AdminCompanions() {
                 ) : (
                   <ActionForm action={linkCompanion} submitLabel="Link account" submitClassName={btnBlue}>
                     <input type="hidden" name="companionId" value={c.id} />
-                    <input name="userId" placeholder="Account user id" className={`${inp} w-44`} />
+                    <input
+                      name="userId"
+                      placeholder="Account email"
+                      aria-label="Account email or user id to link"
+                      className={`${inp} w-56`}
+                    />
                   </ActionForm>
                 )}
               </div>

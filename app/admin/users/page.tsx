@@ -4,7 +4,10 @@
 import { prisma } from '@/lib/prisma';
 import { ageInYears } from '@/lib/server/age';
 import { ActionForm } from '@/components/admin/ActionForm';
+
+export const metadata = { title: "Users" };
 import {
+
   suspendUser, unsuspendUser, banUser, unbanUser,
   deleteUser, grantCredits, blockUserMessaging, unblockUserMessaging,
   editUser,

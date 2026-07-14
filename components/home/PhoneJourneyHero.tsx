@@ -55,7 +55,7 @@ function useHeroVideoEnabled(): boolean {
   useEffect(() => {
     // Read the preference straight from matchMedia rather than via
     // useEffectiveReducedMotion(): that hook reports false until it has mounted,
-    // which is correct for render (hydration) but would let the 2.5 MB download
+    // which is correct for render (hydration) but would let the 1.3 MB download
     // start before it flips to true. Inside an effect there is no SSR to match,
     // so reading the media query directly is both safe and immediate.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;

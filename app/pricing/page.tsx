@@ -51,7 +51,7 @@ export default function PricingPage() {
     <>
       <Nav />
       <BackBar fallbackHref="/" />
-      <main className="min-h-[70vh] bg-[var(--color-bg)] px-4 pb-24">
+      <main id="main-content" className="min-h-[70vh] bg-[var(--color-bg)] px-4 pb-24">
         <div className="max-w-lg mx-auto pt-10 flex flex-col gap-8">
 
           {/* Wallet strip — only after hydration, only when meetings remain */}

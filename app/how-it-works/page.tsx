@@ -13,7 +13,10 @@ export default function HowItWorksPage() {
   return (
     <>
       <Nav />
-      <HowItWorksJourney />
+      {/* Target of the layout's "Skip to content" link, and the page's main landmark. */}
+      <main id="main-content">
+        <HowItWorksJourney />
+      </main>
       <Footer />
     </>
   );
