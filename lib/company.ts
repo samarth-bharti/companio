@@ -50,10 +50,34 @@ export const COMPANY_DISPLAY = {
     ? 'Registered office details available on request'
     : COMPANY.registeredAddress,
   grievanceOfficer: {
-    name: unfilled(COMPANY.grievanceOfficer.name)
-      ? 'Grievance Officer'
-      : COMPANY.grievanceOfficer.name,
+    // null, not the string 'Grievance Officer'. Every call site already prints
+    // the role as a label, so a generic fallback rendered as
+    // "Grievance Officer: Grievance Officer" in the footer of every page.
+    // An absent name is honest and reads cleanly; a name that restates the label
+    // is neither. Callers must omit the clause when this is null.
+    name: unfilled(COMPANY.grievanceOfficer.name) ? null : COMPANY.grievanceOfficer.name,
     email: COMPANY.grievanceOfficer.email,
     phone: unfilled(COMPANY.grievanceOfficer.phone) ? null : COMPANY.grievanceOfficer.phone,
   },
 } as const;
+
+/**
+ * "Grievance Officer" / "Grievance Officer, Asha Rao" — the label with the name
+ * appended only when there is one. Keeps the four places that name the officer
+ * from each inventing their own null handling.
+ */
+export const GRIEVANCE_OFFICER_LABEL = COMPANY_DISPLAY.grievanceOfficer.name
+  ? `Grievance Officer, ${COMPANY_DISPLAY.grievanceOfficer.name}`
+  : 'Grievance Officer';
+
+/**
+ * The same thing, but for the middle of a sentence: "…contact our Grievance
+ * Officer at x@y" / "…contact our Grievance Officer, Asha Rao, at x@y".
+ *
+ * The comma belongs to the name, not to the sentence. Hard-coding it around the
+ * label produced "contact our Grievance Officer, at grievance@trycompanio.com"
+ * whenever the name was absent — which is today, on three pages.
+ */
+export const GRIEVANCE_OFFICER_PHRASE = COMPANY_DISPLAY.grievanceOfficer.name
+  ? `Grievance Officer, ${COMPANY_DISPLAY.grievanceOfficer.name},`
+  : 'Grievance Officer';

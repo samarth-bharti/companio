@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
-import { COMPANY, COMPANY_DISPLAY } from '@/lib/company';
+import { COMPANY, COMPANY_DISPLAY, GRIEVANCE_OFFICER_PHRASE } from '@/lib/company';
 
 export const metadata: Metadata = { title: 'Privacy policy, Companio' };
 
@@ -58,7 +58,7 @@ export default function PrivacyPage() {
         {
           heading: 'Grievance Officer & contact',
           body: [
-            `In line with the DPDPA and the IT Act, you can raise any privacy concern or complaint with our Grievance Officer, ${COMPANY_DISPLAY.grievanceOfficer.name}, at ${COMPANY_DISPLAY.grievanceOfficer.email}${COMPANY_DISPLAY.grievanceOfficer.phone ? ` (${COMPANY_DISPLAY.grievanceOfficer.phone})` : ''}. We acknowledge complaints promptly and aim to resolve them within the timelines the law requires.`,
+            `In line with the DPDPA and the IT Act, you can raise any privacy concern or complaint with our ${GRIEVANCE_OFFICER_PHRASE} at ${COMPANY_DISPLAY.grievanceOfficer.email}${COMPANY_DISPLAY.grievanceOfficer.phone ? ` (${COMPANY_DISPLAY.grievanceOfficer.phone})` : ''}. We acknowledge complaints promptly and aim to resolve them within the timelines the law requires.`,
             `${COMPANY_DISPLAY.legalName}, ${COMPANY_DISPLAY.registeredAddress}.${COMPANY_DISPLAY.llpin ? ` LLPIN: ${COMPANY_DISPLAY.llpin}.` : ''} General privacy queries: ${COMPANY.privacyEmail}.`,
           ],
         },

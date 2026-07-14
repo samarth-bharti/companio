@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
 import { ContactForm } from '@/components/contact/ContactForm';
-import { COMPANY, COMPANY_DISPLAY } from '@/lib/company';
+import { COMPANY, COMPANY_DISPLAY, GRIEVANCE_OFFICER_PHRASE } from '@/lib/company';
 
 export const metadata: Metadata = { title: 'Contact us, Companio' };
 
@@ -21,7 +21,7 @@ export default function ContactPage() {
         {
           heading: 'Privacy & your data',
           body: [
-            `To access, correct, or delete your data, or raise any privacy concern under the DPDPA, contact our Grievance Officer, ${COMPANY_DISPLAY.grievanceOfficer.name}, at ${COMPANY_DISPLAY.grievanceOfficer.email}${COMPANY_DISPLAY.grievanceOfficer.phone ? ` (${COMPANY_DISPLAY.grievanceOfficer.phone})` : ''}. You can also delete your account and all its data yourself, from your dashboard, at any time.`,
+            `To access, correct, or delete your data, or raise any privacy concern under the DPDPA, contact our ${GRIEVANCE_OFFICER_PHRASE} at ${COMPANY_DISPLAY.grievanceOfficer.email}${COMPANY_DISPLAY.grievanceOfficer.phone ? ` (${COMPANY_DISPLAY.grievanceOfficer.phone})` : ''}. You can also delete your account and all its data yourself, from your dashboard, at any time.`,
           ],
         },
         {

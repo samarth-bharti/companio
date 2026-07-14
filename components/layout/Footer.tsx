@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { Seal } from "@/components/ui/Seal";
-import { COMPANY_DISPLAY } from "@/lib/company";
+import { COMPANY_DISPLAY, GRIEVANCE_OFFICER_LABEL } from "@/lib/company";
 import { TRUST_CHIP } from '@/lib/trust';
 
 const COLUMNS = [
@@ -153,7 +153,7 @@ export function Footer() {
             {COMPANY_DISPLAY.llpin ? ` · LLPIN ${COMPANY_DISPLAY.llpin}` : ""}
           </p>
           <p>
-            Grievance Officer: {COMPANY_DISPLAY.grievanceOfficer.name} ·{" "}
+            {GRIEVANCE_OFFICER_LABEL} ·{" "}
             <a
               href={`mailto:${COMPANY_DISPLAY.grievanceOfficer.email}`}
               className="hover:underline underline-offset-4 focus-visible:outline-white"

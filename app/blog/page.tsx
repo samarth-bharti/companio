@@ -19,7 +19,13 @@ export default function BlogPage() {
         {
           heading: 'How we verify every companion',
           body: [
-            'A behind-the-scenes look at ID matching, selfie checks, and background screening, and why every step matters before a profile goes live.',
+            // Was: "ID matching, selfie checks, and background screening". The
+            // background screening does not exist — we collect consent to run one
+            // and run none, which every other page on this site now says out loud
+            // (terms, privacy, trust, safety). This was the last page still
+            // advertising it, and a safety claim is the worst possible place to
+            // leave one lying around.
+            'A behind-the-scenes look at what actually happens before a profile goes live: a government ID, checked against the number the applicant typed; a photo confirmed to be a different image from the document; and a person who reviews every application by hand.',
           ],
         },
         {

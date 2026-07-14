@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
-import { COMPANY, COMPANY_DISPLAY } from '@/lib/company';
+import { COMPANY, COMPANY_DISPLAY, GRIEVANCE_OFFICER_LABEL } from '@/lib/company';
 
 export const metadata: Metadata = { title: 'Terms of service, Companio' };
 
@@ -74,7 +74,7 @@ export default function TermsPage() {
         {
           heading: '10. Changes & contact',
           body: [
-            `We may update these terms; material changes will be notified in-app or by email. Questions or grievances: ${COMPANY_DISPLAY.grievanceOfficer.name}, ${COMPANY_DISPLAY.grievanceOfficer.email}. ${COMPANY_DISPLAY.legalName}, ${COMPANY_DISPLAY.registeredAddress}.`,
+            `We may update these terms; material changes will be notified in-app or by email. Questions or grievances: ${GRIEVANCE_OFFICER_LABEL}, ${COMPANY_DISPLAY.grievanceOfficer.email}. ${COMPANY_DISPLAY.legalName}, ${COMPANY_DISPLAY.registeredAddress}.`,
           ],
         },
       ]}

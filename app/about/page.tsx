@@ -26,7 +26,14 @@ export default function AboutPage() {
         {
           heading: 'How we make money',
           body: [
-            'Honestly and transparently: a small commission on each booking, optional Companio Plus membership, and credit packs. No selling of your data, no hidden charges, no auto-debits you did not choose.',
+            // Was: "a small commission on each booking, optional Companio Plus
+            // membership, and credit packs". Companio sells exactly one thing
+            // today — the ₹199 unlock. Bookings are not charged for, Plus is not
+            // on sale, and the commission is 30%, which is not "small". Describing
+            // three revenue streams that do not exist, on the page about being
+            // honest, is not a small thing to get wrong.
+            'One ₹199 payment, once. It opens every companion profile in your city and includes your first two meetings. There is no subscription, no auto-debit, and nothing else to buy.',
+            'We do not sell your data, and we never will. When we start charging a commission on bookings, this page will say what it is before you are asked to pay it.',
           ],
         },
       ]}
