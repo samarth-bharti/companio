@@ -382,12 +382,23 @@ model Subscription {
 
 model Purchase {
   id                String         @id @default(cuid())
-  userId            String
+  // Nullable, and SetNull on erasure — NOT Cascade. The privacy policy promises
+  // that payment and tax records survive account deletion ("typically kept for
+  // up to 8 years"), and cascading deleted them: an erased member took the
+  // company's own accounting trail with them, and the admin revenue figure
+  // silently shrank. Erasure now severs the buyer from the payment instead of
+  // destroying the payment. A null userId means "the buyer exercised their right
+  // to be forgotten"; the money still happened.
+  userId            String?
   kind              PurchaseKind
   amount            Int            // paise — server-decided, never client-supplied
   credits           Int            @default(0) // granted on settle (kind = credits)
   bookingId         String?        // set when kind = booking
   spinResultId      String?        // spin win redeemed on this booking, if any
+  // Discount code applied to this order, upper-cased. Recorded at order time and
+  // read on settle, which is when the code's usedCount is actually incremented —
+  // an abandoned checkout must not burn a use.
+  discountCode      String?
   status            PurchaseStatus @default(created)
   razorpayOrderId   String         @unique
   razorpayPaymentId String?
@@ -396,7 +407,7 @@ model Purchase {
   gstPaise          Int            @default(0) // 18% GST component of `amount`
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
-  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
   @@map("purchases")
@@ -554,14 +565,19 @@ model Report {
 model CompanionPayout {
   id          String       @id @default(cuid())
   companionId String
-  bookingId   String       @unique
+  // Nullable, and SetNull when the booking goes — NOT Cascade. A member erasing
+  // their account deleted their bookings, and the cascade took the companion's
+  // *unpaid wage* with them: the meetup happened, the money was owed, and the
+  // row vanished because someone unrelated exercised a privacy right. The payout
+  // carries its own companionId and amountPaise, so it survives on its own.
+  bookingId   String?      @unique
   amountPaise Int          // == Booking.payoutPaise at settle time
   status      PayoutStatus @default(pending)
   paidAt      DateTime?
   reference   String?      // bank/UPI txn ref once paid
   createdAt   DateTime     @default(now())
   companion   Companion    @relation(fields: [companionId], references: [id])
-  booking     Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking     Booking?     @relation(fields: [bookingId], references: [id], onDelete: SetNull)
 
   @@index([companionId, status])
   @@map("companion_payouts")

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { X, Columns2 } from 'lucide-react';
 import type { Companion } from '@/lib/data/companions';
+import { RatingBadge } from '@/components/companion/RatingBadge';
 import { spring } from '@/lib/motion';
 
 interface CompareTrayProps {
@@ -137,9 +138,15 @@ function CompareModal({
               </div>
               {/* Stats */}
               <div className="flex flex-wrap gap-1.5">
+                {/* This rendered "★ 0 (0)" for a companion nobody has reviewed yet
+                    — in the one screen built for weighing companions against each
+                    other, where "0 stars" reads as *rated badly*, not *new*. The
+                    card behind this modal already got it right; this was the last
+                    place still formatting a star row by hand. RatingBadge exists so
+                    an unreviewed companion reads as "New", everywhere, at once. */}
                 <span className="px-2 py-1 rounded-pill text-xs font-medium bg-white/60"
                   style={{ border: '1.5px solid rgba(46,107,255,0.2)', color: 'var(--color-ink-muted)' }}>
-                  ★ {c.rating} ({c.reviews})
+                  <RatingBadge rating={c.rating} reviews={c.reviews} />
                 </span>
                 {quizDone && (
                   <span className="px-2 py-1 rounded-pill text-xs font-semibold"

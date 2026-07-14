@@ -8,6 +8,23 @@
 // violations (logged by the browser) WITHOUT breaking the app, so we can tighten
 // it against the real third parties (GA, PostHog, Sentry, Vercel, Spline,
 // Razorpay, Unsplash) before flipping it to the enforcing header.
+//
+// Where the flip stands (checked 2026-07-14, in a browser, against this policy):
+//   Zero violations on /, /explore, /explore?view=map, /spin, /quiz, /pricing,
+//   /dashboard, /how-it-works, /admin. The allowlist is correct for everything
+//   this deployment can currently reach.
+//
+// It is NOT flipped, for one reason: the Razorpay Checkout sheet cannot be
+// exercised without live keys, and a CSP that blocks the payment sheet is worse
+// than no CSP. The origins Razorpay needs are now listed above, but listed from
+// their documentation — not from watching a real payment succeed.
+//
+// To flip: run one real checkout with live keys, confirm the browser console is
+// clean, then change the header name below to 'Content-Security-Policy'. Note
+// that script-src still carries 'unsafe-inline' and 'unsafe-eval' (Next's inline
+// bootstrap and Turbopack), so enforcing buys the origin allowlist — connect-src
+// is the valuable one, it stops exfiltration to an unknown host — but it is not
+// yet XSS-proof. Nonces are the follow-on.
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
@@ -29,10 +46,19 @@ const CSP = [
   // Map tiles are <img> elements. Neither OpenStreetMap nor MapTiler was listed
   // here, so the explore map would go blank the day CSP flips from Report-Only
   // to enforcing. Keep this in step with lib/map/tiles.ts.
-  "img-src 'self' data: blob: https://images.unsplash.com https://*.googletagmanager.com https://*.google-analytics.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://api.maptiler.com",
-  "font-src 'self' data:",
-  "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://vitals.vercel-insights.com https://api.razorpay.com https://*.spline.design",
-  "frame-src 'self' https://checkout.razorpay.com https://*.spline.design",
+  // Razorpay's own CSP requirements are wider than "the script origin": Checkout
+  // pulls its assets from cdn.razorpay.com, beacons to lumberjack.razorpay.com,
+  // and frames api.razorpay.com in addition to checkout.razorpay.com. None of
+  // those three were listed. Under Report-Only that costs nothing — but it means
+  // the day this header is switched to enforcing, the payment sheet is exactly
+  // what breaks, which is the one thing worse than having no CSP at all.
+  // NOT verified against a live gateway (this deployment has no Razorpay keys) —
+  // taken from Razorpay's published integration requirements. Confirm with a real
+  // checkout before enforcing.
+  "img-src 'self' data: blob: https://images.unsplash.com https://cdn.razorpay.com https://*.googletagmanager.com https://*.google-analytics.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://api.maptiler.com",
+  "font-src 'self' data: https://cdn.razorpay.com",
+  "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://vitals.vercel-insights.com https://api.razorpay.com https://lumberjack.razorpay.com https://*.spline.design",
+  "frame-src 'self' https://checkout.razorpay.com https://api.razorpay.com https://*.spline.design",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

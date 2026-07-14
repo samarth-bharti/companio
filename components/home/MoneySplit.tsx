@@ -5,6 +5,14 @@ import { motion, useInView } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Reveal } from "@/components/motion/Reveal";
 import { CountUp } from "@/components/motion/CountUp";
+import {
+  COMPANION_SHARE_PCT,
+  COMPANION_SHARE_PLUS_PCT,
+  PLATFORM_SHARE_PCT,
+} from "@/lib/money";
+
+// Every number in this section is derived from the commission constants the
+// payout actually uses. It said 85/15 while the server took 30%.
 
 export function MoneySplit() {
   const barRef = useRef<HTMLDivElement>(null);
@@ -34,11 +42,12 @@ export function MoneySplit() {
             className="font-display text-h2"
             style={{ color: "var(--color-paper)" }}
           >
-            85% goes to your companion. We show you every rupee.
+            {COMPANION_SHARE_PCT}% goes to your companion. We show you every rupee.
           </h2>
           <p className="text-lead mt-4 max-w-xl mx-auto" style={{ color: "var(--color-edge)" }}>
             No hidden cuts. You see the split before you pay. Money is held
-            safely and released only after you meet.
+            safely and released only after you meet. On Companio Plus the
+            companion keeps {COMPANION_SHARE_PLUS_PCT}%.
           </p>
         </Reveal>
 
@@ -49,7 +58,7 @@ export function MoneySplit() {
             className="w-full h-10 rounded-full overflow-hidden"
             style={{ background: "var(--color-navy-strong)" }}
             role="img"
-            aria-label="85% of the fee goes to the companion, 15% to the platform"
+            aria-label={`${COMPANION_SHARE_PCT}% of the fee goes to the companion, ${PLATFORM_SHARE_PCT}% to the platform`}
           >
             <motion.div
               className="h-full flex"
@@ -60,7 +69,7 @@ export function MoneySplit() {
               {/* Brass — companion share */}
               <div
                 className="h-full flex items-center justify-center"
-                style={{ width: "85%", background: "var(--color-brass)" }}
+                style={{ width: `${COMPANION_SHARE_PCT}%`, background: "var(--color-brass)" }}
               >
                 <span className="font-sans font-bold text-sm text-white drop-shadow-sm">
                   Companion
@@ -85,7 +94,7 @@ export function MoneySplit() {
                 className="font-display text-h2 font-semibold"
                 style={{ color: "var(--color-brass)" }}
               >
-                <CountUp value={85} suffix="%" duration={1.4} />
+                <CountUp value={COMPANION_SHARE_PCT} suffix="%" duration={1.4} />
               </span>
               <span className="text-sm font-sans" style={{ color: "var(--color-edge)" }}>
                 Companion
@@ -99,7 +108,7 @@ export function MoneySplit() {
                 className="font-display text-h2 font-semibold"
                 style={{ color: "var(--color-azure)" }}
               >
-                <CountUp value={15} suffix="%" duration={1.4} />
+                <CountUp value={PLATFORM_SHARE_PCT} suffix="%" duration={1.4} />
               </span>
             </div>
           </div>

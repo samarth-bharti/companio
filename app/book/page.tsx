@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 function BookingLoading() {
   return (
-    <main
+    <main id="main-content"
       className="min-h-screen flex items-center justify-center"
       style={{ background: 'var(--grad-hero-bg)' }}
     >

@@ -5,6 +5,9 @@ import { rupees } from '@/lib/server/admin';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { markPayoutPaid } from '../actions';
 
+export const metadata = { title: "Payouts" };
+
+
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPayouts() {
@@ -24,7 +27,14 @@ export default async function AdminPayouts() {
           <div key={p.id} className="rounded-2xl bg-white border border-[var(--color-ink)]/10 p-4 flex items-center gap-4 flex-wrap">
             <div className="flex-1 min-w-[160px]">
               <p className="text-sm font-semibold text-[var(--color-ink)]">{p.companion?.name ?? p.companionId}</p>
-              <p className="text-xs text-[var(--color-ink-muted)]">Booking {p.bookingId.slice(-8)} · {p.createdAt.toLocaleDateString('en-IN')}</p>
+              {/* A payout outlives its booking: if the member erases their account
+                  the booking goes and bookingId is set to null, but the wage is
+                  still owed and still has to be paid. */}
+              <p className="text-xs text-[var(--color-ink-muted)]">
+                {p.bookingId ? `Booking ${p.bookingId.slice(-8)}` : 'Booking deleted (member erased their account)'}
+                {' · '}
+                {p.createdAt.toLocaleDateString('en-IN')}
+              </p>
               {p.companion?.payoutUpi ? (
                 <p className="text-xs font-mono mt-0.5 text-[var(--color-ink)]">{p.companion.payoutUpi}</p>
               ) : (

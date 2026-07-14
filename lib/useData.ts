@@ -20,9 +20,23 @@ export function useData<T>(
   key: DataKey,
   read: () => Promise<T>,
   fallback: T,
+  enabled = true,
 ): { data: T; loading: boolean; refresh: () => void } {
   const [data, setData] = useState<T>(fallback);
   const [loading, setLoading] = useState(true);
+
+  // `enabled: false` means "this slice is not readable right now" — in http mode
+  // that is a signed-out visitor, whose /api/user and /api/notifications would
+  // answer 401. Issuing those requests anyway put three red errors in the console
+  // of every public page, and would put the same volume into Sentry in production.
+  // Not asking is both quieter and correct: the answer for a guest IS the
+  // fallback.
+  const enabledRef = useRef(enabled);
+  const fallbackRef = useRef(fallback);
+  useEffect(() => {
+    enabledRef.current = enabled;
+    fallbackRef.current = fallback;
+  });
 
   // The reader is a fresh closure on every render. Hold it in a ref so the
   // effect below depends only on `key` and never re-subscribes on each render.
@@ -38,12 +52,36 @@ export function useData<T>(
   const aliveRef = useRef(true);
   const seqRef = useRef(0);
 
+  // Has an ENABLED read ever completed? Distinguishes "we have the real value" from
+  // "we have the fallback because we were not allowed to ask".
+  const loadedRef = useRef(false);
+
   const refresh = useCallback(() => {
     const seq = ++seqRef.current;
+    if (!enabledRef.current) {
+      setData(fallbackRef.current);
+      setLoading(false);
+      loadedRef.current = false; // a disabled slice holds no real value
+      return;
+    }
+
+    // Enabled, but nothing real has been read yet — so we ARE loading, and must
+    // say so. The disabled branch above has already set `loading` to false, and
+    // without this line it stays false while the first real read is in flight: a
+    // component that waits on `loading` then sees "not loading, and no data" and
+    // concludes there is no data. AccountGate did exactly that and bounced a
+    // freshly signed-in member to /register, because for one render the session
+    // said "authenticated" while this slice still said "not loading, user null".
+    //
+    // Deliberately NOT set on every refresh: a focus event or a data-change on an
+    // already-loaded slice must not flash a skeleton over a value we already have.
+    if (!loadedRef.current) setLoading(true);
+
     readRef.current()
       .then((v) => {
         if (!aliveRef.current || seq !== seqRef.current) return;
         setData(v);
+        loadedRef.current = true;
         setLoading(false);
       })
       .catch(() => {
@@ -70,7 +108,9 @@ export function useData<T>(
       unsubscribe();
       window.removeEventListener('focus', onFocus);
     };
-  }, [key, refresh]);
+    // `enabled` is a dependency: the moment a session resolves, the slice that
+    // was skipped must be fetched, not left on its fallback until the next focus.
+  }, [key, refresh, enabled]);
 
   return { data, loading, refresh };
 }

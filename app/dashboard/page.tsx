@@ -25,12 +25,17 @@ export default function DashboardPage() {
     <>
       <Nav />
       <BackBar fallbackHref="/" />
-      <div className="max-w-2xl mx-auto px-4 pt-4">
-        <SpinBanner />
-      </div>
-      <Suspense fallback={<Skeleton />}>
-        <DashboardClient />
-      </Suspense>
+      {/* The layout's "Skip to content" link targets #main-content. This page had
+          no <main> at all, so the skip link — the first thing a keyboard user
+          tabs to — jumped nowhere, and the page exposed no main landmark. */}
+      <main id="main-content">
+        <div className="max-w-2xl mx-auto px-4 pt-4">
+          <SpinBanner />
+        </div>
+        <Suspense fallback={<Skeleton />}>
+          <DashboardClient />
+        </Suspense>
+      </main>
       <Footer />
     </>
   );

@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { createSurge, toggleSurge } from '../actions';
 
+export const metadata = { title: "Surge" };
+
+
 export const dynamic = 'force-dynamic';
 
 export default async function AdminSurge() {

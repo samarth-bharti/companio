@@ -4,9 +4,19 @@ import { useState, useEffect, useRef, useId } from 'react';
 import { animate } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { cn } from '@/lib/utils';
+import { COMPANION_SHARE_PCT, PLATFORM_SHARE_PCT } from '@/lib/money';
 
 const RATE = 499;
 const WEEKS = 4.3;
+
+// The number shown to a prospective companion must be the number that reaches
+// their bank account. This calculator multiplied the rate by the meetups and
+// stopped — advertising the GROSS fee, while the platform takes 30% of it. At six
+// meetups a week that is ₹12,874 promised against ₹9,012 actually paid. Recruiting
+// people to work with a figure a third larger than what they will be given is not
+// an estimate being optimistic; it is the wrong number.
+//
+// Imported from lib/money so it tracks the commission the payout really uses.
 
 interface Props {
   className?: string;
@@ -19,7 +29,8 @@ export function EarningsCalculator({ className }: Props) {
   const displayRef = useRef<HTMLSpanElement>(null);
   const prevRef = useRef<number | null>(null);
 
-  const monthly = Math.round(meetups * RATE * WEEKS);
+  // What they are actually paid: the fee, less the platform's commission.
+  const monthly = Math.round((meetups * RATE * WEEKS * COMPANION_SHARE_PCT) / 100);
   const fillPct = ((meetups - 1) / 13) * 100;
 
   // Animate from previous value to new on slider change
@@ -55,7 +66,7 @@ export function EarningsCalculator({ className }: Props) {
         className="font-sans text-sm font-semibold uppercase tracking-widest mb-2 relative z-10"
         style={{ color: 'var(--color-ink-muted)' }}
       >
-        Estimated monthly earnings
+        Estimated monthly payout, after our cut
       </p>
 
       <span
@@ -63,14 +74,16 @@ export function EarningsCalculator({ className }: Props) {
         className="font-display leading-none tracking-tight mb-2 block relative z-10"
         style={{ fontSize: 'clamp(2.75rem, 6vw, 4.5rem)', color: 'var(--color-ink)' }}
         aria-live="polite"
-        aria-label={`₹${monthly.toLocaleString('en-IN')} estimated monthly`}
+        aria-label={`₹${monthly.toLocaleString('en-IN')} estimated monthly payout, after commission`}
         suppressHydrationWarning
       >
         ₹{monthly.toLocaleString('en-IN')}
       </span>
 
       <p className="font-sans text-xs mb-8 relative z-10" style={{ color: 'var(--color-ink-muted)' }}>
-        Estimate, varies by city &amp; demand. ₹{RATE}/meetup × {meetups}/week × 4.3 weeks.
+        ₹{RATE}/meetup × {meetups}/week × 4.3 weeks, less our {PLATFORM_SHARE_PCT}% commission —
+        you keep {COMPANION_SHARE_PCT}%. Varies by city and demand. Paid bookings are not open
+        yet, so treat this as what the work will pay, not what it pays today.
       </p>
 
       {/* Slider */}

@@ -23,6 +23,9 @@ export async function GET() {
 
     const { prisma } = await import('@/lib/prisma');
 
+    // "A copy of your data" has to mean ALL of it. Spin results, reports the
+    // member filed, and the companion profile their login owns were all held
+    // against this account and all missing from the export.
     const data = await prisma.user.findUnique({
       where: { id: userId },
       include: {
@@ -34,6 +37,9 @@ export async function GET() {
         subscription: true,
         application: true,
         purchases: true,
+        spins: true,
+        reportsMade: true,
+        companion: true,
       },
     });
 

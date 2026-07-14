@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
+import { useViewerReady } from '@/lib/useViewerReady';
 import type { AppNotification } from '@/lib/appState';
 import { calm, stagger, spring } from '@/lib/motion';
 
@@ -23,11 +24,13 @@ const itemVariant = {
 const NO_NOTIFS: AppNotification[] = [];
 
 export function NotificationsPanel() {
+  // A guest previewing the dashboard has no rows to read; asking anyway is 401s.
+  const signedIn = useViewerReady();
   const reduced = useEffectiveReducedMotion();
 
   // A booking made on another tab pushes a notification; this list now shows it
   // without a reload.
-  const { data: notifs } = useData('notifications', () => dataClient.getNotifications(), NO_NOTIFS);
+  const { data: notifs } = useData('notifications', () => dataClient.getNotifications(), NO_NOTIFS, signedIn);
 
   const markAllRead = () => {
     void dataClient.markNotificationsRead();

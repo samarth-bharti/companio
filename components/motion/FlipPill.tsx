@@ -67,7 +67,10 @@ export function FlipPill({ targetISO, className }: FlipPillProps) {
     );
   }
 
-  const srText = `in ${units.d} days, ${units.h} hours, ${units.m} minutes`;
+  // This string is what a screen reader announces, so it has to read like English:
+  // "in 1 days, 1 hours" does not. The visual pill shows "1 d 1 h" and is fine.
+  const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'}`;
+  const srText = `in ${plural(units.d, 'day')}, ${plural(units.h, 'hour')}, ${plural(units.m, 'minute')}`;
 
   return (
     <span className={className}>

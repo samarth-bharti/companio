@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { setReportStatus } from '../actions';
 
+export const metadata = { title: "Reports" };
+
+
 export const dynamic = 'force-dynamic';
 
 const NEXT: Record<string, { label: string; status: string }[]> = {

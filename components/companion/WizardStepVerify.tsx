@@ -8,6 +8,13 @@ import { validateFileIntegrity, validateIdNumber, type IdDocType } from '@/lib/i
 import { VerifyIdInput } from './VerifyIdInput';
 import { VerifySelfie } from './VerifySelfie';
 
+/**
+ * True when this build actually ships the documents to the server. Mirrors the
+ * gate in ApplyWizard.handleSubmit — the two must never disagree, because one
+ * decides what happens and the other decides what the applicant is told.
+ */
+const UPLOADS_ENABLED = process.env.NEXT_PUBLIC_DATA_CLIENT === 'http';
+
 export interface VerifyData {
   photoFile:        File | null;
   idFile:           File | null;
@@ -93,12 +100,33 @@ export function WizardStepVerify({ data, onChange }: Props) {
       <p className="font-sans text-sm mb-2" style={{ color: 'var(--color-ink-muted)' }}>
         Verification builds trust with members and keeps the platform safe for everyone.
       </p>
-      <p
-        className="inline-block font-sans text-xs px-3 py-1 rounded-pill mb-6"
-        style={{ background: 'rgba(46,107,255,0.08)', color: 'var(--color-azure-deep)' }}
-      >
-        Demo mode — nothing is uploaded or stored
-      </p>
+      {/*
+        This badge used to read "Demo mode — nothing is uploaded or stored"
+        unconditionally. That is true in local mode and FALSE in http mode, which
+        is what production runs: ApplyWizard posts both files to
+        /api/application/upload, and the server persists a one-way hash of each,
+        the masked ID number, and the OCR hint.
+
+        Telling someone their government ID is not stored, on the screen where
+        they hand it over, while storing a fingerprint of it, is the one place in
+        this product where a stale string is not a cosmetic bug. Say what actually
+        happens, in each mode.
+      */}
+      {UPLOADS_ENABLED ? (
+        <p
+          className="inline-block font-sans text-xs px-3 py-1 rounded-pill mb-6"
+          style={{ background: 'rgba(46,107,255,0.08)', color: 'var(--color-azure-deep)' }}
+        >
+          We never store your ID image — only a one-way fingerprint and the last digits
+        </p>
+      ) : (
+        <p
+          className="inline-block font-sans text-xs px-3 py-1 rounded-pill mb-6"
+          style={{ background: 'rgba(46,107,255,0.08)', color: 'var(--color-azure-deep)' }}
+        >
+          Demo mode — nothing is uploaded or stored
+        </p>
+      )}
 
       {/* Upload tiles */}
       <div className="grid sm:grid-cols-2 gap-4 mb-3">

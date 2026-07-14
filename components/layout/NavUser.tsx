@@ -9,6 +9,7 @@ import { clearUser, type DemoUser } from '@/lib/journeyState';
 import { markNotificationsRead, type AppNotification } from '@/lib/appState';
 import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
+import { useViewerReady } from '@/lib/useViewerReady';
 import { emitDataChange } from '@/lib/dataEvents';
 import { useAuthCapability } from '@/lib/authClient';
 import { TopUpMenu } from '@/components/layout/TopUpMenu';
@@ -68,8 +69,11 @@ export function NavUser() {
   // Both slices re-read on change: signing in, signing out, or a new
   // notification from a booking updates the avatar and the bell immediately,
   // in this tab and any other. Previously frozen at mount.
-  const { data: liveUser } = useData('user', () => dataClient.getUser(), null);
-  const { data: liveNotifs, refresh: refreshNotifs } = useData('notifications', () => dataClient.getNotifications(), NO_NOTIFS);
+  // Skipped entirely for a signed-out visitor in http mode: both endpoints
+  // require a session, so asking would only produce a 401 on every public page.
+  const viewerReady = useViewerReady();
+  const { data: liveUser } = useData('user', () => dataClient.getUser(), null, viewerReady);
+  const { data: liveNotifs, refresh: refreshNotifs } = useData('notifications', () => dataClient.getNotifications(), NO_NOTIFS, viewerReady);
 
   useEffect(() => { setUser(liveUser); }, [liveUser]);
   useEffect(() => { setNotifs(liveNotifs); }, [liveNotifs]);

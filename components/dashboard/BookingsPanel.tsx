@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
+import { useViewerReady } from '@/lib/useViewerReady';
 import { getCompanion } from '@/lib/data/companions';
 import type { Booking } from '@/lib/appState';
 import { ReviewModal } from './ReviewModal';
@@ -14,13 +15,15 @@ import { calm, stagger } from '@/lib/motion';
 const NO_BOOKINGS: Booking[] = [];
 
 export function BookingsPanel() {
+  // A guest previewing the dashboard has no rows to read; asking anyway is 401s.
+  const signedIn = useViewerReady();
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [reviewTarget, setReviewTarget] = useState<Booking | null>(null);
 
   // `refresh` is still handed to the children that mutate a booking directly
   // (ReviewModal). Every dataClient mutation also emits, so a cancel from
   // another tab, or an admin refund once http mode is live, lands here too.
-  const { data: bookings, refresh } = useData('bookings', () => dataClient.getBookings(), NO_BOOKINGS);
+  const { data: bookings, refresh } = useData('bookings', () => dataClient.getBookings(), NO_BOOKINGS, signedIn);
 
   const doCancel = async (id: string) => {
     await dataClient.updateBooking(id, { status: 'cancelled' });

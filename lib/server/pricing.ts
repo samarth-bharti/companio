@@ -81,8 +81,10 @@ export function clampHourly(ratePaise: number, premium = false): number {
 // members pay a LOWER platform commission (a perk of the subscription). Basis
 // points (1% = 100 bps) avoid floating-point drift on money.
 
-export const COMMISSION_STD_BPS = 3000;  // 30% for standard users
-export const COMMISSION_PLUS_BPS = 1000; // 10% for Companio Plus users
+// Defined in lib/money.ts and re-exported, so the number the home page prints and
+// the number the payout actually uses are the same number.
+export { COMMISSION_STD_BPS, COMMISSION_PLUS_BPS } from '@/lib/money';
+import { COMMISSION_STD_BPS, COMMISSION_PLUS_BPS } from '@/lib/money';
 
 export interface MoneySplit {
   pricePaid: number;       // what the user paid (paise)

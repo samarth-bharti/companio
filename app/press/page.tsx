@@ -29,7 +29,16 @@ export default function PressPage() {
         {
           heading: 'Get in touch',
           body: [
-            'For interviews, assets, or fact-checks, write to press@companio.example. (Demo site, this address is illustrative.)',
+            // Was "press@companio.example. (Demo site, this address is
+            // illustrative.)" — an address that cannot receive mail, on the one
+            // page whose entire purpose is being contactable, under a footer that
+            // carries a real company name and a real LLPIN. The contact form goes
+            // to a mailbox that exists (/admin/messages), so it is what we point at.
+            <>
+              For interviews, assets, or fact-checks,{' '}
+              <a href="/contact" className="underline underline-offset-2">write to us</a> — pick
+              “Something else” and it reaches us directly.
+            </>,
           ],
         },
       ]}

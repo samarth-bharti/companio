@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useViewerReady } from '@/lib/useViewerReady';
 import { Gift, Clock } from 'lucide-react';
 
 /**
@@ -19,7 +20,10 @@ type State =
   | { kind: 'loading' }
   | { kind: 'ready' }
   | { kind: 'cooldown'; nextSpinAt: string | null }
-  | { kind: 'unknown' };
+  | { kind: 'unknown' }
+  // Nothing to win — render nothing at all. Distinct from 'unknown', which still
+  // shows a generic invitation and so must never be used to mean "no prize".
+  | { kind: 'hidden' };
 
 function whenNext(iso: string | null): string {
   if (!iso) return 'soon';
@@ -33,14 +37,34 @@ function whenNext(iso: string | null): string {
 
 export function SpinBanner() {
   const [state, setState] = useState<State>({ kind: 'loading' });
+  // A guest has no spin to offer, and /api/spin answers 401 for them. Don't ask.
+  const signedIn = useViewerReady();
 
   useEffect(() => {
+    if (!signedIn) {
+      setState({ kind: 'hidden' });
+      return;
+    }
     let cancelled = false;
     fetch('/api/spin')
       .then(async (r) => {
         if (cancelled) return;
         if (!r.ok) return setState({ kind: 'unknown' });
-        const d = (await r.json()) as { canSpin?: boolean; nextSpinAt?: string | null };
+        const d = (await r.json()) as {
+          canSpin?: boolean;
+          nextSpinAt?: string | null;
+          nothingToWin?: boolean;
+        };
+
+        // The only prize is a discount on the ₹199 unlock, so a member who has
+        // already bought it cannot win anything — the API says so with
+        // `nothingToWin`, and SpinWheel already honours it. The banner did not:
+        // it read only `canSpin`, so a paid member was invited on every dashboard
+        // load to "try your luck for a discount" on something they already own.
+        // Advertising a prize that cannot be awarded is the kind of small lie
+        // that makes the rest of the product harder to believe.
+        if (d.nothingToWin) return setState({ kind: 'hidden' });
+
         setState(
           d.canSpin
             ? { kind: 'ready' }
@@ -51,10 +75,12 @@ export function SpinBanner() {
         if (!cancelled) setState({ kind: 'unknown' });
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [signedIn]);
 
   // Don't flash a claim we haven't checked yet.
   if (state.kind === 'loading') return null;
+  // The unlock is already bought: there is no prize, so there is no banner.
+  if (state.kind === 'hidden') return null;
 
   if (state.kind === 'cooldown') {
     return (

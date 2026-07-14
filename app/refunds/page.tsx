@@ -13,7 +13,10 @@ export default function RefundsPage() {
         {
           heading: 'Profile unlock (₹199)',
           body: [
-            "Didn't find anyone you'd like to meet? Full refund within 7 days of unlocking, no questions asked. One tap from your dashboard.",
+            // The dashboard tap now exists (Dashboard → Account → Request a refund).
+            // What it does NOT do is move the money by itself, so this no longer
+            // implies an instant reversal: it says a person handles it, and by when.
+            "Didn't find anyone you'd like to meet? Full refund within 7 days of unlocking, no questions asked. Request it in one tap from your dashboard, under Account. We refund it to your original payment method within 5 working days and email you when it is done.",
           ],
         },
         {

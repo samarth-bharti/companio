@@ -9,6 +9,7 @@ import { SosButton } from '@/components/safety/SosButton';
 import { spring } from '@/lib/motion';
 import type { Booking } from '@/lib/appState';
 import type { Companion } from '@/lib/data/companions';
+import { meetupStartISO } from '@/lib/meetupTime';
 
 function fmtDate(iso: string) {
   return new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', {
@@ -80,7 +81,9 @@ export function UpcomingCard({
           <span className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>{b.place} · {fmtDate(b.dateISO)} · {b.time}</span>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <FlipPill targetISO={b.dateISO} />
+          {/* The slot matters: dateISO alone counts down to UTC midnight, which is
+              05:30 IST — the wrong time of day, and already past for a meetup today. */}
+          <FlipPill targetISO={meetupStartISO(b.dateISO, b.time)} />
           {cancelTarget === b.id ? (
             <span className="inline-flex gap-2 items-center text-xs" style={{ color: 'var(--color-ink-muted)' }}>
               Cancel this meetup?

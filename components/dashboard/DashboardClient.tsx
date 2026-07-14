@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
+import { useViewerReady } from '@/lib/useViewerReady';
 import type { Booking } from '@/lib/appState';
 import { ActivityToast } from '@/components/journey/ActivityToast';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
@@ -15,10 +16,11 @@ import { BookingsPanel } from './BookingsPanel';
 import { MessagesPanel } from './MessagesPanel';
 import { SavedPanel } from './SavedPanel';
 import { NotificationsPanel } from './NotificationsPanel';
+import { AccountPanel } from './AccountPanel';
 import { calm } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'bookings' | 'messages' | 'saved' | 'notifications';
+type Tab = 'overview' | 'bookings' | 'messages' | 'saved' | 'notifications' | 'account';
 
 /** Stable identity — a fresh [] each render would re-run useData's effect. */
 const NO_BOOKINGS: Booking[] = [];
@@ -29,6 +31,9 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'messages',      label: 'Messages' },
   { key: 'saved',         label: 'Saved' },
   { key: 'notifications', label: 'Notifications' },
+  // "You can export or delete your account data anytime from settings" — the
+  // privacy policy's words. This is that settings screen.
+  { key: 'account',       label: 'Account' },
 ];
 
 function greetText(firstName: string | null): string {
@@ -45,11 +50,13 @@ function PanelContent({ tab, companionParam }: { tab: Tab; companionParam?: stri
     case 'messages':      return <MessagesPanel initialCompanionId={companionParam} />;
     case 'saved':         return <SavedPanel />;
     case 'notifications': return <NotificationsPanel />;
+    case 'account':       return <AccountPanel />;
     default:              return null;
   }
 }
 
 export function DashboardClient() {
+  const signedIn = useViewerReady();
   const sp = useSearchParams();
   const router = useRouter();
 
@@ -66,9 +73,9 @@ export function DashboardClient() {
 
   // Live slices. The greeting, the journey stepper and the tab badges all used
   // to be frozen at mount, so booking a meetup left the stepper on "Browsed".
-  const { data: user }     = useData('user', () => dataClient.getUser(), null);
-  const { data: bookings } = useData('bookings', () => dataClient.getBookings(), NO_BOOKINGS);
-  const { data: plan }     = useData('plan', () => dataClient.getPlan(), null);
+  const { data: user }     = useData('user', () => dataClient.getUser(), null, signedIn);
+  const { data: bookings } = useData('bookings', () => dataClient.getBookings(), NO_BOOKINGS, signedIn);
+  const { data: plan }     = useData('plan', () => dataClient.getPlan(), null, signedIn);
 
   const userName = user?.firstName ?? null;
 

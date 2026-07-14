@@ -3,6 +3,9 @@
 import { prisma } from '@/lib/prisma';
 import { rupees } from '@/lib/server/admin';
 
+export const metadata = { title: "Overview" };
+
+
 export const dynamic = 'force-dynamic';
 
 async function loadStats() {

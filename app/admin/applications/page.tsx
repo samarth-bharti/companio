@@ -5,6 +5,9 @@ import { prisma } from '@/lib/prisma';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { approveApplication, rejectApplication } from '../actions/applications';
 
+export const metadata = { title: "Applications" };
+
+
 export const dynamic = 'force-dynamic';
 
 const btnGreen = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-[var(--color-emerald)] text-white disabled:opacity-50 disabled:cursor-wait';

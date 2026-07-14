@@ -20,7 +20,11 @@ export default function CareersPage() {
           heading: 'Open roles',
           body: [
             'We are not actively hiring for specific roles right now, but we always read thoughtful introductions from trust & safety, engineering, and city-operations people.',
-            'Write to careers@companio.example with what you would want to build here. (Demo site, this address is illustrative.)',
+            // careers@companio.example could not receive a single application.
+            <>
+              <a href="/contact" className="underline underline-offset-2">Send us an introduction</a>{' '}
+              — pick “Something else” and tell us what you would want to build here.
+            </>,
           ],
         },
       ]}

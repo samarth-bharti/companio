@@ -117,8 +117,19 @@ export function CompanionDashPayout() {
         >
           <Info size={15} style={{ color: 'var(--color-azure-deep)', flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
           <p className="font-sans text-xs leading-relaxed" style={{ color: 'var(--color-ink-muted)' }}>
-            After each completed meetup, your earnings appear under <strong>Owed to you</strong>. We transfer them
-            to this UPI id and the amount moves to <strong>Paid out</strong>. We&rsquo;ll email you when it goes.
+            {/* Was: "After each completed meetup, your earnings appear under Owed to
+                you." Not yet, they do not. Paid bookings are still closed
+                (MARKETPLACE_PAYMENTS_ENABLED), and the only meetups that can happen
+                today are the two included in a member's unlock — which create no
+                payout row at all. A companion following this sentence would have
+                completed a meetup, looked at "Owed to you", found ₹0, and concluded
+                they had been cheated. The notification promised at the end of it is
+                now actually sent (see markPayoutPaid in app/admin/actions.ts). */}
+            Paid bookings are not open yet, so the meetups happening today are the two included
+            in a member&rsquo;s unlock, and they do not earn you anything. Once paid bookings
+            open, each completed meetup will show under <strong>Owed to you</strong>; we transfer
+            it to this UPI id, the amount moves to <strong>Paid out</strong>, and we tell you when
+            it goes.
           </p>
         </div>
 

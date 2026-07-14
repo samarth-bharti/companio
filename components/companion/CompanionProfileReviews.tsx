@@ -110,7 +110,9 @@ function ReviewCard({ r }: { r: Review }) {
           )}
         </div>
         <span className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
-          {r.name} · {r.city}
+          {/* City is optional on a real account, so the separator has to be too —
+              otherwise a reviewer who never set a city renders as "Friend · ". */}
+          {r.city ? `${r.name} · ${r.city}` : r.name}
         </span>
       </div>
       <p

@@ -1,17 +1,49 @@
 // lib/server/notify.ts
 //
-// Post-action transactional email dispatch. Every function here is FIRE-SAFE:
-// it never throws and never blocks the caller's success path. A failure to send
-// must never turn a successful booking or payment into an error response.
+// Post-action notification dispatch. Every function here is FIRE-SAFE: it never
+// throws and never blocks the caller's success path. A failure to notify must
+// never turn a successful booking or payment into an error response.
 //
-// Emails are dormant until RESEND_API_KEY is set (see lib/server/email.ts), so
-// in development / pre-credentials these run as harmless no-ops. The routes can
-// `await` them safely: with no key, sendEmail returns instantly.
+// TWO CHANNELS, AND THEY ARE NOT EQUAL:
+//
+//   in-app  — a Notification row. Always written. This is the record the user
+//             sees in the bell menu and the notifications panel.
+//   email   — dormant until RESEND_API_KEY is set (see lib/server/email.ts).
+//
+// These used to be one thing, and email was it. Every function opened with
+// `if (!envValue('RESEND_API_KEY')) return;`, so on a deployment with no email
+// configured — which is every deployment today — booking a meetup and paying
+// ₹199 produced no notification of any kind. The bell was wired to a table that
+// nothing wrote to: the only code creating a Notification row was the companion
+// decline route.
+//
+// So the in-app write comes FIRST and unconditionally, and email is the extra
+// that happens when it can. A user must never be told nothing happened when
+// something did.
 
 import type { PrismaClient } from '@prisma/client';
 import { sendEmail } from './email';
 import { bookingConfirmationEmail, receiptEmail } from './emailTemplates';
 import { envValue } from '@/lib/env';
+
+/**
+ * Write one in-app notification. Never throws — a notification is a courtesy,
+ * not the transaction, and its failure must not roll back a paid booking.
+ */
+export async function pushNotification(
+  prisma: PrismaClient,
+  userId: string,
+  title: string,
+  body: string,
+): Promise<void> {
+  try {
+    await prisma.notification.create({
+      data: { userId, title, body, ts: BigInt(Date.now()), read: false },
+    });
+  } catch (err) {
+    console.warn('[notify] in-app notification failed:', err instanceof Error ? err.message : err);
+  }
+}
 
 /** Minimal shape needed to compose the confirmation — the created Booking row. */
 type BookingLike = {
@@ -46,9 +78,6 @@ export async function notifyBookingCreated(
   userId: string,
   booking: BookingLike,
 ): Promise<void> {
-  // envValue(), not process.env: a placeholder key must read as "no email",
-  // otherwise we run the lookups and hand sendEmail() a credential Resend 401s.
-  if (!envValue('RESEND_API_KEY')) return; // email dormant — skip the lookups entirely
   try {
     const [user, companion] = await Promise.all([
       prisma.user.findUnique({
@@ -60,19 +89,41 @@ export async function notifyBookingCreated(
         select: { name: true },
       }),
     ]);
+
+    const companionName = companion?.name ?? 'your companion';
+    const when = formatMeetupDate(booking.dateISO);
+
+    // Always. Independent of whether any email service exists.
+    await pushNotification(
+      prisma,
+      userId,
+      'Meetup confirmed',
+      `You're meeting ${companionName} on ${when} at ${booking.place} for ${booking.activity}.`,
+    );
+
+    // envValue(), not process.env: a placeholder key must read as "no email",
+    // otherwise we hand sendEmail() a credential Resend 401s.
+    if (!envValue('RESEND_API_KEY')) return;
     if (!user?.email) return;
 
     const msg = bookingConfirmationEmail({
       name: user.firstName,
-      companionName: companion?.name ?? 'your companion',
+      companionName,
       activity: booking.activity,
       dateISO: booking.dateISO,
       place: booking.place,
     });
     await sendEmail({ to: user.email, subject: msg.subject, html: msg.html, text: msg.text });
   } catch (err) {
-    console.warn('[notify] booking email skipped:', err instanceof Error ? err.message : err);
+    console.warn('[notify] booking notify skipped:', err instanceof Error ? err.message : err);
   }
+}
+
+/** "Wednesday, 15 July" — the same phrasing the confirmation screen uses. */
+function formatMeetupDate(dateISO: string): string {
+  const d = new Date(`${dateISO}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return dateISO;
+  return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 /**
@@ -87,30 +138,51 @@ export async function notifyPurchaseSettled(
   orderId: string,
   result: SettleResult,
 ): Promise<void> {
+  // A replay (verify + webhook both fire for one payment) must not notify twice.
   if (!result.settled || result.idempotent) return;
-  // envValue(), not process.env: a placeholder key must read as "no email",
-  // otherwise we run the lookups and hand sendEmail() a credential Resend 401s.
-  if (!envValue('RESEND_API_KEY')) return; // email dormant — skip the lookups entirely
   try {
     const purchase = await prisma.purchase.findUnique({
       where: { razorpayOrderId: orderId },
       select: { amount: true, kind: true, userId: true },
     });
     if (!purchase) return;
+    // The buyer erased their account before this receipt went out. There is
+    // nobody to notify and no address to send to — the payment row survives them
+    // on purpose (it is the tax record), but it no longer points at a person.
+    const buyerId = purchase.userId;
+    if (!buyerId) return;
 
     const user = await prisma.user.findUnique({
-      where: { id: purchase.userId },
+      where: { id: buyerId },
       select: { email: true, firstName: true },
     });
+
+    const description = KIND_LABEL[purchase.kind] ?? 'Companio purchase';
+    const amount = formatRupees(purchase.amount);
+
+    // Always — a user who has just paid must see something, with or without email.
+    await pushNotification(
+      prisma,
+      buyerId,
+      'Payment received',
+      `${description} · ${amount}. Your 2 included meetings are ready to use.`,
+    );
+
+    if (!envValue('RESEND_API_KEY')) return;
     if (!user?.email) return;
 
     const msg = receiptEmail({
       name: user.firstName,
       amountPaise: purchase.amount,
-      description: KIND_LABEL[purchase.kind] ?? 'Companio purchase',
+      description,
     });
     await sendEmail({ to: user.email, subject: msg.subject, html: msg.html, text: msg.text });
   } catch (err) {
-    console.warn('[notify] receipt email skipped:', err instanceof Error ? err.message : err);
+    console.warn('[notify] receipt notify skipped:', err instanceof Error ? err.message : err);
   }
+}
+
+/** 19900 → "₹199". Paise are storage; rupees are what a person reads. */
+function formatRupees(paise: number): string {
+  return `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }

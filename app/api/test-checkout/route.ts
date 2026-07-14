@@ -97,6 +97,12 @@ export async function POST(req: Request) {
     const result = await settlePurchase(prisma, { orderId, paymentId });
     if (!result.settled) return json({ error: 'settle_failed', reason: result.reason }, 500);
 
+    // The same notification the real webhook sends. This route exists to be a
+    // faithful stand-in for a payment, and a payment the user is never told about
+    // is not faithful — it is just a silent state change.
+    const { notifyPurchaseSettled } = await import('@/lib/server/notify');
+    await notifyPurchaseSettled(prisma, orderId, result);
+
     return json({ ok: true, kind, amount: UNLOCK_AMOUNT, test: true });
   });
 }

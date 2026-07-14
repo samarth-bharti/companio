@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AuroraWipe } from '@/components/motion/AuroraWipe';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
-import { getUser, getWelcomed, setWelcomed } from '@/lib/journeyState';
+import { dataClient } from '@/lib/dataClient';
 
 interface WelcomeOverlayProps {
   name?: string;
@@ -23,15 +23,38 @@ interface WelcomeOverlayProps {
  */
 export function WelcomeOverlay({ name }: WelcomeOverlayProps) {
   const [phase, setPhase] = useState<'idle' | 'wipe' | 'seal'>('idle');
+  // Captured from the same read that decides whether to play, so the greeting
+  // cannot fall back to "friend" just because the member lives on the server.
+  const [loadedName, setLoadedName] = useState<string | null>(null);
   const dismissedRef = useRef(false);
   const safetyRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Hydrate on mount (client only — SSR always returns 'idle').
+  //
+  // Through dataClient, NOT lib/journeyState directly. journeyState reads
+  // localStorage, and in http mode — which is every real deployment — the member
+  // lives in Postgres and localStorage is empty. So `getUser()` was always null,
+  // the overlay never reached the 'wipe' phase, and the welcome moment simply did
+  // not exist in production. Both sign-in paths redirect to `?welcome=1` to
+  // trigger it; nothing has ever been listening.
   useEffect(() => {
-    if (getUser() && !getWelcomed()) {
-      setWelcomed(true);
+    let cancelled = false;
+
+    void (async () => {
+      const [user, welcomed] = await Promise.all([
+        dataClient.getUser(),
+        dataClient.getWelcomed(),
+      ]);
+      if (cancelled || !user || welcomed) return;
+
+      // Mark first, play second: the flag is what stops this replaying on every
+      // visit, and it must be set even if the animation is cut short.
+      void dataClient.setWelcomed(true);
+      setLoadedName(user.firstName ?? null);
       setPhase('wipe');
-    }
+    })();
+
+    return () => { cancelled = true; };
   }, []);
 
   // Cleanup safety timer on unmount.
@@ -61,8 +84,7 @@ export function WelcomeOverlay({ name }: WelcomeOverlayProps) {
 
   if (phase === 'idle') return null;
 
-  // Safe to call getUser() here: only reached after useEffect (client side).
-  const displayName = name || getUser()?.firstName || 'friend';
+  const displayName = name || loadedName || 'friend';
 
   return (
     <>

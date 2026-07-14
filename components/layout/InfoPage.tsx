@@ -7,7 +7,12 @@ import { WaveBridge } from '@/components/journey/WaveBridge';
 
 export interface InfoSection {
   heading: string;
-  body: string[];
+  /**
+   * One paragraph per entry. Not `string[]`: a page that tells you to "use the
+   * contact form" and then does not give you a link to it has told you nothing,
+   * and both the press and careers pages needed exactly that.
+   */
+  body: React.ReactNode[];
   id?: string; // optional anchor target, e.g. "spin" → /terms#spin
 }
 

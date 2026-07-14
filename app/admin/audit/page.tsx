@@ -7,6 +7,9 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 
+export const metadata = { title: "Audit" };
+
+
 export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 50;

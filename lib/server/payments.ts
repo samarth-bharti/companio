@@ -60,6 +60,29 @@ export async function settlePurchase(
       data: { status: 'paid', razorpayPaymentId: opts.paymentId, invoiceNo, gstPaise },
     });
 
+    // Spend the discount code HERE, not when the order was created.
+    //
+    // A use belongs to a payment, not to an attempt: incrementing at order time
+    // would let anyone exhaust a limited code by opening the unlock sheet and
+    // walking away. This sits after the idempotency anchor above, so a replayed
+    // webhook (verify + webhook both fire for one payment) returns early and
+    // cannot count the same code twice.
+    if (purchase.discountCode) {
+      await tx.discountCode.updateMany({
+        where: { code: purchase.discountCode },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
+
+    // The buyer erased their account between paying and this settling. The
+    // payment is real and stays on the books (purchases.userId is SET NULL on
+    // erasure, not cascaded away), but there is nobody left to grant an unlock, a
+    // subscription or credits to — and their bookings are already gone, so the
+    // booking branch below would raise P2025 on a row that no longer exists.
+    // Record the money, grant nothing.
+    const buyerId = purchase.userId;
+    if (!buyerId) return { settled: true, kind: purchase.kind };
+
     switch (purchase.kind) {
       case 'booking':
         if (purchase.bookingId) {
@@ -92,9 +115,9 @@ export async function settlePurchase(
         break;
       case 'credits': {
         const w = await tx.wallet.upsert({
-          where: { userId: purchase.userId },
+          where: { userId: buyerId },
           update: { credits: { increment: purchase.credits } },
-          create: { userId: purchase.userId, credits: 2 + purchase.credits },
+          create: { userId: buyerId, credits: 2 + purchase.credits },
         });
         await tx.creditLedger.create({
           data: { walletId: w.id, delta: purchase.credits, kind: 'topup', note: `purchase ${purchase.id}` },
@@ -102,7 +125,7 @@ export async function settlePurchase(
         break;
       }
       case 'unlock':
-        await tx.user.update({ where: { id: purchase.userId }, data: { unlocked: true } });
+        await tx.user.update({ where: { id: buyerId }, data: { unlocked: true } });
         // A spin win discounts the unlock, so the unlock is where it gets burnt.
         // The old code only ever burnt a win on a booking — which is the reason
         // no win was ever spendable at all.
@@ -115,9 +138,9 @@ export async function settlePurchase(
         break;
       case 'plus':
         await tx.subscription.upsert({
-          where: { userId: purchase.userId },
+          where: { userId: buyerId },
           update: { plan: 'plus', endsAt: null },
-          create: { userId: purchase.userId, plan: 'plus' },
+          create: { userId: buyerId, plan: 'plus' },
         });
         break;
     }

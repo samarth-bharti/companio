@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { ActionForm } from '@/components/admin/ActionForm';
 import { cancelBooking, refundBooking, markBookingComplete } from '../actions/bookings';
 
+export const metadata = { title: "Bookings" };
+
+
 export const dynamic = 'force-dynamic';
 
 const btn = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-[var(--color-ink)]/20 text-[var(--color-ink)] hover:bg-[var(--color-ink)]/5 disabled:opacity-50 disabled:cursor-wait';

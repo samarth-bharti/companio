@@ -22,21 +22,44 @@ import { TX } from '@/lib/server/tx';
  * panel's Delete button.
  */
 export async function eraseUser(prisma: PrismaClient, userId: string): Promise<void> {
+  // Does this login own a companion profile? Read it before the transaction, so
+  // the decision below is made on a value and not on a join inside the delete.
+  const owner = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { companionId: true },
+  });
+
   await prisma.$transaction(async (tx) => {
     // CreditLedger is a child of Wallet, which is a child of User. Wallet
     // cascades from User, but we must go bottom-up to stay explicit.
     await tx.creditLedger.deleteMany({ where: { wallet: { userId } } });
     await tx.wallet.deleteMany({ where: { userId } });
-    await tx.purchase.deleteMany({ where: { userId } });
+
+    // Purchases are NOT deleted. They are the company's payment and tax record,
+    // which the privacy policy says survives account deletion, and the schema now
+    // sets purchases.userId to NULL when the user row goes. The payment stays; the
+    // person is severed from it.
 
     // No cascade on these — they would raise FK errors if User went first.
-    // Booking must precede nothing else here: CompanionPayout cascades from it.
     await tx.booking.deleteMany({ where: { userId } });
     await tx.favorite.deleteMany({ where: { userId } });
     await tx.message.deleteMany({ where: { userId } });
     await tx.notification.deleteMany({ where: { userId } });
     await tx.subscription.deleteMany({ where: { userId } });
     await tx.companionApplication.deleteMany({ where: { userId } });
+
+    // A companion who erases their login must not stay on the marketplace. The
+    // profile row itself cannot be deleted — other members' bookings and messages
+    // point at it, and eraseCompanion() refuses for exactly that reason — so it is
+    // suspended, which hides it from explore and blocks new bookings
+    // (lib/server/visibility.ts). Their payout details stay, because we may still
+    // owe them money for meetups that already happened.
+    if (owner?.companionId) {
+      await tx.companion.update({
+        where: { id: owner.companionId },
+        data: { suspended: true },
+      });
+    }
 
     await tx.user.delete({ where: { id: userId } });
   }, TX);

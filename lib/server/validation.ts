@@ -117,6 +117,9 @@ export const orderCreateBody = z.object({
   kind: z.enum(['booking', 'credits', 'unlock', 'plus']),
   packId: z.string().optional(),
   bookingId: z.string().optional(),
+  // A code STRING only. The client never sends an amount, a percentage or a
+  // discount — the server looks the code up and recomputes the price itself.
+  discountCode: z.string().trim().min(1).max(32).optional(),
 });
 
 export const applicationBody = z.object({

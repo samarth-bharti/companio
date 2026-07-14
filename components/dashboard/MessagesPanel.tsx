@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
+import { useViewerReady } from '@/lib/useViewerReady';
 import { dataClient } from '@/lib/dataClient';
 import { getCompanion } from '@/lib/data/companions';
 import type { ChatMessage } from '@/lib/appState';
@@ -19,8 +20,11 @@ export function MessagesPanel({ initialCompanionId }: MessagesPanelProps) {
   const [threads, setThreads] = useState<Record<string, ChatMessage[]>>({});
   const [selectedId, setSelectedId] = useState<string | undefined>(initialCompanionId);
   const reduced = useEffectiveReducedMotion();
+  const signedIn = useViewerReady();
 
   useEffect(() => {
+    // A guest has no threads and no bookings; both endpoints answer 401.
+    if (!signedIn) return;
     let cancelled = false;
     Promise.all([dataClient.getThreads(), dataClient.getBookings()])
       .then(([loaded, bookings]) => {
@@ -35,7 +39,7 @@ export function MessagesPanel({ initialCompanionId }: MessagesPanelProps) {
       })
       .catch(() => { if (!cancelled) setCompanions([]); });
     return () => { cancelled = true; };
-  }, [initialCompanionId]);
+  }, [initialCompanionId, signedIn]);
 
   // There used to be an effect here that, on opening an empty thread, wrote a
   // message FROM the companion: "Hi! Looking forward to our meetup, shall we say

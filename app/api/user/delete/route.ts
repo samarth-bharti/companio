@@ -1,19 +1,23 @@
 // app/api/user/delete/route.ts
 //
-// POST /api/user/delete  — DPDP / GDPR right to erasure.
-// Permanently deletes the signed-in user and ALL their data inside a single
-// transaction. Child rows that lack onDelete:Cascade are removed explicitly
-// before the user row to avoid FK constraint violations.
+// POST /api/user/delete  — DPDP right to erasure.
+//
+// The work itself lives in lib/server/erase.ts, which the admin panel's Delete
+// button also calls. That file has always claimed the two paths were shared "so
+// the two can't drift" — but this route kept its own copy of the transaction and
+// they had already drifted. Now there is one implementation, and a fix to the
+// cascade rules (payments and companion wages survive an erasure) applies to
+// both at once.
 
 import { getRawSessionUserId } from '@/lib/server/session';
 import { json, unauthorized, guard } from '@/lib/server/http';
 import { rateLimit, clientKey } from '@/lib/server/rateLimit';
-import { TX } from '@/lib/server/tx';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   return guard(async () => {
+    // Raw: a suspended or banned account is still legally entitled to erase itself.
     const userId = await getRawSessionUserId();
     if (!userId) return unauthorized();
 
@@ -22,31 +26,9 @@ export async function POST(req: Request) {
     if (!rl.ok) return json({ error: 'rate_limited', retryAfter: rl.retryAfter }, 429);
 
     const { prisma } = await import('@/lib/prisma');
+    const { eraseUser } = await import('@/lib/server/erase');
 
-    await prisma.$transaction(async (tx) => {
-      // 1. CreditLedger — child of Wallet (Cascade from Wallet, but Wallet
-      //    must go before User, so delete ledger first to be explicit)
-      await tx.creditLedger.deleteMany({
-        where: { wallet: { userId } },
-      });
-
-      // 2. Wallet — has onDelete:Cascade from User; explicit for safety
-      await tx.wallet.deleteMany({ where: { userId } });
-
-      // 3. Purchase — has onDelete:Cascade from User; explicit for safety
-      await tx.purchase.deleteMany({ where: { userId } });
-
-      // 4–9. Relations with no cascade (would raise FK error if user deleted first)
-      await tx.booking.deleteMany({ where: { userId } });
-      await tx.favorite.deleteMany({ where: { userId } });
-      await tx.message.deleteMany({ where: { userId } });
-      await tx.notification.deleteMany({ where: { userId } });
-      await tx.subscription.deleteMany({ where: { userId } });
-      await tx.companionApplication.deleteMany({ where: { userId } });
-
-      // 10. User — must be last
-      await tx.user.delete({ where: { id: userId } });
-    }, TX);
+    await eraseUser(prisma, userId);
 
     return json({ ok: true });
   });
