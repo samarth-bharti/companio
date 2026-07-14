@@ -21,7 +21,7 @@ import { COMPANY } from '@/lib/company';
 
 export const dynamic = 'force-dynamic';
 
-const TOPICS = ['support', 'safety', 'privacy', 'companion', 'other'] as const;
+const TOPICS = ['support', 'refund', 'safety', 'privacy', 'companion', 'other'] as const;
 
 const body = z.object({
   name: z.string().trim().min(1).max(80),

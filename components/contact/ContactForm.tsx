@@ -6,6 +6,7 @@ import { CheckCircle2 } from 'lucide-react';
 
 const TOPICS = [
   { value: 'support', label: 'Account, bookings, or payments' },
+  { value: 'refund', label: 'A refund' },
   { value: 'safety', label: 'A safety concern' },
   { value: 'privacy', label: 'Privacy or my data' },
   { value: 'companion', label: 'Becoming a companion' },
