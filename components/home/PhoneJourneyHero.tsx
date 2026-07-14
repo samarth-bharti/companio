@@ -41,13 +41,16 @@ const VIDEO_FALLBACK =
   'linear-gradient(160deg, #EBF1FF 0%, #F4EEFF 42%, #FFF3E0 100%)';
 
 /**
- * True when we should actually download and play the 2.5 MB hero footage.
+ * True when we should actually download and play the hero footage.
  *
  * Skipped for: reduced-motion users (the project's motion contract forbids
  * looping video), Data Saver, and 2G/3G connections — the hero is decorative,
  * and on a mid-range Indian phone the download is the single slowest thing on
- * the page. Everyone else gets the video, mounted after first paint so it can
- * never delay LCP.
+ * the page. Everyone else gets the video.
+ *
+ * These are exactly the conditions HERO_PRELOAD (app/layout.tsx) tests before it
+ * preloads the poster, so the two always agree: whenever this returns true the
+ * poster is already in flight, and whenever it returns false nothing was fetched.
  */
 function useHeroVideoEnabled(): boolean {
   const [allowed, setAllowed] = useState(false);
@@ -55,18 +58,16 @@ function useHeroVideoEnabled(): boolean {
   useEffect(() => {
     // Read the preference straight from matchMedia rather than via
     // useEffectiveReducedMotion(): that hook reports false until it has mounted,
-    // which is correct for render (hydration) but would let the 1.3 MB download
-    // start before it flips to true. Inside an effect there is no SSR to match,
-    // so reading the media query directly is both safe and immediate.
+    // which is correct for render (hydration) but would let the download start
+    // before it flips to true. Inside an effect there is no SSR to match, so
+    // reading the media query directly is both safe and immediate.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const conn = (navigator as Navigator & {
       connection?: { saveData?: boolean; effectiveType?: string };
     }).connection;
     if (conn?.saveData) return;
     if (conn?.effectiveType && /(^|-)2g$|3g/.test(conn.effectiveType)) return;
-    // Defer past first paint so the video never competes with the LCP text.
-    const id = window.setTimeout(() => setAllowed(true), 0);
-    return () => window.clearTimeout(id);
+    setAllowed(true);
   }, []);
 
   return allowed;
@@ -83,11 +84,20 @@ function VideoBackground() {
           className="absolute inset-0 w-full h-full object-cover"
           style={{ zIndex: 1 }}
           src="/hero.mp4"
+          // The first frame of the footage itself, 33 KB. It decodes while the
+          // mp4 is still arriving, so the hero shows real film rather than the
+          // flat gradient underneath it, and the switch to live video is
+          // invisible — the poster IS frame one.
+          poster="/hero-poster.webp"
           autoPlay
           muted
           loop
           playsInline
-          preload="metadata"
+          // "auto", not "metadata": metadata fetched the header, then waited for
+          // autoplay to ask for the frames in a second request. The poster covers
+          // the hero meanwhile, so pulling the footage straight away costs the
+          // visitor nothing they can see.
+          preload="auto"
           aria-hidden="true"
         />
       )}
