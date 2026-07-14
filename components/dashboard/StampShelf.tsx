@@ -8,6 +8,21 @@ import type { Booking } from '@/lib/appState';
 interface StampShelfProps {
   bookings: Booking[];
   unlocked: boolean;
+  /**
+   * The signed-in member's date of birth, if they have given one. `null` means
+   * either a guest or an account that has never confirmed its age.
+   *
+   * It is here because the first stamp used to read "Verified member" with
+   * `earned: true` — hard-coded, for everybody, including a signed-out guest
+   * previewing the dashboard. Nothing was verified. A milestone shelf where the
+   * first milestone is awarded for existing is not a milestone shelf, and this
+   * codebase has spent a lot of rounds deleting badges that meant nothing.
+   *
+   * Age confirmation is a real thing a member does, the server enforces it
+   * (lib/server/age.ts refuses bookings without it), and it can be genuinely
+   * unearned — so it is worth a stamp.
+   */
+  dateOfBirth: string | null;
 }
 
 interface MilestoneDef {
@@ -19,14 +34,15 @@ interface MilestoneDef {
   delay: number;
 }
 
-export function StampShelf({ bookings, unlocked }: StampShelfProps) {
+export function StampShelf({ bookings, unlocked, dateOfBirth }: StampShelfProps) {
   const hasBooking = bookings.some(
     (b) => b.status === 'upcoming' || b.status === 'completed',
   );
   const hasReview = bookings.some((b) => !!b.review);
+  const ageConfirmed = !!dateOfBirth;
 
   const milestones: MilestoneDef[] = [
-    { key: 'verified',     label: 'Verified member',      icon: ShieldCheck, earned: true,       angle:  2,    delay: 0    },
+    { key: 'age',          label: 'Age confirmed',        icon: ShieldCheck, earned: ageConfirmed, angle:  2,  delay: 0    },
     { key: 'profiles',     label: 'Profiles unlocked',    icon: Unlock,      earned: unlocked,   angle: -2,    delay: 0.06 },
     { key: 'first-meetup', label: 'First meetup booked',  icon: Calendar,    earned: hasBooking, angle:  1.5,  delay: 0.12 },
     { key: 'first-review', label: 'First review',         icon: Star,        earned: hasReview,  angle: -1.5,  delay: 0.18 },

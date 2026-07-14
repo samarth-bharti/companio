@@ -7,6 +7,7 @@ import { FlipPill } from '@/components/motion/FlipPill';
 import { spring } from '@/lib/motion';
 import type { Booking } from '@/lib/appState';
 import type { Companion } from '@/lib/data/companions';
+import { meetupStartISO } from '@/lib/meetupTime';
 
 interface NextMeetupCardProps {
   booking: Booking;
@@ -65,7 +66,7 @@ export function NextMeetupCard({ booking, companion }: NextMeetupCardProps) {
             {booking.place} · {fmtDate(booking.dateISO)} · {booking.time}
           </span>
         </div>
-        <FlipPill targetISO={booking.dateISO} />
+        <FlipPill targetISO={meetupStartISO(booking.dateISO, booking.time)} />
       </div>
     </motion.article>
   );

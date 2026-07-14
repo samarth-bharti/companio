@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { type Wallet } from '@/lib/journeyState';
 import { dataClient } from '@/lib/dataClient';
 import { type Companion } from '@/lib/data/companions';
+import { formatPaise, UNLOCK_AMOUNT } from '@/lib/money';
 import { calm } from '@/lib/motion';
 
 interface BookingFormState {
@@ -42,6 +43,14 @@ function Row({ icon: Icon, label, value }: { icon: LucideIcon; label: string; va
 
 export function BookingStepReview({ companion, state, onConfirm, onBack, submitting = false }: Props) {
   const [wallet, setWallet] = useState<Wallet | null>(null);
+  // Zero credits has TWO causes and they are not the same sentence.
+  //
+  // This screen said "You've used both included meetings" whenever the balance
+  // was zero — including to a member who has never unlocked, never booked, and
+  // therefore never had a meeting to use. They were told they had spent the very
+  // thing they had not yet bought, and handed a dead button reading "No meetings
+  // left", on the last screen before a booking. The two states need telling apart.
+  const [unlocked, setUnlocked] = useState<boolean | null>(null);
   const reduced = useEffectiveReducedMotion();
 
   // Read the wallet through dataClient, not journeyState: in http mode the
@@ -50,10 +59,28 @@ export function BookingStepReview({ companion, state, onConfirm, onBack, submitt
   useEffect(() => {
     let cancelled = false;
     dataClient.getWallet().then((w) => { if (!cancelled) setWallet(w); }).catch(() => {});
+    dataClient.getUnlocked().then((u) => { if (!cancelled) setUnlocked(u); }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
   const hasCredits = (wallet?.credits ?? 0) > 0;
+  // Never bought the unlock → they have not "used" anything; they have not started.
+  const needsUnlock = !hasCredits && unlocked === false;
+
+  /**
+   * Nothing is known until BOTH reads land, and "not known yet" must not render as
+   * "no". Both start as null, so for the first moments of this screen `hasCredits`
+   * was false and the member — who may have two meetings sitting in their wallet —
+   * was shown "You've used both included meetings" above a dead "No meetings left"
+   * button, on the last screen before they book. It corrects itself when the fetch
+   * returns; on a slow connection that is a long time to be told you cannot do the
+   * thing you are about to do, and the natural response is to give up and leave.
+   *
+   * OverviewPanel already learned this exact lesson about the wallet ("the fallback
+   * is null — we do not know yet — not { credits: 2 }"). Same rule here: say nothing
+   * until we know.
+   */
+  const loading = wallet === null || unlocked === null;
 
   return (
     <div className="space-y-6">
@@ -125,13 +152,27 @@ export function BookingStepReview({ companion, state, onConfirm, onBack, submitt
         animate={{ opacity: 1, y: 0 }}
         transition={reduced ? { duration: 0 } : { ...calm.base, delay: 0.1 }}
       >
-        {hasCredits ? (
+        {loading ? (
+          <p className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
+            Checking your included meetings…
+          </p>
+        ) : hasCredits ? (
           <>
             <p className="font-sans font-bold text-base" style={{ color: 'var(--color-ink)' }}>
               ₹0 today
             </p>
             <p className="font-sans text-sm mt-0.5" style={{ color: 'var(--color-azure-deep)' }}>
               This uses 1 of your {wallet?.credits} included meeting{(wallet?.credits ?? 0) > 1 ? 's' : ''}.
+            </p>
+          </>
+        ) : needsUnlock ? (
+          <>
+            <p className="font-sans font-bold text-base" style={{ color: 'var(--color-ink)' }}>
+              Unlock Companio to book
+            </p>
+            <p className="font-sans text-sm mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
+              One {formatPaise(UNLOCK_AMOUNT)} payment opens every profile in your city and
+              includes your first two meetings — this one would be the first.
             </p>
           </>
         ) : (
@@ -158,23 +199,54 @@ export function BookingStepReview({ companion, state, onConfirm, onBack, submitt
         </Button>
         {/* v1 is unlock-only: a meetup can only be booked with an included
             meeting. Without one there is nothing to charge against, so the
-            action is disabled rather than silently creating a free booking. */}
-        <Button
-          variant="cta"
-          size="lg"
-          type="button"
-          className="flex-1"
-          onClick={onConfirm}
-          disabled={!hasCredits || submitting}
-          style={{ minHeight: 44 }}
-          aria-label={
-            hasCredits
-              ? 'Confirm your meetup booking'
-              : 'Booking unavailable — you have used both included meetings'
-          }
-        >
-          {submitting ? 'Confirming…' : hasCredits ? 'Confirm meetup' : 'No meetings left'}
-        </Button>
+            action is disabled rather than silently creating a free booking.
+            But a member who has simply never unlocked is not at a dead end —
+            they are one payment away, and the button should say so and take
+            them there, instead of reading "No meetings left" and doing nothing. */}
+        {loading ? (
+          <Button
+            variant="cta"
+            size="lg"
+            type="button"
+            className="flex-1"
+            disabled
+            style={{ minHeight: 44 }}
+            aria-label="Checking your included meetings"
+          >
+            Checking…
+          </Button>
+        ) : needsUnlock ? (
+          <Button
+            variant="cta"
+            size="lg"
+            type="button"
+            className="flex-1"
+            // Seeded with this companion, so the sheet opens on the person they
+            // were already trying to book rather than a generic grid.
+            onClick={() => { window.location.href = `/explore?unlock=${companion.id}`; }}
+            style={{ minHeight: 44 }}
+            aria-label={`Unlock Companio for ${formatPaise(UNLOCK_AMOUNT)} to book this meetup`}
+          >
+            Unlock for {formatPaise(UNLOCK_AMOUNT)}
+          </Button>
+        ) : (
+          <Button
+            variant="cta"
+            size="lg"
+            type="button"
+            className="flex-1"
+            onClick={onConfirm}
+            disabled={!hasCredits || submitting}
+            style={{ minHeight: 44 }}
+            aria-label={
+              hasCredits
+                ? 'Confirm your meetup booking'
+                : 'Booking unavailable — you have used both included meetings'
+            }
+          >
+            {submitting ? 'Confirming…' : hasCredits ? 'Confirm meetup' : 'No meetings left'}
+          </Button>
+        )}
       </div>
     </div>
   );
