@@ -36,7 +36,7 @@ export default function Home() {
         {/* grad-dark-panel ENDS at #0F1120 — flipped arch must match that edge */}
         <WaveBridge fill="#0F1120" base="var(--color-bg)" flip height={80} />
         <BentoSection />
-        <ColorMorphBridge from="#FBFCFF" to="#FFF3E0" heightVh={11} />
+        <ColorMorphBridge from="#FBFCFF" to="#FFF3E0" heightVh={8} />
         <ActivityChapter />
         <WaveBridge fill="var(--color-ink-dark-panel)" height={90} />
         <SafetySection />
@@ -44,7 +44,7 @@ export default function Home() {
         <TrustCarousel />
         <ColorMorphBridge from="#EBF1FF" to="#FBFCFF" heightVh={14} />
         <StatsSection />
-        <ColorMorphBridge from="#FBFCFF" to="#EBF1FF" heightVh={14} />
+        <ColorMorphBridge from="#FBFCFF" to="#EBF1FF" heightVh={10} />
         <FinalCtaSection />
       </main>
       <Footer />

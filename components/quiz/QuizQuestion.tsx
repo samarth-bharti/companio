@@ -56,8 +56,8 @@ export function QuizQuestion({
       {/* Split layout */}
       <div
         ref={containerRef}
-        className="relative z-10 flex-1 max-w-5xl mx-auto w-full px-5 pt-10 pb-16
-                   grid md:grid-cols-2 gap-10 items-center"
+        className="relative z-10 max-w-5xl mx-auto w-full px-5 pt-12 pb-16 md:pt-[clamp(3rem,12vh,8rem)]
+                   grid md:grid-cols-2 gap-x-10 gap-y-6 items-start"
       >
         {/* Left: avatar bubble + question heading */}
         <div className="flex flex-col gap-5">

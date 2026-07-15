@@ -102,9 +102,18 @@ export function HowItWorksJourney() {
                   <Reveal delay={i * 0.1}>
                     <TiltCard maxDeg={5}>
                       <div
-                        className="flex flex-col rounded-2xl p-7"
+                        className="relative flex flex-col overflow-hidden rounded-2xl p-7"
                         style={{ background: s.bg, border: `1.5px solid ${s.color}22` }}
                       >
+                        {/* Real ordered sequence (step 1→4), so the numeral carries
+                            information — not a decorative section marker. */}
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute top-3 right-5 font-display font-bold leading-none select-none"
+                          style={{ fontSize: '3.5rem', color: s.color, opacity: 0.16 }}
+                        >
+                          {s.n}
+                        </span>
 
                         <LottiePlayer src={s.lottie} width={150} height={150} className="mb-4 self-start" />
 

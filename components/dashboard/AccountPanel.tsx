@@ -7,7 +7,7 @@
 // false, in a document that is legally binding. This panel is what makes it true.
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Download, Trash2, AlertTriangle, IndianRupee } from 'lucide-react';
@@ -58,6 +58,12 @@ export function AccountPanel() {
   const consent = useSyncExternalStore(onConsentChange, getConsent, consentServerSnapshot);
 
   const { data: user } = useData('user', () => dataClient.getUser(), null, signedIn);
+
+  // Email lives in the session, not the app user object. Showing it turns the
+  // "Your account" card from a single Name row into something that actually
+  // identifies the account you're signed in as.
+  const { data: session } = useSession();
+  const email = session?.user?.email ?? null;
 
   const [confirm, setConfirm] = useState('');
   const [state, setState] = useState<DeleteState>('idle');
@@ -181,6 +187,12 @@ export function AccountPanel() {
             <dt style={{ color: 'var(--color-ink-muted)' }}>Name</dt>
             <dd style={{ color: 'var(--color-ink)' }}>{user?.firstName ?? 'Guest'}</dd>
           </div>
+          {email && (
+            <div className="flex justify-between gap-4 py-1.5">
+              <dt style={{ color: 'var(--color-ink-muted)' }}>Email</dt>
+              <dd className="truncate" style={{ color: 'var(--color-ink)' }}>{email}</dd>
+            </div>
+          )}
           {user?.city && (
             <div className="flex justify-between py-1.5">
               <dt style={{ color: 'var(--color-ink-muted)' }}>City</dt>

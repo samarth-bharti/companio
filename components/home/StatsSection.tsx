@@ -20,7 +20,7 @@ import { ClipReveal } from "@/components/journey/ClipReveal";
 export function StatsSection() {
   return (
     <section
-      className="pt-20 pb-12 md:pt-28 md:pb-16"
+      className="pt-20 pb-6 md:pt-28 md:pb-10"
       style={{ background: "var(--color-bg)" }}
       aria-labelledby="stats-heading"
     >
@@ -67,8 +67,8 @@ export function StatsSection() {
           </p>
         </Reveal>
 
-        <Reveal delay={0.2} className="flex justify-center mt-8">
-          <LottiePlayer src="/lottie/accent-2.json" width={210} height={210} loop />
+        <Reveal delay={0.2} className="flex justify-center mt-4">
+          <LottiePlayer src="/lottie/accent-2.json" width={248} height={248} loop />
         </Reveal>
       </div>
     </section>

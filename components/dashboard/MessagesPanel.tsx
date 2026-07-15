@@ -9,6 +9,8 @@ import { getCompanion } from '@/lib/data/companions';
 import type { ChatMessage } from '@/lib/appState';
 import type { Companion } from '@/lib/data/companions';
 import { ChatPanel } from './ChatPanel';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { MessageSquare } from 'lucide-react';
 import { calm, stagger } from '@/lib/motion';
 
 interface MessagesPanelProps {
@@ -128,10 +130,15 @@ export function MessagesPanel({ initialCompanionId }: MessagesPanelProps) {
       >
         {selected ? (
           <ChatPanel companion={selected} onBack={() => setSelectedId(undefined)} />
+        ) : companions.length === 0 ? (
+          <EmptyState
+            icon={<MessageSquare size={18} aria-hidden="true" />}
+            title="No conversations yet"
+            description="Book a meetup and your chat with the companion opens here — you can plan the details before you meet."
+            action={{ href: '/explore', label: 'Find a companion →' }}
+          />
         ) : (
-          <p className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
-            Select a conversation to start messaging.
-          </p>
+          <EmptyState compact title="Select a conversation to start messaging" />
         )}
       </div>
     </div>
