@@ -125,7 +125,7 @@ function BentoCard({ card, delay = 0 }: { card: Card; delay?: number }) {
 export function BentoSection() {
   return (
     <section
-      className="pt-24 md:pt-32 pb-12 md:pb-16"
+      className="pt-24 md:pt-32 pb-6 md:pb-10"
       style={{ background: 'var(--color-bg)' }}
       aria-labelledby="bento-heading"
     >
@@ -200,14 +200,15 @@ export function BentoSection() {
 
         {/* High-five accent — centered at the bottom of the light bento section */}
         <Reveal delay={0.1}>
-          <div className="flex flex-col items-center gap-4 mt-12 text-center">
+          <div className="flex flex-col items-center gap-2 mt-4 text-center">
             {/* The high-five is a single beat: play it fast, and restart it the
                 moment it enters view so the clap lands with the user's scroll
-                rather than seconds after they've arrived. */}
+                rather than seconds after they've arrived. Sized up a touch and
+                pulled in tight to the caption so it doesn't float in blank space. */}
             <LottiePlayer
               src="/lottie/high-five.json"
-              width={210}
-              height={210}
+              width={248}
+              height={248}
               speed={1.8}
               restartOnEnter
               aria-hidden
