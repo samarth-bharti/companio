@@ -111,6 +111,10 @@
     background-color: var(--color-bg);
     color: var(--color-ink);
     line-height: 1.65;
+    /* Clear the fixed mobile bottom tab bar. Nav.tsx measures its own height into
+       --mobile-nav-h (0 on desktop, where the bar is display:none), so every page
+       that mounts the nav reserves exactly that much and no content hides behind it. */
+    padding-bottom: var(--mobile-nav-h, 0px);
   }
 
   ::selection {

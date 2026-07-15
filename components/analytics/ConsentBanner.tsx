@@ -45,8 +45,10 @@ export function ConsentBanner() {
     if (!el) return;
 
     const apply = () => {
-      // 16px so the content clears the banner rather than kissing its edge.
-      document.body.style.paddingBottom = `${el.offsetHeight + 16}px`;
+      // 16px so the content clears the banner rather than kissing its edge, and
+      // + the mobile tab bar's height (--mobile-nav-h, 0 on desktop) so the two
+      // fixed bars stack instead of the nav covering the banner's buttons.
+      document.body.style.paddingBottom = `calc(var(--mobile-nav-h, 0px) + ${el.offsetHeight + 16}px)`;
     };
     apply();
 
@@ -73,7 +75,10 @@ export function ConsentBanner() {
       ref={ref}
       role="dialog"
       aria-label="Cookie consent"
-      className="fixed inset-x-3 bottom-4 z-40 mx-auto max-w-xl rounded-2xl border border-black/10 bg-white/95 p-4 shadow-2xl backdrop-blur sm:inset-x-auto sm:left-4 sm:right-auto sm:bottom-4"
+      // Sit above the mobile tab bar (--mobile-nav-h, 0 on desktop → 1rem) so its
+      // Accept/Decline buttons are never hidden behind the fixed nav.
+      style={{ bottom: "calc(var(--mobile-nav-h, 0px) + 1rem)" }}
+      className="fixed inset-x-3 z-40 mx-auto max-w-xl rounded-2xl border border-black/10 bg-white/95 p-4 shadow-2xl backdrop-blur sm:inset-x-auto sm:left-4 sm:right-auto"
     >
       <p className="text-sm leading-relaxed text-neutral-700">
         We use privacy-friendly analytics to understand what works and improve
