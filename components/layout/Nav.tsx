@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Home, Compass, User, LayoutDashboard, ShieldCheck } from "lucide-react";
 import { Seal } from "@/components/ui/Seal";
 import { NavUser } from "@/components/layout/NavUser";
@@ -33,6 +33,30 @@ const TABS = [
 export function Nav({ heroMode = false }: NavProps) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const mobileNavRef = useRef<HTMLElement>(null);
+
+  // Publish the mobile bar's height as --mobile-nav-h so the body (globals.css)
+  // and the consent banner can leave exactly that much room. The bar is
+  // md:hidden, so getBoundingClientRect() reports 0 on desktop and the reserved
+  // space collapses to nothing. Re-measures on resize (safe-area + wrap changes)
+  // and clears the var on unmount so a page without the nav reserves nothing.
+  useEffect(() => {
+    const el = mobileNavRef.current;
+    if (!el) return;
+    const apply = () => {
+      const h = el.getBoundingClientRect().height;
+      document.body.style.setProperty("--mobile-nav-h", `${Math.round(h)}px`);
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+      document.body.style.removeProperty("--mobile-nav-h");
+    };
+  }, []);
 
   // Hydration-safe: the read is deferred to mount, so the server and the first
   // client render agree. useData also re-reads when the user signs in or out in
@@ -129,6 +153,7 @@ export function Nav({ heroMode = false }: NavProps) {
 
       {/* Mobile bottom tab bar */}
       <nav
+        ref={mobileNavRef}
         aria-label="Mobile navigation"
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t"
         style={{
@@ -136,6 +161,8 @@ export function Nav({ heroMode = false }: NavProps) {
           backdropFilter: "blur(6px)",
           borderTopColor: "rgba(20,26,46,0.1)",
           boxShadow: "0 -2px 12px rgba(20,26,46,0.08)",
+          // Keep the tab row above the iOS home indicator on notched phones.
+          paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
         <div className="flex">

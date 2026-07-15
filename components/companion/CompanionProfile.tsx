@@ -82,10 +82,13 @@ export function CompanionProfile({ companion }: Props) {
         </div>
       </div>
 
-      {/* Mobile booking rail — fixed bottom bar */}
+      {/* Mobile booking rail — fixed bar sitting directly above the global tab
+          bar (--mobile-nav-h), not under it: the two share bottom:0 and the nav
+          (z-50) was covering this rail's Book button (z-40) entirely. */}
       <div
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-4 py-3"
+        className="md:hidden fixed left-0 right-0 z-40 px-4 py-3"
         style={{
+          bottom: 'var(--mobile-nav-h, 0px)',
           background: 'var(--color-surface)',
           borderTop: '1px solid rgba(20,26,46,0.08)',
           boxShadow: '0 -4px 20px rgba(20,26,46,0.08)',
