@@ -6,11 +6,13 @@ import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
 import { useViewerReady } from '@/lib/useViewerReady';
+import { CalendarDays } from 'lucide-react';
 import { getCompanion } from '@/lib/data/companions';
 import type { Booking } from '@/lib/appState';
 import { ReviewModal } from './ReviewModal';
-import { UpcomingCard, PastCard, cardVariant } from './BookingCard';
-import { calm, stagger } from '@/lib/motion';
+import { UpcomingCard, PastCard } from './BookingCard';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { stagger } from '@/lib/motion';
 
 const NO_BOOKINGS: Booking[] = [];
 
@@ -43,12 +45,12 @@ export function BookingsPanel() {
         <Section title="Upcoming">
           {upcoming.length === 0
             ? (
-              <Empty>
-                No upcoming meetups yet.{' '}
-                <a href="/explore" className="underline font-medium" style={{ color: 'var(--color-azure-deep)' }}>
-                  Find a companion →
-                </a>
-              </Empty>
+              <EmptyState
+                icon={<CalendarDays size={18} aria-hidden="true" />}
+                title="No meetups booked yet"
+                description="Your upcoming meetups will show here with the date, place, and a way to message your companion."
+                action={{ href: '/explore', label: 'Find a companion →' }}
+              />
             )
             : upcoming.map((b) => {
                 const c = getCompanion(b.companionId);
@@ -70,7 +72,7 @@ export function BookingsPanel() {
 
         <Section title="Past">
           {past.length === 0
-            ? <Empty>No past meetups yet.</Empty>
+            ? <EmptyState compact title="No past meetups yet" />
             : past.map((b) => {
                 const c = getCompanion(b.companionId);
                 if (!c) return null;
@@ -118,17 +120,5 @@ function Section({ title, children }: { title: string; children: React.ReactNode
         {children}
       </motion.div>
     </section>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <motion.p
-      variants={cardVariant}
-      className="font-sans text-sm"
-      style={{ color: 'var(--color-ink-muted)' }}
-    >
-      {children}
-    </motion.p>
   );
 }

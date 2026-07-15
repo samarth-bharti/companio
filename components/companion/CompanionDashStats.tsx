@@ -33,14 +33,14 @@ function Tile({
 }) {
   return (
     <div
-      className="rounded-2xl p-5 flex flex-col items-center text-center"
+      className="rounded-2xl px-4 py-3.5 flex flex-col items-center text-center"
       style={{
         background: 'var(--color-surface)',
         border: '1.5px solid rgba(46,107,255,0.1)',
         boxShadow: 'var(--shadow-1)',
       }}
     >
-      <Icon size={18} style={{ color: iconColor }} className="mb-2" aria-hidden="true" />
+      <Icon size={18} style={{ color: iconColor }} className="mb-1.5" aria-hidden="true" />
       <p
         className="font-display font-bold leading-none mb-1"
         style={{ fontSize: '1.75rem', color: 'var(--color-ink)' }}

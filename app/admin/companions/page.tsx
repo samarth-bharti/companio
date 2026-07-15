@@ -67,9 +67,13 @@ export default async function AdminCompanions() {
       </h1>
 
       {/* ── Create ─────────────────────────────────────────────────────────── */}
-      <section className="rounded-2xl bg-white border border-[var(--color-ink)]/10 p-5">
-        <h2 className="text-sm font-bold text-[var(--color-ink)] mb-1">Add a companion</h2>
-        <p className="text-xs text-[var(--color-ink-muted)] mb-4">
+      {/* Collapsed by default so the moderation list — the thing an admin opens
+          this page for — leads, instead of scrolling past a 12-field form. */}
+      <details className="rounded-2xl bg-white border border-[var(--color-ink)]/10 p-5">
+        <summary className="text-sm font-bold text-[var(--color-ink)] cursor-pointer select-none">
+          Add a companion
+        </summary>
+        <p className="text-xs text-[var(--color-ink-muted)] mt-1 mb-4">
           Activities, languages and suggestions are comma-separated. Leave the id blank to derive it
           from the name. A profile with no activities renders as an empty card, so fill them in.
         </p>
@@ -89,7 +93,7 @@ export default async function AdminCompanions() {
           </div>
           <Field label="Bio *"><textarea name="bio" required rows={2} className={`${inp} h-auto py-2`} /></Field>
         </ActionForm>
-      </section>
+      </details>
 
       {/* ── List ───────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4">

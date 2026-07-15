@@ -38,13 +38,13 @@ export function BlurLockCard({
   const lockedSrc = blurredPhoto(companion.photo);
 
   return (
-    <TiltCard maxDeg={4}>
+    <TiltCard maxDeg={4} className="h-full">
       <motion.button
         type="button"
         onClick={() => onUnlockClick(companion)}
         aria-label={`Unlock ${companion.maskedName}'s full profile`}
         className={cn(
-          'relative w-full text-left rounded-[var(--radius-lg)] overflow-hidden bg-surface',
+          'relative flex h-full w-full flex-col text-left rounded-[var(--radius-lg)] overflow-hidden bg-surface',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-azure',
         )}
         style={{ boxShadow: 'var(--shadow-1)' }}
@@ -52,8 +52,9 @@ export function BlurLockCard({
         variants={{ hovered: { scale: shouldReduce ? 1 : 1.01 } }}
         transition={spring.snappy}
       >
-        {/* Portrait — blurred photo layer */}
-        <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4/3' }}>
+        {/* Portrait — blurred photo layer. flex-1 so a locked card grows to match
+            the taller free-preview card in its row instead of leaving a gap under it. */}
+        <div className="relative w-full overflow-hidden flex-1" style={{ minHeight: 150 }}>
           <Image
             src={lockedSrc}
             alt=""
@@ -95,7 +96,7 @@ export function BlurLockCard({
         </div>
 
         {/* Crisp un-blurred info below photo */}
-        <div className="p-3 flex flex-col gap-2">
+        <div className="p-3 flex flex-col gap-2 shrink-0">
           <div className="flex items-center gap-1.5">
             <span
               className="text-base font-semibold text-ink leading-tight"

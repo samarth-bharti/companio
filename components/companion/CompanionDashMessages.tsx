@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
-import { Send, Shield } from 'lucide-react';
+import { Send, Shield, MessageSquare } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { CONTACT_RE } from '@/lib/chat/contact';
 import { spring } from '@/lib/motion';
 import type { ChatMessage } from '@/lib/appState';
@@ -105,9 +106,12 @@ export function CompanionDashMessages() {
       )}
 
       {threads?.length === 0 && (
-        <p className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
-          No messages yet. When a member writes to you, their message appears here and you can reply.
-        </p>
+        <EmptyState
+          compact
+          icon={<MessageSquare size={16} aria-hidden="true" />}
+          title="No messages yet"
+          description="When a member writes to you, their message appears here and you can reply."
+        />
       )}
 
       {threads && threads.length > 0 && !openId && (

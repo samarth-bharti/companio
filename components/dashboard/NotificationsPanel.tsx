@@ -1,11 +1,13 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { Bell } from 'lucide-react';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
 import { useViewerReady } from '@/lib/useViewerReady';
 import type { AppNotification } from '@/lib/appState';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { calm, stagger, spring } from '@/lib/motion';
 
 function fmtTs(ts: number): string {
@@ -40,23 +42,12 @@ export function NotificationsPanel() {
 
   if (notifs.length === 0) {
     return (
-      <div className="py-12 text-center">
-        <p className="font-sans text-sm font-semibold mb-1" style={{ color: 'var(--color-ink)' }}>
-          All quiet here
-        </p>
-        <p className="font-sans text-sm mb-4" style={{ color: 'var(--color-ink-muted)' }}>
-          Booking updates and review confirmations will appear here.
-        </p>
-        <motion.a
-          href="/explore"
-          whileTap={reduced ? {} : { scale: 0.97 }}
-          transition={spring.snappy}
-          className="inline-flex items-center justify-center min-h-[44px] px-6 rounded-pill text-sm font-semibold text-white"
-          style={{ background: 'var(--grad-cta)' }}
-        >
-          Book a meetup →
-        </motion.a>
-      </div>
+      <EmptyState
+        icon={<Bell size={18} aria-hidden="true" />}
+        title="All quiet here"
+        description="Booking updates and review confirmations will appear here."
+        action={{ href: '/explore', label: 'Book a meetup →' }}
+      />
     );
   }
 

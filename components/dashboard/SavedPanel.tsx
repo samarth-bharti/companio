@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Heart } from 'lucide-react';
 import { RatingBadge } from '@/components/companion/RatingBadge';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
 import { useViewerReady } from '@/lib/useViewerReady';
@@ -41,23 +42,12 @@ export function SavedPanel() {
 
   if (favorites.length === 0) {
     return (
-      <div className="py-12 text-center">
-        <p className="font-sans text-sm mb-1 font-semibold" style={{ color: 'var(--color-ink)' }}>
-          No saved companions yet
-        </p>
-        <p className="font-sans text-sm mb-4" style={{ color: 'var(--color-ink-muted)' }}>
-          Heart a companion on the explore page to save them here.
-        </p>
-        <motion.a
-          href="/explore"
-          whileTap={reduced ? {} : { scale: 0.97 }}
-          transition={spring.snappy}
-          className="inline-flex items-center justify-center min-h-[44px] px-6 rounded-pill text-sm font-semibold text-white"
-          style={{ background: 'var(--grad-cta)' }}
-        >
-          Explore companions →
-        </motion.a>
-      </div>
+      <EmptyState
+        icon={<Heart size={18} aria-hidden="true" />}
+        title="No saved companions yet"
+        description="Heart a companion on the explore page to save them here."
+        action={{ href: '/explore', label: 'Explore companions →' }}
+      />
     );
   }
 
