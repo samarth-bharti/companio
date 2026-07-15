@@ -1,6 +1,6 @@
 # Status & next steps
 
-_Last updated: 2026-07-13, after the de-faking pass._
+_Last updated: 2026-07-15, after the UI-polish session._
 
 The single source of truth for **where the project is and what to do next**.
 Keep this current — it's the first file to read when resuming.
@@ -14,13 +14,24 @@ what it says, and the claims it makes are ones it can keep. What stands between
 this and a launch is twenty-two companions who do not exist, a Grievance Officer
 with no name, and two leaked secrets.
 
-## Quality gates (all green — verified 2026-07-13 by running them)
+## 2026-07-14→15: launched fixes + UI polish
 
-- `npx tsc --noEmit` → **0 errors**
-- `npx vitest run` → **368 passing** (28 files)
-- `npx eslint .` → **0 errors** (50 warnings remain)
-- `npx next build` → **success**
-- 25 public routes → **200**; `/admin` → **307** without an admin session
+- **Merged to `main`:** the full feature audit (PR #4, 51 fixes, 397 tests), the hero-video
+  autoplay fix (PR #5), and the mobile bottom-bar overlap fix (PR #6, `--mobile-nav-h`).
+- **One PR open — `feat/ui-polish-rhythm`** (UI-only, verified desktop + iPhone): quiz
+  top-anchor + how-it-works step numbers; a shared `EmptyState` component across the
+  dashboard tabs + companion messages; equal-height locked explore cards; collapsed admin
+  create form; tightened companion stat tiles; Account card email; and closed the blank
+  gaps under the bento/stats closing animations. Merge it to catch `main` up.
+- Nothing else is coded and pending. The launch blockers below are all non-code.
+
+## Quality gates
+
+- `npx tsc --noEmit` → **0 errors** (re-run 2026-07-15)
+- `npx vitest run` → **397 passing** (31 files) (re-run 2026-07-15)
+- `npx eslint .` → **0 errors** (warnings remain) — last run 2026-07-14
+- `npx next build` → **success** — last run 2026-07-14
+- Public routes → **200**; `/admin` redirects without an admin session
 - Walked in a real browser against the real Neon database, not just unit-tested:
   sign-in, quiz, paywall, unlock, favourites, chat (both directions), spin,
   booking, the 18+ gate, and the companion dashboard.
