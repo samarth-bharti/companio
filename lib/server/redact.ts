@@ -55,10 +55,22 @@ export function redactCompanion(c: Companion): Companion {
   return {
     ...c,
     name: c.maskedName,
+    // `firstName` used to survive this. maskedName is "first 3 letters + ···",
+    // so shipping firstName handed back precisely what the mask removed — and
+    // the only thing hiding it was the client choosing to render maskedName
+    // instead (ExploreClient: `unlocked ? firstName : maskedName`). That is the
+    // same "the server sent it, the browser politely looked away" mistake as
+    // CSS-blurring a sharp photo, which is what the header of this file exists
+    // to warn about.
+    firstName: c.maskedName,
     bio: '',
     suggestions: [],
     reviewsList: [],
-    photo: blurredPhoto(c.photo),
+    // '' when the photo cannot be blurred at its source. blurredPhoto() answers
+    // null rather than handing back the original — a face we cannot destroy is a
+    // face we do not send — and an empty string is how this type says "no photo"
+    // to the card, which renders a placeholder for it.
+    photo: blurredPhoto(c.photo) ?? '',
   };
 }
 

@@ -55,23 +55,62 @@ export const toNotification = (n: PNotification): AppNotification => ({
   read: n.read,
 });
 
+/**
+ * A database row → the public Companion shape.
+ *
+ * THIS IS AN ALLOWLIST, AND IT HAS TO STAY ONE.
+ *
+ * It used to be `const { reviewCount, createdAt, ...rest } = c; return { ...rest }
+ * as Companion` — five named columns removed and everything else forwarded. The
+ * callers (lib/server/catalogue.ts, app/api/companions) query with `where` and no
+ * `select`, so "everything else" is every column on the table, and the
+ * `as Companion` cast is what stopped the compiler from mentioning it.
+ *
+ * What that shipped to anonymous callers of GET /api/companions:
+ *
+ *   payoutUpi  — "9876543210@paytm". Where a companion gets PAID. A UPI VPA
+ *                normally embeds a phone number or a legal name.
+ *   banReason  — an operator's private note about a person.
+ *   suspended, bannedAt, hourlyRate — internal moderation and pricing state.
+ *
+ * redactCompanion() did not save it: that spreads the object and overrides a few
+ * keys, so the LOCKED payload carried the UPI id too.
+ *
+ * A denylist against a table that keeps growing loses by default — every new
+ * column is public until somebody remembers. An allowlist fails the other way:
+ * a new column is private until somebody adds it here, on purpose, and the type
+ * checker points at this function when the shape changes.
+ *
+ * `verified` DOES cross: the badge renders off it, and while it was stripped
+ * every card drew a hardcoded "Verified" tick regardless of the column.
+ * `distanceKm` does NOT: an authored constant rendered as "3.2 km away", a
+ * distance from a member whose location we have never known.
+ */
 export function toCompanion(c: PCompanion): Companion {
-  // reviewsList is stored as Json; the TS Companion type owns its exact shape.
-  // createdAt/updatedAt are db-only — destructured out so they don't leak into
-  // the frontend shape.
-  //
-  // `verified` DOES cross to the client: the badge is rendered from it. While it
-  // was stripped here, every card drew a hardcoded "Verified" tick regardless of
-  // what the column said.
-  //
-  // `distanceKm` stops here too. The column still exists, but it is an authored
-  // constant that was rendered as "3.2 km away" — a distance from a member whose
-  // location we have never known. It is not the client's business.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { reviewCount, reviewsList, createdAt, updatedAt, distanceKm, ...rest } = c;
   return {
-    ...rest,
-    reviews: reviewCount,
-    reviewsList: reviewsList as Companion['reviewsList'],
-  } as Companion;
+    id: c.id,
+    name: c.name,
+    firstName: c.firstName,
+    maskedName: c.maskedName,
+    city: c.city,
+    area: c.area,
+    age: c.age ?? undefined,
+    activities: c.activities,
+    languages: c.languages,
+    rating: c.rating,
+    reviews: c.reviewCount,
+    ratePerMeeting: c.ratePerMeeting,
+    bio: c.bio,
+    suggestions: c.suggestions,
+    photo: c.photo,
+    accent: c.accent,
+    gender: (c.gender ?? undefined) as Companion['gender'],
+    sameGenderNote: c.sameGenderNote ?? undefined,
+    topMatch: c.topMatch ?? undefined,
+    verified: c.verified ?? undefined,
+    availableNow: c.availableNow,
+    availability: c.availability,
+    matchScore: c.matchScore,
+    reviewsList: c.reviewsList as Companion['reviewsList'],
+  };
 }
