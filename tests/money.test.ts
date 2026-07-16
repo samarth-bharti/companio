@@ -12,6 +12,7 @@ import {
 } from '@/lib/server/pricing';
 import {
   PASS_TIERS,
+  PASS_TIER_ORDER,
   isPassTierId,
   perMonthPaise,
   nextPassExpiry,
@@ -159,5 +160,31 @@ describe('passIsActive', () => {
   });
   it('is false once the pass has lapsed', () => {
     expect(passIsActive(true, new Date(now.getTime() - 1000), now)).toBe(false);
+  });
+});
+
+// ── The screen and the server must agree, per tier ───────────────────────────
+//
+// The unlock sheet showed a ₹199 headline while the radio said "12 months" and
+// the button charged ₹999, because UnlockBenefits derived its own price from
+// UNLOCK_AMOUNT (the entry tier) instead of the selected one. lib/money.ts exists
+// because a member was once quoted ₹159 and charged ₹159.20; this was the same
+// bug, five times larger. These pin the arithmetic both sides now share.
+describe('the quoted price is the charged price, for every tier', () => {
+  it('quotes each tier at its own amount, not the entry tier', () => {
+    for (const id of PASS_TIER_ORDER) {
+      const quoted = formatPaise(applyDiscount(PASS_TIERS[id].amount, 0));
+      expect(quoted, `${id} quoted as the entry tier`).toBe(formatPaise(PASS_TIERS[id].amount));
+    }
+    // The specific regression: the 12-month tier must never render as ₹199.
+    expect(formatPaise(PASS_TIERS.pass12m.amount)).toBe('₹999');
+    expect(formatPaise(PASS_TIERS.pass12m.amount)).not.toBe(formatPaise(UNLOCK_AMOUNT));
+  });
+
+  it('applies a spin discount to the SELECTED tier, in paise', () => {
+    // 10% off the ₹1999 lifetime is ₹1799.10 — the sheet must print the paise,
+    // because that is what leaves the account.
+    expect(formatPaise(applyDiscount(PASS_TIERS.passlife.amount, 10))).toBe('₹1799.10');
+    expect(formatPaise(applyDiscount(PASS_TIERS.pass1m.amount, 20))).toBe('₹159.20');
   });
 });

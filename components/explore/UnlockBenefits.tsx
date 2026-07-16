@@ -5,7 +5,7 @@ import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { type LucideIcon } from "lucide-react";
 import { Users, CalendarHeart, ShieldCheck } from "lucide-react";
 import { stagger } from "@/lib/motion";
-import { UNLOCK_AMOUNT, applyDiscount, formatPaise } from "@/lib/money";
+import { applyDiscount, formatPaise } from "@/lib/money";
 
 type BenefitRow = {
   Icon: LucideIcon;
@@ -32,12 +32,27 @@ export function UnlockBenefits({
   city,
   count,
   headlineId,
+  basePaise,
   discountPct = 0,
 }: {
   seedName: string;
   city: string;
   count: number;
   headlineId: string;
+  /**
+   * The list price of the tier the member has actually selected, in paise.
+   *
+   * This component used to compute its own price from UNLOCK_AMOUNT — which is
+   * the ₹199 entry tier — while the sheet around it priced whatever tier the
+   * radio said. Selecting the ₹999 pass therefore showed a ₹199 headline over a
+   * button that charged ₹999. That is the same class of bug lib/money.ts was
+   * created to end (a member quoted ₹159 and charged ₹159.20), and it is worse
+   * here by a factor of five.
+   *
+   * The sheet owns the tier, so the sheet passes the price down. Nothing on this
+   * screen may derive a price independently.
+   */
+  basePaise: number;
   /** An unspent spin win. The wheel's prize is a discount on exactly this. */
   discountPct?: number;
 }) {
@@ -45,8 +60,8 @@ export function UnlockBenefits({
   const total = count + 1;
   // The same paise math the server bills on — not a rupee approximation of it.
   const hasDiscount = discountPct > 0;
-  const fullPrice = formatPaise(UNLOCK_AMOUNT);
-  const payPrice = formatPaise(applyDiscount(UNLOCK_AMOUNT, discountPct));
+  const fullPrice = formatPaise(basePaise);
+  const payPrice = formatPaise(applyDiscount(basePaise, discountPct));
 
   return (
     <div className="flex flex-col gap-4">
