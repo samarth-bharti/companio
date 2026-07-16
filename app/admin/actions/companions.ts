@@ -5,6 +5,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { logAdminAction } from '@/lib/server/admin';
+import { storePhotoFromUrl, photoStoreConfigured } from '@/lib/server/photoStore';
 import {
   adminAction,
   succeeded,
@@ -74,9 +75,42 @@ export async function createCompanion(_prev: ActionState, formData: FormData): P
     // stranger, over their real, ID-verified name. Members pay for a pass to see
     // exactly this photo. Every argument against a catalogue of invented people
     // applies just as hard to one invented face on a real profile.
-    const photo = field(formData, 'photo');
-    if (!photo) {
+    const photoInput = field(formData, 'photo');
+    if (!photoInput) {
       return failed('A photo URL is required — a profile must show the actual person.');
+    }
+
+    // Ingest it onto our own storage rather than hotlinking, and blur it here.
+    //
+    // A hotlinked portrait is a URL somebody else can repoint or delete, on a
+    // host next/image refuses (next.config.ts allows our blob and nothing else),
+    // and — the part that matters — one we cannot destroy, so the locked card
+    // would have no blurred variant to show and would fall back to a placeholder.
+    // Pasting a link is the operator's convenience; owning the bytes is the
+    // product's requirement.
+    // No blob store means no ingest, which means a hotlinked URL that next/image
+    // will refuse (400, broken card) and that we could not blur even if it
+    // rendered. Refuse with the reason rather than write a row that is
+    // guaranteed to look broken and leak an unblurred face.
+    if (!photoStoreConfigured()) {
+      return failed(
+        'Photo storage is not configured, so a portrait cannot be ingested or blurred. ' +
+          'Set BLOB_READ_WRITE_TOKEN and try again.',
+      );
+    }
+
+    let photo: string;
+    let photoBlurred: string;
+    try {
+      const stored = await storePhotoFromUrl(photoInput, id);
+      photo = stored.url;
+      photoBlurred = stored.blurUrl;
+    } catch (err) {
+      return failed(
+        err instanceof Error
+          ? `Could not fetch that photo: ${err.message}`
+          : 'Could not fetch that photo.',
+      );
     }
 
     const accent = field(formData, 'accent') || '#5b5bd6';
@@ -96,6 +130,7 @@ export async function createCompanion(_prev: ActionState, formData: FormData): P
         hourlyRate,
         ratePerMeeting: hourlyRate,
         photo,
+        photoBlurred,
         accent,
         // These drive the explore card and the match sort. Creating a companion
         // with all three empty renders a blank tile, so accept them up front.
@@ -137,6 +172,36 @@ export async function editCompanion(_prev: ActionState, formData: FormData): Pro
     const { prisma } = await import('@/lib/prisma');
     // Keep the derived display names in step with the name the admin typed.
     const data: Record<string, unknown> = { ...parsed.data };
+
+    // A changed photo must be re-ingested and re-blurred TOGETHER. Writing the
+    // new `photo` while leaving the old `photoBlurred` in place would leave a
+    // locked card showing a blurred copy of the previous face — a photo the
+    // companion has just replaced, still being served to everyone who has not
+    // paid. The two columns are one fact and are always written as a pair.
+    //
+    // Only re-ingest when the URL actually changed: the edit form posts the
+    // current value back on every save, and re-uploading an unchanged portrait
+    // on every unrelated edit is pure cost.
+    if (parsed.data.photo && photoStoreConfigured()) {
+      const current = await prisma.companion.findUnique({
+        where: { id },
+        select: { photo: true, photoBlurred: true },
+      });
+      if (parsed.data.photo !== current?.photo || !current?.photoBlurred) {
+        try {
+          const stored = await storePhotoFromUrl(parsed.data.photo, id);
+          data.photo = stored.url;
+          data.photoBlurred = stored.blurUrl;
+        } catch (err) {
+          return failed(
+            err instanceof Error
+              ? `Could not fetch that photo: ${err.message}`
+              : 'Could not fetch that photo.',
+          );
+        }
+      }
+    }
+
     if (parsed.data.name) {
       const firstName = parsed.data.name.split(' ')[0];
       const lastInitial = parsed.data.name.split(' ')[1]?.[0];

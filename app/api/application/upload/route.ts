@@ -30,6 +30,7 @@ import {
   hashBuffer,
   type IdDocType,
 } from '@/lib/server/documentValidation'; // server file — has hashBuffer + node:crypto
+import { storePhoto, photoStoreConfigured } from '@/lib/server/photoStore';
 
 export const dynamic = 'force-dynamic';
 
@@ -124,6 +125,38 @@ export async function POST(req: Request) {
     const ocrMatched = ocrRaw === 'true' ? true : ocrRaw === 'false' ? false : null;
     const idDocMasked = maskIdNumber(docType, idDocNumber);
 
+    // Store the PORTRAIT — and only the portrait.
+    //
+    // This route used to hash both files and keep neither. Hashing the ID and
+    // discarding it is right and stays: an Aadhaar image is a DPDPA liability
+    // with no reason to exist once its number has been checked. Doing the same
+    // to the portrait was not right, it was just the same code path — a
+    // companion's photo is published by design, and throwing it away meant an
+    // approved profile had no face, so it went live hidden and waited for an
+    // operator to find a picture and paste a link. That is the whole reason the
+    // catalogue could not be populated.
+    //
+    // storePhoto blurs it with sharp here, once, and writes both variants. The
+    // paywall then serves a file we destroyed rather than asking someone else's
+    // CDN to destroy it on request.
+    //
+    // A failure here is NOT fatal to the application: the ID checks above have
+    // already passed and re-running them would mean re-uploading a document. The
+    // application lands photo-less and the admin can attach one, which is
+    // exactly the old behaviour — so this degrades to what we had rather than
+    // losing the applicant.
+    let photoUrl: string | null = null;
+    let photoBlurUrl: string | null = null;
+    if (photoStoreConfigured()) {
+      try {
+        const stored = await storePhoto(photoBytes, `app-${userId}`);
+        photoUrl = stored.url;
+        photoBlurUrl = stored.blurUrl;
+      } catch (err) {
+        console.warn('[application/upload] photo store failed; application saved without a portrait', err);
+      }
+    }
+
     await prisma.companionApplication.update({
       where: { userId },
       data: {
@@ -131,6 +164,8 @@ export async function POST(req: Request) {
         idDocMasked,
         idHash,
         photoHash,
+        photoUrl,
+        photoBlurUrl,
         idVerifyStatus:    'pending',
         photoVerifyStatus: 'pending',
         ocrMatched,
@@ -139,6 +174,6 @@ export async function POST(req: Request) {
       },
     });
 
-    return json({ ok: true, idDocMasked });
+    return json({ ok: true, idDocMasked, photoStored: !!photoUrl });
   });
 }

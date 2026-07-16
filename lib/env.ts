@@ -61,6 +61,7 @@ const schema = z.object({
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   NEXT_PUBLIC_SITE_URL:     z.string().url().optional(),
   PASS_SALES_ENABLED:       z.string().optional(),
+  BLOB_READ_WRITE_TOKEN:    z.string().optional(),
 });
 
 type Env = z.infer<typeof schema>;

@@ -1,5 +1,15 @@
 # Companio — Feature Inventory & Audit Loop
 
+> ## ⚠️ Historical (as of 2026-07-17).
+>
+> Valuable as an inventory of *intent*. Stale on specifics — it predates the pass
+> ladder, the photo pipeline, and the removal of the 22 fictional companions.
+> Where it conflicts with [`STATUS.md`](STATUS.md) or
+> [`ARCHITECTURE.md`](ARCHITECTURE.md), those win.
+>
+> Do not use this to decide what the product does today. Use it to remember what
+> was intended and why.
+
 Every feature the product has, numbered. Each is audited on five axes:
 
 - **W** wired — the click reaches real code, not a stub

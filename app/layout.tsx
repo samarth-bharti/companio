@@ -72,8 +72,17 @@ export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
   applicationName: "Companio",
+  // `icon` is deliberately NOT listed here.
+  //
+  // Next already emits app/favicon.ico and app/icon.png from the file
+  // convention, with content hashes. Naming "/favicon.ico" again only added a
+  // second, unhashed <link> to the same file and suppressed the PNG — which
+  // browsers prefer, and which is the crisper of the two. Both are generated
+  // from the Seal by scripts/gen-icons.mjs.
+  //
+  // apple-icon lives in public/, not app/, so it has no convention to inherit
+  // and does need naming.
   icons: {
-    icon: "/favicon.ico",
     apple: "/apple-icon.png",
   },
   openGraph: {

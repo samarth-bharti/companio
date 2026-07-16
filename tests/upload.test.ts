@@ -8,7 +8,15 @@ const { sessionMock, prismaMock } = vi.hoisted(() => ({
 
 vi.mock('@/lib/server/session', () => ({ getSessionUserId: sessionMock }));
 vi.mock('@/lib/prisma', () => ({ prisma: prismaMock }));
-vi.mock('@/lib/env', () => ({ hasDatabase: () => true }));
+// envValue is read by photoStore.photoStoreConfigured(), which the route calls
+// before deciding whether to store the portrait. Returning undefined here means
+// "no blob store configured", so these tests exercise the degraded path: the
+// application still saves, just without a photo. The storing path is covered in
+// tests/photoStore.test.ts against real image bytes.
+vi.mock('@/lib/env', () => ({
+  hasDatabase: () => true,
+  envValue: () => undefined,
+}));
 vi.mock('@/lib/server/rateLimit', () => ({
   rateLimit: async () => ({ ok: true, remaining: 9, retryAfter: 0 }),
   clientKey: () => 'k',

@@ -1,5 +1,26 @@
 # Companio — Go-Live Runbook, Deployment & Buying Plan
 
+> # ⚠️ SUPERSEDED — do not follow this to deploy.
+>
+> **[`../DEPLOY.md`](../DEPLOY.md) is the live runbook.** It has verified July
+> 2026 pricing, every environment variable and where each one comes from, and the
+> RBI / Razorpay Route position.
+>
+> This file is kept for its reasoning and its history. Its specifics are wrong in
+> at least these ways:
+>
+> - The product no longer sells a one-time ₹199 unlock. It sells **a pass** at
+>   four durations (₹199/1mo, ₹499/3mo, ₹999/12mo, ₹1999 lifetime).
+> - It predates `PASS_SALES_ENABLED` and `BLOB_READ_WRITE_TOKEN`, both of which
+>   are required.
+> - It predates the finding that **Vercel Hobby forbids commercial use**, which
+>   makes Pro (~₹1,750/mo) mandatory from the day payments go live.
+> - Its cost figures were not verified against official pricing pages.
+>
+> Original header follows.
+>
+> ---
+
 > **Single source of truth for launch.** Read this first when resuming. "YOU" =
 > a value you procure and paste in. "ME" = code and commands run in the repo.
 

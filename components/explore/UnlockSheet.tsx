@@ -301,7 +301,10 @@ export function UnlockSheet({
                   <X size={20} aria-hidden="true" />
                 </button>
               </div>
-              <UnlockBenefits seedName={seedName} city={city} count={count} headlineId={HEADLINE_ID} discountPct={discountPct} />
+              {/* basePaise, not the component's own idea of the price: the tier
+                  lives here, so the headline has to be told which one is
+                  selected or it silently quotes the ₹199 month for all four. */}
+              <UnlockBenefits seedName={seedName} city={city} count={count} headlineId={HEADLINE_ID} basePaise={basePaise} discountPct={discountPct} />
               {/* Guests create an account first — don't show payment UI yet, it
                   reads as "pay now" and conflicts with the account step. */}
               {/* Loud on purpose. A free unlock that looks like a paid one is

@@ -81,6 +81,9 @@ export default async function AdminApplications({ searchParams }: { searchParams
         idUploaded: true, backgroundConsent: true, idDocType: true, idDocMasked: true,
         idVerifyStatus: true, photoVerifyStatus: true, ocrMatched: true, updatedAt: true,
         status: true,
+        // Drives the approve confirmation: with a stored portrait the profile
+        // goes live immediately, without one it lands hidden.
+        photoUrl: true,
         user: { select: { email: true } },
       },
     }),
@@ -154,6 +157,20 @@ export default async function AdminApplications({ searchParams }: { searchParams
               </span>
               <span className="text-[var(--color-ink-muted)]">ID check:</span> <StatusPill s={a.idVerifyStatus} />
               <span className="text-[var(--color-ink-muted)]">Photo:</span> <StatusPill s={a.photoVerifyStatus} />
+              {/* Whether we actually HOLD their portrait — which decides whether
+                  approving publishes a profile or files a hidden one. The
+                  operator should know that before clicking, not from the confirm
+                  dialog. */}
+              <span
+                className="text-[var(--color-ink-muted)]"
+                title={
+                  a.photoUrl
+                    ? 'Stored and blurred. Approving publishes their profile immediately.'
+                    : 'No portrait on file. Approving creates a hidden profile you will have to add a photo to.'
+                }
+              >
+                portrait: {a.photoUrl ? 'on file → goes live' : 'missing → stays hidden'}
+              </span>
               {a.ocrMatched != null && (
                 // Computed by tesseract.js in the APPLICANT'S browser and posted
                 // to us. Trivially forged. Never style it as a green tick.
@@ -181,7 +198,17 @@ export default async function AdminApplications({ searchParams }: { searchParams
                 action={approveApplication}
                 submitLabel="Approve → create companion"
                 submitClassName={btnGreen}
-                confirm={`Approve ${a.name}? This promotes their account and creates their profile — HIDDEN until you add a real photo. It does not go live yet.`}
+                // The consequence depends on whether we hold their portrait, so
+                // the confirmation has to say which. It used to promise "HIDDEN
+                // until you add a real photo" unconditionally — now false for
+                // any applicant who uploaded one, and telling an operator a
+                // profile is invisible when it is about to be live and bookable
+                // is the wrong direction to be wrong in.
+                confirm={
+                  a.photoUrl
+                    ? `Approve ${a.name}? This promotes their account and publishes their profile — LIVE and bookable, with the photo they uploaded.`
+                    : `Approve ${a.name}? This promotes their account and creates their profile — HIDDEN, because this application has no stored photo. It does not go live until you add one.`
+                }
               >
                 <input type="hidden" name="id" value={a.id} />
               </ActionForm>

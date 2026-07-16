@@ -1,105 +1,153 @@
 # Companio
 
-A paid **platonic companionship marketplace** — book an ID-checked companion for
-real-world activities (city walks, café chats, museum tours). Warm, premium,
-and **strictly platonic**: no romantic/sexual/dating framing anywhere (legal +
-trust + payment-processor requirement — see [the hard rule](#hard-rules)).
+A **platonic companionship marketplace** — book an ID-checked companion for
+real-world activities (city walks, café chats, museum tours). Warm, premium, and
+**strictly platonic**: no romantic, sexual or dating framing anywhere. That is a
+legal, payment-processor and trust requirement, not a style choice.
 
-> **"ID-checked", not "verified".** No companion is verified: the `verified` column
-> is operator-owned and false for all of them, and there is no Aadhaar/KYC vendor
-> integrated. `lib/trust.ts` is the single source of truth for what the product may
-> claim, and `tests/trustClaims.test.ts` fails the build if a claim it cannot keep
-> reappears. See [`docs/STATUS.md`](docs/STATUS.md).
+> **"ID-checked", not "verified".** No companion is *verified*: the `verified`
+> column is operator-owned and true of nobody, and no KYC vendor is integrated.
+> `lib/trust.ts` is the single source of truth for what the product may claim,
+> and `tests/trustClaims.test.ts` **fails the build** if a claim it cannot keep
+> reappears.
 
-Built with **Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 ·
-framer-motion**. Backend seam is **Prisma + Neon Postgres · Auth.js · Razorpay ·
-zod** (see [`docs/BACKEND.md`](docs/BACKEND.md)).
+**Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · Prisma +
+Neon Postgres · Auth.js · Razorpay · sharp + Vercel Blob · Vitest**
 
 ---
+
+## Where the project actually is
+
+Companio has **not launched**. It has no companions, no members and no revenue.
+
+- The software is real and tested: **443 tests**, clean typecheck, clean build,
+  and the full flow driven in a browser against a real Neon database.
+- The catalogue is **empty on purpose**. It used to hold 22 invented people with
+  stock portraits; selling access to them would have been selling access to
+  people who cannot be met. Real companions arrive through applications and a
+  hand-checked ID.
+- Pass checkout is **built, tested, and switched off** (`PASS_SALES_ENABLED`).
+  A pass buys access to the catalogue, so there is nothing to sell yet.
+
+**The launch is the companion funnel, not the buyer funnel.** See
+[`docs/STATUS.md`](docs/STATUS.md).
+
+## What it sells
+
+One thing: **the pass**. Four durations, same access, no auto-renewal and no
+auto-debit — it lapses and the member chooses to buy again.
+
+| Tier | Price |
+|---|---|
+| 1 month | ₹199 |
+| 3 months | ₹499 |
+| 12 months | ₹999 |
+| Lifetime | ₹1999 |
+
+Prices live in `lib/money.ts` (`PASS_TIERS`) and **nothing may derive a price
+independently** — see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#1-the-client-never-sends-a-price).
+
+Meetups themselves are **not charged for**. Paying a companion out of money we
+collected is unlicensed Payment Aggregator activity under RBI rules, so
+`booking`/`credits`/`plus` are refused outright. That gate is a licence boundary,
+not a feature flag.
 
 ## Getting started
 
 ```bash
 npm install
-npm run dev      # http://localhost:3000  (see note on memory below)
+npm run dev      # http://localhost:3000
 ```
 
-> **Memory note:** this machine is memory-constrained for Next 16 + Turbopack.
-> If dev/build freezes or OOMs, bump the Node heap:
+With no keys the app runs on browser `localStorage` (`NEXT_PUBLIC_DATA_CLIENT=local`)
+and says so on screen. No database or keys needed to look around.
+
+> **Memory note:** Next 16 + Turbopack is heavy. If dev or build OOMs:
 > ```powershell
-> $env:NODE_OPTIONS="--max-old-space-size=4096"; npm run dev    # build: 6144
+> $env:NODE_OPTIONS="--max-old-space-size=6144"; npm run build
 > ```
 
-The app runs fully on **mock data** out of the box (`NEXT_PUBLIC_DATA_CLIENT=local`).
-No database or keys are needed until you wire the backend.
+### Running against a real database
 
-### What's real vs. mock
+Set `NEXT_PUBLIC_DATA_CLIENT=http` plus `DATABASE_URL` / `DIRECT_URL` /
+`NEXTAUTH_SECRET`. This path is **proven** — sign-in, paywall, checkout,
+approval and the admin panel have all been driven against real Neon.
 
-The **frontend is fully built**. With no keys it runs on browser `localStorage`
-(per-device, no sign-in required) and says so. The **backend is complete and
-tested**: the full Prisma schema, every API route, server-authoritative payments,
-and a 200-test suite, all behind the `lib/dataClient.ts` seam.
+The Prisma CLI reads `.env`, **not** `.env.local` (Next reads `.env.local`). To
+run migrations locally:
 
-Sign-in and payment are **real when configured** and **honestly simulated when
-not**. Supplying `GOOGLE_CLIENT_ID` + `NEXTAUTH_SECRET` + `DATABASE_URL` turns on
-real Google sign-in; supplying `NEXT_PUBLIC_RAZORPAY_KEY_ID` turns on real
-payment *and switches the demo path off entirely* — a keyed build will never
-grant a paid benefit without a verified payment.
+```bash
+node -e "require('dotenv').config({path:'.env.local'});require('child_process').execSync('npx prisma migrate deploy',{stdio:'inherit',env:process.env})"
+```
 
-> **`NEXT_PUBLIC_DATA_CLIENT=http` has never been run against a real database.**
-> The core components (nav, auth, dashboard, explore) go through `dataClient`
-> now; the rest of the tree still reads `localStorage` directly. Finish that
-> sweep before flipping the flag. See [`docs/STATUS.md`](docs/STATUS.md) for the
-> honest picture and [`docs/BACKEND.md`](docs/BACKEND.md) for the recipe.
->
-> **Three env vars gate real behaviour and cannot be guessed from the code:**
-> `ADMIN_EMAILS` (without it nobody can ever reach `/admin`),
-> `MARKETPLACE_PAYMENTS_ENABLED` (leave unset — RBI Payment Aggregator rules),
-> and `NEXT_PUBLIC_MAPTILER_KEY` (map tiles). See
-> [`docs/GO-LIVE.md`](docs/GO-LIVE.md#vars-added-2026-07-10--read-these-before-deploying).
+### Testing it without any keys
+
+Both are impossible in production and turn themselves off the moment real keys
+exist.
+
+| Want to test | Set | What happens |
+|---|---|---|
+| **Sign-in** | nothing | With no `RESEND_API_KEY` the code is shown **on screen**. Production refuses to run without email at all, so no real user's code can be handed back. |
+| **The pass** | `ALLOW_TEST_CHECKOUT=true` **and** `PASS_SALES_ENABLED=true` | Checkout completes for free via `POST /api/test-checkout`, granting through `settlePurchase()` — the same function the real webhook calls. **Setting `RAZORPAY_KEY_ID` kills it dead**, flag or no flag. |
 
 ## Scripts
 
-| Command          | What it does                                  |
-|------------------|-----------------------------------------------|
-| `npm run dev`    | Dev server (Turbopack)                        |
-| `npm run build`  | Production build                              |
-| `npm start`      | Serve the production build                     |
-| `npm run lint`   | ESLint                                         |
-| `npm test`       | Vitest unit + route tests                      |
-| `npx prisma ...` | DB tooling (see `docs/BACKEND.md`)            |
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server (Turbopack) |
+| `npm run build` | Production build (runs migrations first — production only) |
+| `npm start` | Serve the production build |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest — 443 tests, no database needed |
+| `node scripts/gen-icons.mjs` | Regenerate favicon + PWA icons from the brand mark |
+| `node scripts/gen-og.mjs` | Regenerate the social card |
 
 ## Project shape
 
 ```
-app/            App Router routes (pages + app/api/** backend)
-components/      UI, grouped by feature (home, explore, booking, auth, lounge, feed, …)
-lib/            Client state (journeyState, appState), data (companions, cities),
-                the data-access seam (dataClient.ts), and server-only helpers (lib/server/**)
-prisma/         schema.prisma + seed.ts
-tests/          Vitest suites (serialize, validation, http, payments, routes, dataClient)
-docs/           This documentation
+app/            Routes. app/api/** is the backend; app/admin/** is the operator panel.
+components/     UI, grouped by feature (home, explore, booking, companion, admin…)
+lib/
+  money.ts      Prices. Pure. The only source.
+  server/       Server-only helpers. Never import from a client component.
+  dataClient.ts The local-vs-http seam.
+  data/         Static reference data. companions.ts is EMPTY by design.
+prisma/         schema.prisma (+ the comments explaining each column's rules)
+tests/          Vitest, mirroring lib/ and app/api/
+scripts/        Icon generation, the deploy migration runner
 ```
 
 ## Documentation
 
-- [`docs/STATUS.md`](docs/STATUS.md) — **start here**: what's done, what's next, blockers.
-- [`docs/GO-LIVE.md`](docs/GO-LIVE.md) — launch runbook, real infra costs, deploy steps.
-- [`docs/BACKEND.md`](docs/BACKEND.md) — API routes, the data-client seam, and how to go live.
-- [`docs/ANALYTICS.md`](docs/ANALYTICS.md) — consent-gated GA4 / PostHog / Sentry wiring.
-- [`docs/LAUNCH-AUDIT.md`](docs/LAUNCH-AUDIT.md) — security/UX audit (25 Jun; partly superseded).
-- [`docs/journey-spec.md`](docs/journey-spec.md) — the master design/journey spec (historical).
+Start here, in this order:
+
+- [`docs/STATUS.md`](docs/STATUS.md) — **what is done, what is left, what blocks launch.**
+- [`DEPLOY.md`](DEPLOY.md) — deploying: every key, where to get it, what it costs.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how it works and **why** — the invariants, and the bug behind each one.
+- [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — running it: incidents, the database, backups, scaling, refunds.
+- [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) — symptom → cause → fix.
+- [`SECURITY.md`](SECURITY.md) — reporting a vulnerability.
+- [`docs/BACKEND.md`](docs/BACKEND.md) — API route reference.
+- [`docs/ANALYTICS.md`](docs/ANALYTICS.md) — consent-gated GA4 / PostHog / Sentry.
+- [`docs/journey-spec.md`](docs/journey-spec.md), [`docs/FEATURE-AUDIT.md`](docs/FEATURE-AUDIT.md),
+  [`docs/LAUNCH-AUDIT.md`](docs/LAUNCH-AUDIT.md), [`docs/GO-LIVE.md`](docs/GO-LIVE.md),
+  [`docs/CHAT-ROADMAP.md`](docs/CHAT-ROADMAP.md) — **historical.** Useful for intent,
+  stale on specifics. Trust the four above over these.
 
 ## Hard rules
 
 - **Strictly platonic.** No romantic/sexual/flirtatious copy or imagery, no
-  couple photos. "People having fun" = friends/groups/activities. This is a
-  legal + processor + trust requirement, not a style choice.
-- **Never claim something the product doesn't do.** "₹ held in escrow" was
-  written into 18 places — including the Terms of Service — for a feature that
-  does not exist. On a payments product in India that is a liability, not a
-  copy nit. If a claim isn't true today, don't ship it.
-- **v1 sells the ₹199 unlock only.** Taking a meetup fee and paying a companion
-  from it is unlicensed Payment Aggregator activity under RBI. See
-  [`docs/STATUS.md`](docs/STATUS.md#v1-scope-decision-locked-2026-07-10).
-- **Line endings: CRLF.** Keep edits surgical; do not mass-reformat (shared repo).
+  couple photos. "People having fun" means friends, groups, activities.
+- **Never claim something the product doesn't do.** "Held in escrow" was written
+  into 18 places — including the Terms of Service — for a feature that does not
+  exist. So was Aadhaar KYC, in fourteen. So was a "24/7 safety rep on the
+  phone". On a product where people meet strangers, a claim you cannot keep is a
+  liability, not a copy nit.
+- **The client never sends a price.** It names what it wants; the server prices
+  it.
+- **A face we cannot destroy is a face we do not send.** CSS blur is a costume.
+- **No invented people, ever** — not in the catalogue, not as testimonials, not
+  as "Rohan just booked a walk" toasts. `tests/catalogue.test.ts` enforces it.
+- **`MARKETPLACE_PAYMENTS_ENABLED` is a licence boundary**, not a flag to flip to
+  make a feature work.
+- **Line endings: CRLF.** Keep edits surgical; do not mass-reformat.
