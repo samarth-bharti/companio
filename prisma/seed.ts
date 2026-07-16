@@ -1,60 +1,25 @@
 // prisma/seed.ts
 //
-// Seeds the companion catalogue from the static mock (lib/data/companions), and
-// promotes the ADMIN_EMAILS allowlist so the panel is reachable on a fresh DB.
+// Promotes the ADMIN_EMAILS allowlist so the panel is reachable on a fresh DB,
+// and repairs any companion reputation that was authored rather than earned.
 //
-// Idempotent: upsert by id, so re-running never duplicates.
+// Idempotent. Safe to re-run:
 //   npx prisma db seed         (uses the "prisma.seed" command in package.json)
 // Requires DATABASE_URL / DIRECT_URL to be set.
 //
-// The update branch used to be `update: {}` — meaning a re-seed silently did
-// NOTHING to rows that already existed. Editing lib/data/companions.ts and
-// re-seeding appeared to work and changed nothing in the database. It now
-// refreshes the catalogue fields on every run.
+// THIS NO LONGER SEEDS COMPANIONS, AND MUST NOT AGAIN.
 //
-// It deliberately does NOT touch the columns an operator owns: `suspended`,
-// `bannedAt`, `banReason`, `verified` and `premium`. A re-seed must never
-// silently un-ban someone an admin removed from the marketplace.
-//
-// Nor does it touch `rating`, `reviewCount` or `reviewsList` on an existing row.
-// Those are EARNED, not authored: they accumulate from real Booking.review rows.
-// Every seed entry carries `rating: 0, reviews: 0, reviewsList: []`, so an
-// update branch that included them would erase a companion's real reviews every
-// time somebody edited a bio and re-ran the seed. They are set once, at create.
+// It used to upsert 22 profiles out of lib/data/companions.ts into the
+// `companions` table — invented people with stock portraits, served by the
+// explore grid as the catalogue a pass unlocks. Selling access to a person who
+// does not exist is not a placeholder. That array is empty now and the seeding
+// loop is gone with it; every companion arrives through a real application and
+// a hand-checked ID in /admin/applications.
 
 import { PrismaClient, Prisma } from '@prisma/client';
-import { COMPANIONS } from '../lib/data/companions';
 import { envValue } from '../lib/env';
 
 const prisma = new PrismaClient();
-
-async function seedCompanions() {
-  for (const c of COMPANIONS) {
-    const { reviews, reviewsList, rating, ...editable } = c;
-
-    await prisma.companion.upsert({
-      where: { id: c.id },
-      // Refresh authored content only. Moderation and earned reputation are
-      // both excluded — see the note above.
-      update: editable,
-      create: {
-        ...editable,
-        rating,
-        reviewCount: reviews,
-        reviewsList: reviewsList as unknown as Prisma.InputJsonValue,
-      },
-    });
-  }
-
-  const byCity = COMPANIONS.reduce<Record<string, number>>((acc, c) => {
-    acc[c.city] = (acc[c.city] ?? 0) + 1;
-    return acc;
-  }, {});
-  const summary = Object.entries(byCity)
-    .map(([city, n]) => `${city}: ${n}`)
-    .join(', ');
-  console.log(`Seeded ${COMPANIONS.length} companions (${summary}).`);
-}
 
 async function seedAdmins() {
   const emails = (envValue('ADMIN_EMAILS') ?? '')
@@ -131,7 +96,6 @@ async function recomputeReputation() {
 }
 
 async function main() {
-  await seedCompanions();
   await recomputeReputation();
   await seedAdmins();
 }

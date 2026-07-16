@@ -15,11 +15,18 @@ import {
   drawPrize,
   canSpin,
   nextSpinAt,
+  spinOdds,
   SPIN_EXPIRY_MS,
+  FREE_VISIT_CREDITS,
 } from '@/lib/server/spin';
 import { TX } from '@/lib/server/tx';
 
 export const dynamic = 'force-dynamic';
+
+/** Lifetime = a paid pass with no expiry. See lib/money.ts#nextPassExpiry. */
+function hasLifetime(u: { unlocked: boolean; unlockedUntil: Date | null } | null): boolean {
+  return !!u?.unlocked && u.unlockedUntil === null;
+}
 
 export async function GET() {
   return guard(async () => {
@@ -29,7 +36,7 @@ export async function GET() {
     const { prisma } = await import('@/lib/prisma');
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { lastSpinAt: true, unlocked: true },
+      select: { lastSpinAt: true, unlocked: true, unlockedUntil: true },
     });
     const reward = await prisma.spinResult.findFirst({
       where: { userId, usedAt: null, expiresAt: { gt: new Date() }, discountPct: { gt: 0 } },
@@ -42,11 +49,16 @@ export async function GET() {
       canSpin: canSpin(last, new Date()),
       nextSpinAt: nextSpinAt(last),
       reward,
-      // A win discounts the ₹199 unlock. Once that is bought there is nothing
-      // left for a discount to apply to, so we say so and do not let the member
-      // burn a spin on a prize they could never spend. Extra meetups are not
-      // purchasable (the RBI aggregator gate), so there is no second thing to buy.
-      nothingToWin: !!user?.unlocked,
+      // A win discounts the pass. A TIMED pass can be renewed or upgraded, so a
+      // discount stays spendable for as long as one can lapse — which is why
+      // this is no longer keyed on `unlocked`. Only a LIFETIME holder has
+      // genuinely nothing left to buy: meetups are not purchasable (the RBI
+      // aggregator gate), so a discount could never be redeemed against
+      // anything. We refuse their spin rather than let them repeat a weekly
+      // ritual that cannot pay out — that is the exact trick this wheel used to
+      // play on everybody.
+      nothingToWin: hasLifetime(user),
+      odds: spinOdds(),
     });
   });
 }
@@ -70,29 +82,47 @@ export async function POST(req: Request) {
     const result = await prisma.$transaction(async (tx) => {
       const u = await tx.user.findUnique({
         where: { id: userId },
-        select: { lastSpinAt: true, unlocked: true },
+        select: { lastSpinAt: true, unlocked: true, unlockedUntil: true },
       });
       const now = new Date();
-      // Refused on the server, not merely hidden in the UI: a member who has
-      // already unlocked has nothing a discount could apply to, and spending
-      // their weekly spin on an unspendable prize is the exact trick this
-      // wheel was doing to everybody.
-      if (u?.unlocked) {
+      // Refused on the server, not merely hidden in the UI: a lifetime holder
+      // has nothing a discount could apply to, and spending their weekly spin on
+      // an unspendable prize is the exact trick this wheel was doing to
+      // everybody.
+      if (hasLifetime(u)) {
         return { nothingToWin: true as const };
       }
       if (!canSpin(u?.lastSpinAt ?? null, now)) {
         return { cooldown: true as const, nextSpinAt: nextSpinAt(u?.lastSpinAt ?? null) };
       }
       await tx.user.update({ where: { id: userId }, data: { lastSpinAt: now } });
+
+      // A free visit is granted HERE, not held as a redeemable coupon. It is not
+      // a discount on a purchase — it is a credit — so there is no later
+      // checkout to burn it against, and leaving it unused-but-pending would
+      // make bestSpin() offer a 0% "discount" forever. Stamped used at birth for
+      // the same reason.
+      const isFreeVisit = prize.prize === 'free_visit';
       const spin = await tx.spinResult.create({
         data: {
           userId,
           prize: prize.prize,
           discountPct: prize.discountPct,
           expiresAt: new Date(now.getTime() + SPIN_EXPIRY_MS),
+          usedAt: isFreeVisit ? now : null,
         },
-        select: { prize: true, discountPct: true, expiresAt: true },
+        select: { id: true, prize: true, discountPct: true, expiresAt: true },
       });
+      if (isFreeVisit) {
+        const w = await tx.wallet.upsert({
+          where: { userId },
+          update: { credits: { increment: FREE_VISIT_CREDITS } },
+          create: { userId, credits: 1 + FREE_VISIT_CREDITS },
+        });
+        await tx.creditLedger.create({
+          data: { walletId: w.id, delta: FREE_VISIT_CREDITS, kind: 'topup', note: `spin ${spin.id}` },
+        });
+      }
       return { cooldown: false as const, spin };
     }, TX);
 

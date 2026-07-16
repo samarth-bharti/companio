@@ -19,7 +19,7 @@ const ROWS: BenefitRow[] = [
   },
   {
     Icon: CalendarHeart,
-    text: () => "2 meetings included, yours to use anytime, no expiry.",
+    text: () => "1 meeting included, yours to use anytime, no expiry.",
   },
   {
     Icon: ShieldCheck,
@@ -93,9 +93,12 @@ export function UnlockBenefits({
                 {discountPct}% spin win applied
               </span>
             ) : (
-              <>
-                2 meetings included · worth <span className="line-through">₹998</span>
-              </>
+              // This said "2 meetings included · worth ₹998" — the ₹998 being two
+              // × the ₹499 MEETING_AMOUNT. A meetup cannot be bought at any
+              // price: `booking` purchases are refused until there is an RBI
+              // Payment Aggregator licence. So the struck-through anchor was a
+              // saving against a number nobody has ever been able to pay.
+              <>1 meeting included · nothing to pay to meet</>
             )}
           </p>
         </div>

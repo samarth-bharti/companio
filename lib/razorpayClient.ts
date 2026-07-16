@@ -11,6 +11,13 @@
 export type RazorpayIntent = {
   kind: 'unlock' | 'plus' | 'credits' | 'booking';
   packId?: string;
+  /**
+   * Which pass tier (kind='unlock'). A NAME — 'pass1m' | 'pass3m' | 'pass12m' |
+   * 'passlife' — never a duration and never a price. The server reads both out
+   * of PASS_TIERS, so a tampered request buys the tier it names at that tier's
+   * real price, or nothing.
+   */
+  passTier?: string;
   bookingId?: string;
   /**
    * A discount code, as typed. Only ever a string: the server looks it up and
@@ -57,7 +64,10 @@ const SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js';
  * the honest answer: this deployment cannot sell anything.
  */
 async function payWithTestCheckout(intent: RazorpayIntent): Promise<PayResult> {
-  const res = await postJson<{ ok?: boolean }>('/api/test-checkout', { kind: intent.kind });
+  const res = await postJson<{ ok?: boolean }>('/api/test-checkout', {
+    kind: intent.kind,
+    passTier: intent.passTier,
+  });
   if (res.status === 200 && res.data?.ok) return 'success';
   if (res.status === 401) return 'auth_required';
   return 'unconfigured';

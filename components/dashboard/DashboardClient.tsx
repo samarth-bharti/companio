@@ -8,7 +8,6 @@ import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
 import { useViewerReady } from '@/lib/useViewerReady';
 import type { Booking } from '@/lib/appState';
-import { ActivityToast } from '@/components/journey/ActivityToast';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
 import { Reveal } from '@/components/motion/Reveal';
 import { OverviewPanel } from './OverviewPanel';
@@ -238,7 +237,6 @@ export function DashboardClient() {
         </AnimatePresence>
       </div>
 
-      <ActivityToast />
     </div>
   );
 }

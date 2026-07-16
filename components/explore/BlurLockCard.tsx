@@ -35,6 +35,9 @@ export function BlurLockCard({
   // query parameters to it: the card must never be the only thing standing
   // between a locked profile and its face, but it must not undo the server's
   // work either. blurredPhoto() rebuilds the query, so it is idempotent.
+  // null when the photo's host cannot destroy it for us. The card then paints a
+  // tinted placeholder rather than the person's face: CSS blur is a costume, not
+  // a paywall — the sharp original would sit in the network tab either way.
   const lockedSrc = blurredPhoto(companion.photo);
 
   return (
@@ -55,15 +58,28 @@ export function BlurLockCard({
         {/* Portrait — blurred photo layer. flex-1 so a locked card grows to match
             the taller free-preview card in its row instead of leaving a gap under it. */}
         <div className="relative w-full overflow-hidden flex-1" style={{ minHeight: 150 }}>
-          <Image
-            src={lockedSrc}
-            alt=""
-            aria-hidden="true"
-            fill
-            sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, (max-width:1280px) 33vw, 25vw"
-            className="object-cover"
-            style={{ filter: 'blur(8px) saturate(1.05)', transform: 'scale(1.06)' }}
-          />
+          {lockedSrc ? (
+            <Image
+              src={lockedSrc}
+              alt=""
+              aria-hidden="true"
+              fill
+              sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, (max-width:1280px) 33vw, 25vw"
+              className="object-cover"
+              style={{ filter: 'blur(8px) saturate(1.05)', transform: 'scale(1.06)' }}
+            />
+          ) : (
+            // No servable blur for this host. A soft wash in the companion's own
+            // accent still says "a person is here, behind this" — which is the
+            // job of a locked card — without betting a real face on a CSS filter.
+            <div
+              className="absolute inset-0"
+              aria-hidden="true"
+              style={{
+                background: `linear-gradient(150deg, ${companion.accent}55, ${companion.accent}22 55%, var(--color-bg))`,
+              }}
+            />
+          )}
 
           {/* 2.4s diagonal shimmer sweep — CSS animation instead of framer-motion
               repeat:Infinity; compositor handles all 13 locked cards at once with

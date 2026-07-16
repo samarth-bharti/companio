@@ -22,7 +22,9 @@ const TRUST_PILLARS = [
   {
     icon: Siren,
     title: "SOS & live-share",
-    body: "One tap activates emergency contact sharing and location broadcast during any booking.",
+    // Not a "broadcast": lib/safety/sos.ts resolves your position once and sends
+    // a maps link to a contact you saved. It does not track you.
+    body: "One tap sends your location and your companion's name to a trusted contact you choose.",
     color: "#FFB23E",
   },
   {

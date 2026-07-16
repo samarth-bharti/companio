@@ -9,14 +9,41 @@ import {
   freeNowCountIn,
 } from '@/lib/data/companions';
 
-// The catalogue and the map used to disagree by design: every city rendered the
-// same fourteen Mumbai people, and only Mumbai had coordinates. These tests pin
-// the invariant that replaced that — a city either has real companions in real,
-// mapped neighbourhoods, or it has none and says so.
+// The static catalogue is EMPTY, and these tests are most of what keeps it that
+// way. It used to hold 22 invented people with stock portraits, which the
+// explore grid served as the profiles a pass unlocks — i.e. Companio charged for
+// access to people who could not be met.
+//
+// Real companions live in the `companions` table and arrive through an
+// application and a hand-checked ID. Nothing may be authored back into
+// lib/data/companions.ts.
+//
+// The per-companion invariants below (a real city, a mapped neighbourhood, no
+// invented reputation) are vacuous today. They are kept deliberately: the moment
+// somebody re-adds a profile, they stop being vacuous and start failing.
 
-const LIVE_CITIES = ['Mumbai', 'Indore'];
+describe('the static companion catalogue', () => {
+  /**
+   * The one that matters. If this fails, someone has authored a person into the
+   * codebase — read the header of lib/data/companions.ts before "fixing" it.
+   */
+  it('is empty: Companio does not ship invented people', () => {
+    expect(COMPANIONS).toEqual([]);
+  });
 
-describe('the companion catalogue', () => {
+  it('leaves every city with no static supply, and says so', () => {
+    for (const city of CITIES) {
+      expect(cityIsLive(city.name), `${city.name}`).toBe(false);
+      expect(companionsInCity(city.name)).toEqual([]);
+      expect(freeNowCountIn(city.name)).toBe(0);
+      // No supply means no teaser to unblur — an empty city must not point at a
+      // profile that isn't there.
+      expect(topMatchIdFor(city.name), `${city.name} offers a teaser`).toBeUndefined();
+    }
+  });
+});
+
+describe('invariants any future companion must satisfy', () => {
   it('has no fabricated reputation: nobody is rated before they are reviewed', () => {
     for (const c of COMPANIONS) {
       expect(c.reviews, `${c.id} claims reviews`).toBe(0);
@@ -34,12 +61,6 @@ describe('the companion catalogue', () => {
   it('gives every companion a unique id', () => {
     const ids = COMPANIONS.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
-  });
-
-  it('marks exactly the live cities as live', () => {
-    for (const city of CITIES) {
-      expect(cityIsLive(city.name), `${city.name}`).toBe(LIVE_CITIES.includes(city.name));
-    }
   });
 
   it('offers at most one top match per city, and always one where anyone lists', () => {
@@ -78,19 +99,23 @@ describe('the companion catalogue', () => {
   });
 });
 
-describe('map anchors track the catalogue', () => {
-  it('maps the neighbourhoods of every live city, and only those', () => {
-    for (const city of CITIES) {
-      expect(cityHasRealAreas(city.id), `${city.name}`).toBe(cityIsLive(city.name));
+describe('map anchors', () => {
+  // Neighbourhood geography is AUTHORED REFERENCE DATA, not supply: Bandra West
+  // is at those coordinates whether or not anyone lists there. So the map keeps
+  // its anchors while the catalogue is empty. What must stay true is the reverse
+  // direction — nobody may list in a neighbourhood we cannot place on a map.
+  const MAPPED_CITIES = ['Mumbai', 'Indore'];
+
+  it('still maps the cities we have surveyed', () => {
+    for (const name of MAPPED_CITIES) {
+      expect(cityHasRealAreas(cityIdFromName(name)!), name).toBe(true);
     }
   });
 
-  it('resolves an anchor for every companion, in every live city', () => {
-    for (const name of LIVE_CITIES) {
-      const cityId = cityIdFromName(name)!;
-      const people = companionsInCity(name);
-      expect(people.length).toBeGreaterThan(0);
-      for (const c of people) {
+  it('resolves an anchor for every companion, wherever they list', () => {
+    for (const city of CITIES) {
+      const cityId = cityIdFromName(city.name)!;
+      for (const c of companionsInCity(city.name)) {
         expect(getAreaAnchor(cityId, c.area), `no anchor for "${c.area}" (${c.id})`).not.toBeNull();
       }
     }
@@ -99,7 +124,7 @@ describe('map anchors track the catalogue', () => {
   it('keeps every anchor inside a sane box around its own city centre', () => {
     // Guards a transposed lat/lng, or a stray decimal, dropping a neighbourhood
     // into the Arabian Sea — or into the wrong city entirely.
-    for (const name of LIVE_CITIES) {
+    for (const name of MAPPED_CITIES) {
       const cityId = cityIdFromName(name)!;
       const city = getCity(cityId);
       for (const c of companionsInCity(name)) {

@@ -1,7 +1,18 @@
 // app/admin/discounts/page.tsx — create & manage promo / discount codes.
 
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { ActionForm } from '@/components/admin/ActionForm';
+import { AdminSearch } from '@/components/admin/AdminSearch';
+import { AdminPager } from '@/components/admin/AdminPager';
+import { AdminEmpty } from '@/components/admin/AdminEmpty';
+import {
+  ADMIN_PAGE_SIZE,
+  parseQ,
+  parsePage,
+  like,
+  type AdminListSearchParams,
+} from '@/lib/server/adminList';
 import { createDiscount, toggleDiscountActive, deleteDiscount } from '../actions/discounts';
 
 export const metadata = { title: "Discounts" };
@@ -20,18 +31,32 @@ const inp = 'h-9 px-2 text-sm rounded-lg border border-[var(--color-ink)]/15';
  * row would compare against a slightly different `now`, and the rule that
  * catches it is the same one that catches genuinely unstable renders.
  */
-async function loadCodes() {
-  const codes = await prisma.discountCode.findMany({ orderBy: { createdAt: 'desc' }, take: 200 });
-  return { codes, now: Date.now() };
+async function loadCodes(where: Prisma.DiscountCodeWhereInput, page: number) {
+  const [codes, total] = await Promise.all([
+    prisma.discountCode.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: ADMIN_PAGE_SIZE,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+    }),
+    prisma.discountCode.count({ where }),
+  ]);
+  return { codes, total, now: Date.now() };
 }
 
-export default async function AdminDiscounts() {
-  const { codes, now } = await loadCodes();
+const BASE = '/admin/discounts';
+
+export default async function AdminDiscounts({ searchParams }: { searchParams: AdminListSearchParams }) {
+  const sp = await searchParams;
+  const q = parseQ(sp.q);
+  const page = parsePage(sp.page);
+
+  const { codes, total, now } = await loadCodes(q ? { code: like(q) } : {}, page);
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-display font-black text-[var(--color-ink)]" style={{ fontSize: 'var(--text-h2)' }}>
-        Discount codes ({codes.length})
+        Discount codes ({total.toLocaleString('en-IN')})
       </h1>
 
       {/* Create form */}
@@ -71,8 +96,12 @@ export default async function AdminDiscounts() {
       </ActionForm>
 
       {/* List */}
+      <AdminSearch q={q} label="Search codes" placeholder="LAUNCH50" />
+
       <div className="flex flex-col gap-3">
-        {codes.length === 0 && <p className="text-[var(--color-ink-muted)]">No codes yet.</p>}
+        {codes.length === 0 && (
+          <AdminEmpty basePath={BASE} q={q} noun="codes" emptyLabel="No codes yet." />
+        )}
         {codes.map((c) => {
           const expired = c.expiresAt ? c.expiresAt.getTime() < now : false;
           const label = c.type === 'percentage' ? `${c.value}% off` : `₹${(c.value / 100).toFixed(0)} off`;
@@ -111,6 +140,15 @@ export default async function AdminDiscounts() {
           );
         })}
       </div>
+
+      <AdminPager
+        basePath={BASE}
+        page={page}
+        pageSize={ADMIN_PAGE_SIZE}
+        total={total}
+        q={q}
+        label="Discount code pages"
+      />
     </div>
   );
 }

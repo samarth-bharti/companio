@@ -17,12 +17,12 @@ import {
   isPackId,
   isPurchaseKindEnabled,
   applyDiscount,
-  UNLOCK_AMOUNT,
   PLUS_AMOUNT,
 } from '@/lib/server/pricing';
+import { PASS_TIERS, isPassTierId, type PassTierId } from '@/lib/money';
 import { quoteBooking, bestSpin } from '@/lib/server/booking';
 import { resolveDiscount, discountFailureMessage } from '@/lib/server/discounts';
-import { envValue } from '@/lib/env';
+import { envValue, passSalesEnabled } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,13 +44,21 @@ export async function POST(req: Request) {
 
     const parsed = orderCreateBody.safeParse(await readJsonBody(req));
     if (!parsed.success) return badRequest(parsed.error.flatten());
-    const { kind, packId, bookingId, discountCode } = parsed.data;
+    const { kind, packId, passTier, bookingId, discountCode } = parsed.data;
 
     // Refuse any kind that would leave us holding a companion's money without
     // an RBI Payment Aggregator licence. 503, so the client shows "temporarily
     // unavailable" rather than falling back to a free grant.
     if (!isPurchaseKindEnabled(kind)) {
       return json({ error: 'purchase_kind_disabled', kind }, 503);
+    }
+
+    // Supply-first launch: a pass buys access to the companion catalogue, and
+    // until real companions exist there is nothing behind the paywall to sell.
+    // Refused on the SERVER, not merely hidden in the UI — a hidden button is
+    // not a closed door.
+    if (kind === 'unlock' && !passSalesEnabled()) {
+      return json({ error: 'pass_sales_disabled' }, 503);
     }
 
     const { prisma } = await import('@/lib/prisma');
@@ -60,24 +68,49 @@ export async function POST(req: Request) {
     let credits = 0;
     let spinResultId: string | null = null;
     let appliedCode: string | null = null;
+    let tierId: PassTierId | null = null;
     if (kind === 'unlock') {
-      // A spin win discounts the unlock — the only thing v1 sells, and so the
-      // only thing a win can be spent on. The wheel used to award "% off your
-      // next meetup", which nobody could ever redeem.
+      // The pass. The client names a tier; the SERVER reads the price and the
+      // duration out of PASS_TIERS. An unknown tier is refused rather than
+      // quietly defaulted — defaulting would charge someone who asked for
+      // lifetime the price of a month, or vice versa.
+      if (!isPassTierId(passTier)) return badRequest('invalid_pass_tier');
+      tierId = passTier;
+      const base = PASS_TIERS[tierId].amount;
+
+      // A lifetime holder has nothing left to buy. nextPassExpiry() treats
+      // lifetime as absorbing — correctly, it must never be downgraded — so a
+      // second purchase would take the money and grant precisely nothing, and
+      // we would owe the refund. Refused here, where the charge is decided.
+      //
+      // /api/spin already refuses a lifetime holder for exactly this reason
+      // ("we won't spend your spin on it"). The path that takes real money is a
+      // strange place to be more relaxed than the one handing out coupons.
+      const holder = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { unlocked: true, unlockedUntil: true },
+      });
+      if (holder?.unlocked && holder.unlockedUntil === null) {
+        return json({ error: 'already_lifetime' }, 409);
+      }
+
+      // A spin win discounts the pass — the only thing v1 sells, and so the only
+      // thing a win can be spent on. The wheel used to award "% off your next
+      // meetup", which nobody could ever redeem.
       //
       // Reserved here, at the moment the price is fixed, because the Razorpay
       // order is created for exactly this amount: if the win were claimed after
       // the order, a second order could claim it too and both would be charged
       // the discounted price.
-      amount = UNLOCK_AMOUNT;
+      amount = base;
       const spin = await bestSpin(prisma, userId);
-      if (spin) {
+      if (spin && spin.discountPct > 0) {
         const reserved = await prisma.spinResult.updateMany({
           where: { id: spin.id, usedAt: null },
           data: { usedAt: new Date() },
         });
         if (reserved.count === 1) {
-          amount = applyDiscount(UNLOCK_AMOUNT, spin.discountPct);
+          amount = applyDiscount(base, spin.discountPct);
           spinResultId = spin.id;
         }
         // reserved.count === 0 ⇒ a concurrent order already took it. Full price.
@@ -186,6 +219,7 @@ export async function POST(req: Request) {
         kind,
         amount,
         credits,
+        passTier: tierId,
         bookingId: kind === 'booking' ? bookingId : null,
         spinResultId,
         // Recorded, not spent. settlePurchase reads it back and increments the

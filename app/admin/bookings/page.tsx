@@ -1,7 +1,20 @@
 // app/admin/bookings/page.tsx — view all bookings; cancel / refund / complete.
 
+import type { Prisma, BookingStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { ActionForm } from '@/components/admin/ActionForm';
+import { AdminSearch } from '@/components/admin/AdminSearch';
+import { AdminPager } from '@/components/admin/AdminPager';
+import { AdminEmpty } from '@/components/admin/AdminEmpty';
+import { AdminStatusChips } from '@/components/admin/AdminStatusChips';
+import {
+  ADMIN_PAGE_SIZE,
+  parseQ,
+  parsePage,
+  parseStatus,
+  like,
+  type AdminListSearchParams,
+} from '@/lib/server/adminList';
 import { cancelBooking, refundBooking, markBookingComplete } from '../actions/bookings';
 
 export const metadata = { title: "Bookings" };
@@ -21,26 +34,74 @@ const STATUS_COLORS: Record<string, string> = {
   pending_payment: 'bg-rose-100 text-rose-700',
 };
 
-export default async function AdminBookings() {
-  const bookings = await prisma.booking.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 200,
-    select: {
-      id: true, activity: true, dateISO: true, time: true, place: true,
-      status: true, usedCredit: true, pricePaid: true, createdAt: true,
-      user: { select: { firstName: true, email: true, phone: true } },
-      companion: { select: { name: true } },
-    },
-  });
+const BASE = '/admin/bookings';
+
+const STATUSES = [
+  'pending_payment', 'upcoming', 'completed', 'cancelled', 'declined', 'refunded',
+] as const satisfies readonly BookingStatus[];
+
+export default async function AdminBookings({ searchParams }: { searchParams: AdminListSearchParams }) {
+  const sp = await searchParams;
+  const q = parseQ(sp.q);
+  const page = parsePage(sp.page);
+  const status = parseStatus(sp.status, STATUSES);
+
+  const where: Prisma.BookingWhereInput = {
+    ...(status ? { status } : {}),
+    ...(q
+      ? {
+          OR: [
+            { id: like(q) },
+            { user: { email: like(q) } },
+            { user: { firstName: like(q) } },
+            { user: { lastName: like(q) } },
+            { companion: { name: like(q) } },
+          ],
+        }
+      : {}),
+  };
+
+  const [bookings, total] = await Promise.all([
+    prisma.booking.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: ADMIN_PAGE_SIZE,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      select: {
+        id: true, activity: true, dateISO: true, time: true, place: true,
+        status: true, usedCredit: true, pricePaid: true, createdAt: true,
+        user: { select: { firstName: true, email: true, phone: true } },
+        companion: { select: { name: true } },
+      },
+    }),
+    prisma.booking.count({ where }),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-display font-black text-[var(--color-ink)]" style={{ fontSize: 'var(--text-h2)' }}>
-        Bookings ({bookings.length})
+        Bookings ({total.toLocaleString('en-IN')})
       </h1>
 
+      <AdminStatusChips
+        basePath={BASE}
+        active={status}
+        options={STATUSES}
+        q={q}
+        label="Filter bookings by status"
+      />
+
+      <AdminSearch
+        q={q}
+        label="Search bookings"
+        placeholder="Booking id, member name or email, companion"
+        preserve={{ status }}
+      />
+
       <div className="flex flex-col gap-3">
-        {bookings.length === 0 && <p className="text-[var(--color-ink-muted)]">No bookings yet.</p>}
+        {bookings.length === 0 && (
+          <AdminEmpty basePath={BASE} q={q} status={status} noun="bookings" emptyLabel="No bookings yet." />
+        )}
         {bookings.map((b) => {
           const closed = b.status === 'cancelled' || b.status === 'refunded' || b.status === 'completed';
           return (
@@ -88,6 +149,16 @@ export default async function AdminBookings() {
           );
         })}
       </div>
+
+      <AdminPager
+        basePath={BASE}
+        page={page}
+        pageSize={ADMIN_PAGE_SIZE}
+        total={total}
+        q={q}
+        status={status}
+        label="Booking pages"
+      />
     </div>
   );
 }

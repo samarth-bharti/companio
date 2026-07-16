@@ -116,6 +116,9 @@ export const planBody = z.object({ plan: z.union([z.literal('plus'), z.null()]) 
 export const orderCreateBody = z.object({
   kind: z.enum(['booking', 'credits', 'unlock', 'plus']),
   packId: z.string().optional(),
+  // Which pass tier (kind=unlock): pass1m | pass3m | pass12m | passlife. A NAME,
+  // never a duration and never a price — the server looks both up in PASS_TIERS.
+  passTier: z.string().optional(),
   bookingId: z.string().optional(),
   // A code STRING only. The client never sends an amount, a percentage or a
   // discount — the server looks the code up and recomputes the price itself.

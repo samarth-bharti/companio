@@ -85,7 +85,7 @@ export async function POST(req: Request) {
       // the credit cannot be double-spent across concurrent requests.
       const result = await prisma.$transaction(async (tx) => {
         // Ensure a wallet row exists before the conditional decrement — a
-        // freshly-migrated user has no row yet, so the default 2 free credits
+        // freshly-migrated user has no row yet, so the free starter meeting
         // must be materialised here or the decrement would wrongly 402.
         await tx.wallet.upsert({
           where: { userId },

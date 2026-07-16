@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         email: user.email,
         topic: 'refund',
         message:
-          `Refund requested for the ₹199 unlock.\n\n` +
+          `Refund requested for a Companio pass.\n\n` +
           `Purchase: ${purchase.id}\n` +
           `Amount: ${formatPaise(purchase.amount)}\n` +
           `Razorpay payment: ${purchase.razorpayPaymentId ?? '(none — settled without a gateway)'}\n` +

@@ -1,8 +1,21 @@
 // app/admin/applications/page.tsx — review companion applications: see the free
 // document-check results, then approve (creates the Companion profile) or reject.
 
+import type { Prisma, ApplicationStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { ActionForm } from '@/components/admin/ActionForm';
+import { AdminSearch } from '@/components/admin/AdminSearch';
+import { AdminPager } from '@/components/admin/AdminPager';
+import { AdminEmpty } from '@/components/admin/AdminEmpty';
+import { AdminStatusChips } from '@/components/admin/AdminStatusChips';
+import {
+  ADMIN_PAGE_SIZE,
+  parseQ,
+  parsePage,
+  parseStatus,
+  like,
+  type AdminListSearchParams,
+} from '@/lib/server/adminList';
 import { approveApplication, rejectApplication } from '../actions/applications';
 
 export const metadata = { title: "Applications" };
@@ -14,30 +27,70 @@ const btnGreen = 'text-xs font-semibold px-3 py-1.5 rounded-full bg-[var(--color
 const btnRed = 'text-xs font-semibold px-3 py-1.5 rounded-full border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-wait';
 const inp = 'h-8 px-2 text-xs rounded-lg border border-[var(--color-ink)]/15';
 
+// Doubles for the document checks (pending/verified/failed/manual) and, since
+// the status filter arrived, the application's own status.
 function StatusPill({ s }: { s: string }) {
-  const cls = s === 'verified' ? 'bg-[var(--color-emerald)]/10 text-[var(--color-emerald)]'
-    : s === 'failed' ? 'bg-rose-100 text-rose-700'
-    : s === 'manual' ? 'bg-[var(--color-azure)]/10 text-[var(--color-azure)]'
+  const cls = s === 'verified' || s === 'approved' ? 'bg-[var(--color-emerald)]/10 text-[var(--color-emerald)]'
+    : s === 'failed' || s === 'rejected' ? 'bg-rose-100 text-rose-700'
+    : s === 'manual' || s === 'submitted' ? 'bg-[var(--color-azure)]/10 text-[var(--color-azure)]'
     : 'bg-[var(--color-ink)]/5 text-[var(--color-ink-muted)]';
   return <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${cls}`}>{s}</span>;
 }
 
-export default async function AdminApplications() {
-  const apps = await prisma.companionApplication.findMany({
-    where: { status: 'submitted' },
-    orderBy: { updatedAt: 'desc' },
-    take: 200,
-    select: {
-      id: true, name: true, city: true, rate: true, bio: true, activities: true,
-      idUploaded: true, backgroundConsent: true, idDocType: true, idDocMasked: true,
-      idVerifyStatus: true, photoVerifyStatus: true, ocrMatched: true, updatedAt: true,
-    },
-  });
+const BASE = '/admin/applications';
+
+const STATUSES = ['draft', 'submitted', 'approved', 'rejected'] as const satisfies readonly ApplicationStatus[];
+/** "All" is an explicit value here: with no filter this page means `submitted`. */
+const ALL = 'all';
+
+export default async function AdminApplications({ searchParams }: { searchParams: AdminListSearchParams }) {
+  const sp = await searchParams;
+  const q = parseQ(sp.q);
+  const page = parsePage(sp.page);
+  // The queue an admin opens this page for is the pending one, so that stays the
+  // default; the other statuses are now reachable rather than merely stored.
+  // `urlStatus` is only what the URL actually asked for — the links reuse it, so
+  // the default stays an absent param instead of `?status=submitted` everywhere.
+  const urlStatus = parseStatus(sp.status, [...STATUSES, ALL]);
+  const status = urlStatus ?? 'submitted';
+
+  const where: Prisma.CompanionApplicationWhereInput = {
+    ...(status === ALL ? {} : { status }),
+    ...(q
+      ? {
+          OR: [
+            { name: like(q) },
+            { city: like(q) },
+            { id: like(q) },
+            // Applications carry no email of their own — it lives on the account
+            // that submitted them.
+            { user: { email: like(q) } },
+          ],
+        }
+      : {}),
+  };
+
+  const [apps, total] = await Promise.all([
+    prisma.companionApplication.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      take: ADMIN_PAGE_SIZE,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      select: {
+        id: true, name: true, city: true, rate: true, bio: true, activities: true,
+        idUploaded: true, backgroundConsent: true, idDocType: true, idDocMasked: true,
+        idVerifyStatus: true, photoVerifyStatus: true, ocrMatched: true, updatedAt: true,
+        status: true,
+        user: { select: { email: true } },
+      },
+    }),
+    prisma.companionApplication.count({ where }),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-display font-black text-[var(--color-ink)]" style={{ fontSize: 'var(--text-h2)' }}>
-        Pending applications ({apps.length})
+        {status === 'submitted' ? 'Pending applications' : 'Applications'} ({total.toLocaleString('en-IN')})
       </h1>
       <p className="text-xs text-[var(--color-ink-muted)] -mt-3">
         Document checks are automated sanity checks (number format, file integrity, duplicate
@@ -45,8 +98,33 @@ export default async function AdminApplications() {
         Approving stamps <em>manual</em>: it records that <em>you</em> looked. Always eyeball first.
       </p>
 
+      <AdminStatusChips
+        basePath={BASE}
+        active={status}
+        options={STATUSES}
+        q={q}
+        allLabel="All"
+        allValue={ALL}
+        label="Filter applications by status"
+      />
+
+      <AdminSearch
+        q={q}
+        label="Search applications"
+        placeholder="Name, email, city or id"
+        preserve={{ status: urlStatus }}
+      />
+
       <div className="flex flex-col gap-3">
-        {apps.length === 0 && <p className="text-[var(--color-ink-muted)]">No pending applications.</p>}
+        {apps.length === 0 && (
+          <AdminEmpty
+            basePath={BASE}
+            q={q}
+            status={urlStatus === ALL ? undefined : urlStatus}
+            noun="applications"
+            emptyLabel="No pending applications."
+          />
+        )}
         {apps.map((a) => (
           <div key={a.id} className="rounded-2xl bg-white border border-[var(--color-ink)]/10 p-4 flex flex-col gap-3">
             <div className="flex items-start gap-3 flex-wrap">
@@ -54,9 +132,14 @@ export default async function AdminApplications() {
                 <p className="text-sm font-semibold text-[var(--color-ink)]">
                   {a.name} <span className="font-normal text-[var(--color-ink-muted)]">· {a.city} · ₹{(a.rate / 100).toFixed(0)}/mtg</span>
                 </p>
+                {/* The applicant's account email — searchable, so show it. */}
+                <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">{a.user?.email ?? '—'}</p>
                 <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">{a.bio}</p>
                 <p className="text-xs text-[var(--color-ink-muted)] mt-0.5">{a.activities.join(', ')}</p>
               </div>
+              {/* Only pending rows used to reach this page; the status filter can
+                  now surface approved and rejected ones, so say which is which. */}
+              <StatusPill s={a.status} />
             </div>
 
             {/* Document-check results.
@@ -89,6 +172,10 @@ export default async function AdminApplications() {
               applicant. Nothing here proves the person owns the identity — open both images and look.
             </p>
 
+            {/* Both actions refuse anything that is not "submitted" (they check
+                the status server-side), so don't offer them on the rows the
+                status filter now makes reachable. */}
+            {a.status === 'submitted' && (
             <div className="flex flex-wrap items-start gap-2 pt-2 border-t border-[var(--color-ink)]/5">
               <ActionForm
                 action={approveApplication}
@@ -103,9 +190,20 @@ export default async function AdminApplications() {
                 <input name="reason" placeholder="Reject reason" className={inp} style={{ width: 130 }} />
               </ActionForm>
             </div>
+            )}
           </div>
         ))}
       </div>
+
+      <AdminPager
+        basePath={BASE}
+        page={page}
+        pageSize={ADMIN_PAGE_SIZE}
+        total={total}
+        q={q}
+        status={urlStatus}
+        label="Application pages"
+      />
     </div>
   );
 }

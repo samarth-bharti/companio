@@ -49,7 +49,7 @@ const PROMISES = [
     icon: Undo2,
     headline: '7 days',
     label: 'Full refund, no questions',
-    sub: "Didn't find anyone you'd like to meet? Take your ₹199 back.",
+    sub: "Didn't find anyone you'd like to meet? Take your money back.",
     color: 'var(--color-emerald)',
     bg: '#E6F5EE',
     border: 'rgba(31,174,107,0.2)',
@@ -58,13 +58,21 @@ const PROMISES = [
 
 export function StatShowcase() {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+    // One column on a phone, not two.
+    //
+    // Two 136px-wide cards side by side on a 360px screen left 104px of text
+    // column, and "Government" is 112px at the headline's own minimum size —
+    // so the word could not fit at any size the type scale allows. It clipped,
+    // and once it was allowed to wrap it broke mid-word into "Governme / nt ID".
+    // Shrinking the font to fit meant a 16px "display" headline, which is not a
+    // display headline. The card just needs the whole width until `sm`.
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
       {PROMISES.map((s, i) => {
         const Icon = s.icon;
         return (
           <Reveal key={s.label} delay={i * 0.08}>
             <div
-              className="flex flex-col p-6 rounded-2xl h-full"
+              className="flex flex-col p-6 rounded-2xl h-full min-w-0"
               style={{ background: s.bg, border: `1.5px solid ${s.border}` }}
             >
               <span
@@ -75,8 +83,14 @@ export function StatShowcase() {
                 <Icon size={18} strokeWidth={1.8} style={{ color: s.color }} />
               </span>
 
+              {/* The clamp is the original and is correct at every width the
+                  card is actually given — it was the two-column mobile grid that
+                  starved it, not the type scale. `leading-none` did clip
+                  descenders, though, and `break-words`/`min-w-0` stay as a
+                  backstop so a longer headline degrades visibly instead of
+                  spilling out of the card. */}
               <p
-                className="font-display font-bold leading-none mb-2"
+                className="font-display font-bold leading-tight mb-2 break-words text-balance"
                 style={{ fontSize: 'clamp(1.5rem,2.4vw,2rem)', color: s.color }}
               >
                 {s.headline}
