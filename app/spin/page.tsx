@@ -24,16 +24,18 @@ export default function SpinPage() {
               Your weekly spin
             </h1>
             <p className="text-[var(--color-ink-muted)]" style={{ fontSize: 'var(--text-lead)' }}>
-              One spin a week. Most spins win nothing — but a lucky few get a real
-              discount on the one-time ₹199 unlock. No purchase needed.
+              One spin a week. Nine out of ten win nothing — the exact odds for
+              every prize are printed under the wheel. No purchase needed.
             </p>
           </div>
 
           <SpinWheel />
 
           <p className="text-xs text-[var(--color-ink-muted)] max-w-sm">
-            Prizes are discounts on the ₹199 unlock only, and expire 7 days after you
-            win them. A win applies automatically at checkout. See our{' '}
+            Prizes are a discount on a pass, or a free visit. They expire 7 days after
+            you win them, and a discount applies automatically at checkout. Every
+            outcome is drawn on our servers — the wheel shows you what was drawn, it
+            doesn&apos;t decide it. See our{' '}
             <a href="/terms#spin" className="underline underline-offset-2">spin terms</a>.
           </p>
         </div>

@@ -1,25 +1,62 @@
 import { describe, it, expect } from 'vitest';
-import { drawPrize, canSpin, nextSpinAt, SPIN_COOLDOWN_MS } from '@/lib/server/spin';
+import {
+  drawPrize,
+  canSpin,
+  nextSpinAt,
+  spinOdds,
+  SPIN_COOLDOWN_MS,
+  SPIN_PRIZES,
+  SPIN_WEIGHT_TOTAL,
+} from '@/lib/server/spin';
 
+// Cumulative bands, out of 10,000:
+//   none        [0,      9000)  90%
+//   discount5   [9000,   9500)  5%
+//   discount10  [9500,   9800)  3%
+//   discount15  [9800,   9950)  1.5%
+//   discount20  [9950,   9999)  0.49%
+//   free_visit  [9999,  10000)  0.01%
 describe('drawPrize (weighted, deterministic by rnd)', () => {
   it('lands on "none" across the bulk of the range', () => {
     expect(drawPrize(0).prize).toBe('none');
-    expect(drawPrize(0.8).prize).toBe('none'); // none weight 85 of 100
+    expect(drawPrize(0.8).prize).toBe('none');
+    expect(drawPrize(0.8999).prize).toBe('none');
   });
-  it('lands on discount10 in its band', () => {
-    expect(drawPrize(0.90).prize).toBe('discount10'); // [85,95)
+  it('lands on each discount in its own band', () => {
+    expect(drawPrize(0.90).prize).toBe('discount5');
+    expect(drawPrize(0.95).prize).toBe('discount10');
+    expect(drawPrize(0.98).prize).toBe('discount15');
+    expect(drawPrize(0.995).prize).toBe('discount20');
   });
-  it('lands on discount20 at the top of the range', () => {
-    expect(drawPrize(0.96).prize).toBe('discount20');  // [95,99)
-    expect(drawPrize(0.995).prize).toBe('discount20'); // still in discount20 band
+  it('lands on free_visit only in the last ten-thousandth', () => {
+    expect(drawPrize(0.99989).prize).toBe('discount20');
+    expect(drawPrize(0.9999).prize).toBe('free_visit');
+    expect(drawPrize(0.9999999).prize).toBe('free_visit');
   });
-  it('never returns out of bounds for rnd ~1', () => {
-    expect(drawPrize(0.9999999).prize).toBe('discount20');
-  });
-  it('discount prizes carry the right pct', () => {
-    expect(drawPrize(0.90).discountPct).toBe(10);
-    expect(drawPrize(0.96).discountPct).toBe(20);
+  it('prizes carry the right pct', () => {
+    expect(drawPrize(0.90).discountPct).toBe(5);
+    expect(drawPrize(0.95).discountPct).toBe(10);
+    expect(drawPrize(0.98).discountPct).toBe(15);
+    expect(drawPrize(0.995).discountPct).toBe(20);
     expect(drawPrize(0).discountPct).toBe(0);
+    // A free visit is a credit, not a discount — a nonzero pct here would make
+    // create-order try to reserve it as money off the pass.
+    expect(drawPrize(0.9999).discountPct).toBe(0);
+  });
+});
+
+describe('the published odds are the real odds', () => {
+  // The weights ARE the basis points, which is the only reason spinOdds() can
+  // print them without a second calculation. If the table stops summing to
+  // 10,000 the fine print under the wheel starts lying.
+  it('weights sum to exactly SPIN_WEIGHT_TOTAL', () => {
+    const sum = SPIN_PRIZES.reduce((s, p) => s + p.weight, 0);
+    expect(sum).toBe(SPIN_WEIGHT_TOTAL);
+  });
+  it('publishes the odds the draw actually uses', () => {
+    const odds = spinOdds();
+    expect(odds.find((o) => o.label.startsWith('No win'))?.pct).toBe('90%');
+    expect(odds.find((o) => o.label.startsWith('A free visit'))?.pct).toBe('0.01%');
   });
 });
 

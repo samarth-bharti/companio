@@ -6,25 +6,39 @@ import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { Gift, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-// Visual segments. These mirror the REAL server prize table (lib/server/spin.ts):
-// only two wins exist — 10% off and 20% off — and most wedges are "Try again",
-// so the wheel can never paint a prize the server won't actually award. (An
-// earlier "Plus month" jackpot wedge was unwinnable and has been removed.)
+// Visual segments. Every wedge here is a prize the server can actually award
+// (lib/server/spin.ts), and every prize the server can award has a wedge — the
+// wheel must never paint something unwinnable, and must never be unable to show
+// what was won. (An earlier "Plus month" jackpot wedge was unwinnable and has
+// been removed.)
+//
+// The wedges are EQUALLY SIZED and the odds are NOT. "Free visit" occupies an
+// eighth of the wheel and is drawn one spin in ten thousand; the discounts are
+// likewise rarer than they look. A wedge is a label, not a probability, and
+// nobody reads it that way — which is why the exact odds are printed directly
+// under the wheel rather than buried in terms. Do not remove that disclosure: it
+// is the only thing standing between this component and a rigged wheel.
 const SEGMENTS = [
+  { label: '5% off', color: '#2E6BFF' },
+  { label: 'Try again', color: '#E7E9F2' },
   { label: '10% off', color: '#2E6BFF' },
   { label: 'Try again', color: '#E7E9F2' },
+  { label: '15% off', color: '#1FAE6B' },
   { label: 'Try again', color: '#E7E9F2' },
   { label: '20% off', color: '#1FAE6B' },
-  { label: 'Try again', color: '#E7E9F2' },
-  { label: 'Try again', color: '#E7E9F2' },
+  { label: 'Free visit', color: '#8B5CF6' },
 ];
 const SEG = 360 / SEGMENTS.length;
 
 // Map a server prize to the segment the pointer should land on. `none` lands on
-// any "Try again" wedge (index 1).
+// any "Try again" wedge (index 1). The pointer always lands on the result the
+// SERVER drew — the animation reports the outcome, it never decides it.
 const PRIZE_SEGMENT: Record<string, number> = {
-  discount10: 0,
-  discount20: 3,
+  discount5: 0,
+  discount10: 2,
+  discount15: 4,
+  discount20: 6,
+  free_visit: 7,
   none: 1,
 };
 
@@ -35,6 +49,8 @@ interface SpinState {
   rotation: number;
   resultLabel: string | null;
   nextSpinAt: string | null;
+  /** Published odds, straight from the server's own prize table. */
+  odds: { label: string; pct: string }[];
 }
 
 // Bounce/overshoot easing — wheel slams in then bounces back slightly.
@@ -43,7 +59,7 @@ const WHEEL_TRANSITION_REDUCED = { duration: 0.4, ease: 'easeOut' as const };
 
 export function SpinWheel() {
   const reduced = useEffectiveReducedMotion();
-  const [s, setS] = useState<SpinState>({ status: 'loading', rotation: 0, resultLabel: null, nextSpinAt: null });
+  const [s, setS] = useState<SpinState>({ status: 'loading', rotation: 0, resultLabel: null, nextSpinAt: null, odds: [] });
   const isWin = s.status === 'done' && s.resultLabel !== null && !s.resultLabel.startsWith('No win');
 
   useEffect(() => {
@@ -56,6 +72,9 @@ export function SpinWheel() {
           status: d.nothingToWin ? 'nothingtowin' : d.canSpin ? 'ready' : 'cooldown',
           nextSpinAt: d.nextSpinAt,
           resultLabel: d.reward ? labelFor(d.reward.prize) : null,
+          // The server publishes its own odds. Typing them here is how the
+          // printed odds and the real table drift apart.
+          odds: Array.isArray(d.odds) ? d.odds : [],
         }));
       })
       .catch(() => setS((p) => ({ ...p, status: 'signedout' })));
@@ -125,12 +144,25 @@ export function SpinWheel() {
         <SpinStatus state={s} onSpin={spin} />
       </div>
 
-      {/* Honest odds disclosure — most spins win nothing; no hidden jackpot. */}
-      <p className="text-xs text-center text-[var(--color-ink-muted)] max-w-xs">
-        One spin a week. Most spins win nothing — about 1 in 10 wins 10% off and
-        1 in 25 wins 20% off the one-time ₹199 unlock. Discounts only; no cash
-        prizes. A win lasts 7 days.
-      </p>
+      {/* Honest odds disclosure. These are the SERVER's numbers, rendered from
+          /api/spin — not a claim typed next to the wheel and left to rot. The
+          wedges are equal; the odds are not, and this is where we say so. */}
+      <div className="text-xs text-center text-[var(--color-ink-muted)] max-w-xs flex flex-col gap-2">
+        <p>One spin a week. A win lasts 7 days. No cash prizes.</p>
+        {s.odds.length > 0 && (
+          <>
+            <p className="font-semibold text-[var(--color-ink)]">Your exact chances</p>
+            <ul className="flex flex-col gap-0.5">
+              {s.odds.map((o) => (
+                <li key={o.label} className="flex justify-between gap-3">
+                  <span className="text-left">{o.label}</span>
+                  <span className="tabular-nums shrink-0">{o.pct}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -171,9 +203,8 @@ function SpinStatus({ state, onSpin }: { state: SpinState; onSpin: () => void })
     return (
       <div className="flex flex-col items-center gap-2 text-center">
         <p className="text-[var(--color-ink-muted)] text-sm max-w-xs">
-          You&apos;ve already unlocked Companio, and a spin only ever discounts that
-          one-time ₹199 unlock. There is nothing here for you to win right now, so we
-          won&apos;t spend your spin on it.
+          You hold a lifetime pass, and a spin only ever discounts a pass. There is
+          nothing here for you to win, so we won&apos;t spend your spin on it.
         </p>
         <p className="text-xs text-[var(--color-ink-muted)]">
           When extra meetups go on sale, this comes back.
@@ -198,8 +229,13 @@ function SpinStatus({ state, onSpin }: { state: SpinState; onSpin: () => void })
   );
 }
 
+// Mirrors the server's own labels (lib/server/spin.ts). Only reached for a
+// reward loaded from /api/spin; a fresh spin uses the label the server returns.
 function labelFor(prize: string): string {
-  if (prize === 'discount10') return '10% off your ₹199 unlock';
-  if (prize === 'discount20') return '20% off your ₹199 unlock';
+  if (prize === 'discount5') return '5% off your pass';
+  if (prize === 'discount10') return '10% off your pass';
+  if (prize === 'discount15') return '15% off your pass';
+  if (prize === 'discount20') return '20% off your pass';
+  if (prize === 'free_visit') return 'A free visit — one extra included meeting';
   return 'No win this week';
 }
