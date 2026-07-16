@@ -26,7 +26,12 @@ describe('settlePurchase', () => {
       booking: { update: vi.fn().mockResolvedValue({ id: 'b1', companionId: 'c1', payoutPaise: 0 }) },
       wallet: { upsert: vi.fn().mockResolvedValue({ id: 'w1' }) },
       creditLedger: { create: vi.fn().mockResolvedValue({}) },
-      user: { update: vi.fn().mockResolvedValue({}) },
+      // The unlock branch reads the buyer's current pass before extending it —
+      // `holder` defaults to someone who has never held one.
+      user: {
+        findUnique: vi.fn().mockResolvedValue({ unlocked: false, unlockedUntil: null }),
+        update: vi.fn().mockResolvedValue({}),
+      },
       subscription: { upsert: vi.fn().mockResolvedValue({}) },
       companionPayout: { upsert: vi.fn().mockResolvedValue({}) },
       spinResult: { update: vi.fn().mockResolvedValue({}) },
@@ -60,12 +65,52 @@ describe('settlePurchase', () => {
     expect(tx.creditLedger.create).toHaveBeenCalledOnce();
   });
 
-  it('flips the unlock flag for an unlock purchase', async () => {
-    const { prisma, tx } = makePrisma({ id: 'pu1', userId: 'u1', kind: 'unlock', credits: 0, status: 'created', razorpayPaymentId: null });
+  it('flips the unlock flag and dates the pass for an unlock purchase', async () => {
+    const { prisma, tx } = makePrisma({ id: 'pu1', userId: 'u1', kind: 'unlock', passTier: 'pass1m', credits: 0, status: 'created', razorpayPaymentId: null });
     const res = await settlePurchase(prisma, { orderId: 'o1', paymentId: 'p1' });
     expect(res).toEqual({ settled: true, kind: 'unlock' });
-    expect(tx.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { unlocked: true } });
+    expect(tx.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { unlocked: true, unlockedUntil: expect.any(Date) },
+    });
     expect(tx.wallet.upsert).not.toHaveBeenCalled();
+  });
+
+  it('gives a lifetime buyer a null expiry, not a date', async () => {
+    const { prisma, tx } = makePrisma({ id: 'pu1', userId: 'u1', kind: 'unlock', passTier: 'passlife', credits: 0, status: 'created', razorpayPaymentId: null });
+    await settlePurchase(prisma, { orderId: 'o1', paymentId: 'p1' });
+    expect(tx.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { unlocked: true, unlockedUntil: null },
+    });
+  });
+
+  it('extends an active pass from its expiry, not from today', async () => {
+    const { prisma, tx } = makePrisma({ id: 'pu1', userId: 'u1', kind: 'unlock', passTier: 'pass1m', credits: 0, status: 'created', razorpayPaymentId: null });
+    // 20 days still on the clock. Renewing early must ADD 30 days to those, not
+    // throw them away — buying must never take time off a pass.
+    const current = new Date(Date.now() + 20 * 86_400_000);
+    tx.user.findUnique.mockResolvedValue({ unlocked: true, unlockedUntil: current });
+    await settlePurchase(prisma, { orderId: 'o1', paymentId: 'p1' });
+    const until = tx.user.update.mock.calls[0][0].data.unlockedUntil as Date;
+    expect(until.getTime()).toBe(current.getTime() + 30 * 86_400_000);
+  });
+
+  it('never downgrades a lifetime pass to a dated one', async () => {
+    const { prisma, tx } = makePrisma({ id: 'pu1', userId: 'u1', kind: 'unlock', passTier: 'pass1m', credits: 0, status: 'created', razorpayPaymentId: null });
+    tx.user.findUnique.mockResolvedValue({ unlocked: true, unlockedUntil: null });
+    await settlePurchase(prisma, { orderId: 'o1', paymentId: 'p1' });
+    expect(tx.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { unlocked: true, unlockedUntil: null },
+    });
+  });
+
+  it('treats a pre-ladder unlock row (no passTier) as the one-month pass', async () => {
+    const { prisma, tx } = makePrisma({ id: 'pu1', userId: 'u1', kind: 'unlock', passTier: null, credits: 0, status: 'created', razorpayPaymentId: null });
+    await settlePurchase(prisma, { orderId: 'o1', paymentId: 'p1' });
+    const until = tx.user.update.mock.calls[0][0].data.unlockedUntil as Date;
+    expect(until).toBeInstanceOf(Date);
   });
 
   it('activates plus for a plus purchase', async () => {
@@ -112,7 +157,10 @@ describe('settlePurchase', () => {
   it('burns the redeemed spin on an unlock — the only purchase a win can apply to', async () => {
     const { prisma, tx } = makePrisma({ id: 'pu2', userId: 'u1', kind: 'unlock', bookingId: null, spinResultId: 's2', credits: 0, status: 'created', razorpayPaymentId: null });
     await settlePurchase(prisma, { orderId: 'o2', paymentId: 'p2' });
-    expect(tx.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { unlocked: true } });
+    expect(tx.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { unlocked: true, unlockedUntil: expect.any(Date) },
+    });
     expect(tx.spinResult.update).toHaveBeenCalledWith({
       where: { id: 's2' },
       data: expect.objectContaining({ usedAt: expect.any(Date), usedPurchaseId: 'pu2' }),
@@ -122,7 +170,10 @@ describe('settlePurchase', () => {
   it('settles an unlock with no spin win without touching spin state', async () => {
     const { prisma, tx } = makePrisma({ id: 'pu3', userId: 'u1', kind: 'unlock', bookingId: null, spinResultId: null, credits: 0, status: 'created', razorpayPaymentId: null });
     await settlePurchase(prisma, { orderId: 'o3', paymentId: 'p3' });
-    expect(tx.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { unlocked: true } });
+    expect(tx.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { unlocked: true, unlockedUntil: expect.any(Date) },
+    });
     expect(tx.spinResult.update).not.toHaveBeenCalled();
   });
 });

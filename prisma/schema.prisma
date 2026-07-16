@@ -92,11 +92,15 @@ enum UserRole {
 }
 
 // Server-generated spin outcomes. 'none' = the (most common) no-win result.
+// Odds live in lib/server/spin.ts and are published under the wheel.
 enum SpinPrize {
   none
-  discount10  // 10% off next booking
-  discount20  // 20% off next booking
-  plus_month  // one free month of Companio Plus
+  discount5   // 5% off the pass
+  discount10  // 10% off the pass
+  discount15  // 15% off the pass
+  discount20  // 20% off the pass
+  free_visit  // one extra included meeting — 0.01%
+  plus_month  // retired: never drawn (kept so old rows still parse)
 }
 
 enum ReportTargetType {
@@ -146,7 +150,12 @@ model User {
   companionId String?  @unique
   // Onboarding flags (mirrors localStorage keys)
   welcomed    Boolean  @default(false)
-  unlocked    Boolean  @default(false)  // paid full-unlock
+  // The pass. `unlocked` says a pass was paid for; `unlockedUntil` says when it
+  // lapses. NULL while unlocked = lifetime (the ₹1999 tier). Never read these
+  // two directly — lib/server/viewer.ts#viewerHasUnlocked is the one chokepoint
+  // that gets the "unlocked but expired" case right.
+  unlocked       Boolean   @default(false)
+  unlockedUntil  DateTime?
   // Quiz result — stored inline to avoid a join on every page load
   quizMatchId String?  // companion id matched by the onboarding quiz
   // Spin wheel — weekly cooldown gate (null = never spun)
@@ -226,7 +235,9 @@ model ContactMessage {
 model Wallet {
   id       String  @id @default(cuid())
   userId   String  @unique
-  credits  Int     @default(2)  // free starter credits
+  // One free included meeting, not two. The second was giving away the whole
+  // trial before anyone had a reason to pay for a pass.
+  credits  Int     @default(1)
   used     Int     @default(0)
   user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   ledger   CreditLedger[]
@@ -393,6 +404,10 @@ model Purchase {
   kind              PurchaseKind
   amount            Int            // paise — server-decided, never client-supplied
   credits           Int            @default(0) // granted on settle (kind = credits)
+  // Which pass tier was bought (kind = unlock): pass1m | pass3m | pass12m |
+  // passlife. Recorded so settle knows how long to extend the pass, and so a
+  // receipt can name what was sold. Null on pre-ladder rows.
+  passTier          String?
   bookingId         String?        // set when kind = booking
   spinResultId      String?        // spin win redeemed on this booking, if any
   // Discount code applied to this order, upper-cased. Recorded at order time and

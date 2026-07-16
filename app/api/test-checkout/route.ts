@@ -1,12 +1,12 @@
 // app/api/test-checkout/route.ts
 //
 // GET  /api/test-checkout → { enabled }
-// POST /api/test-checkout { kind } → grants the purchase without taking money
+// POST /api/test-checkout { kind, passTier? } → grants the pass without taking money
 //
 // ─────────────────────────────────────────────────────────────────────────────
 // WHY THIS EXISTS
 //
-// The ₹199 unlock is the only thing Companio sells, and until Razorpay keys land
+// The pass is the only thing Companio sells, and until Razorpay keys land
 // there is no way to click through it — so the single most important flow in the
 // product cannot be tested by a human. This closes that gap, and closes itself
 // the moment the keys arrive.
@@ -30,8 +30,9 @@
 import { randomUUID } from 'node:crypto';
 import { getSessionUserId } from '@/lib/server/session';
 import { json, unauthorized, badRequest, guard, readJsonBody } from '@/lib/server/http';
-import { envValue } from '@/lib/env';
-import { isPurchaseKindEnabled, UNLOCK_AMOUNT, type PurchaseKind } from '@/lib/server/pricing';
+import { envValue, passSalesEnabled } from '@/lib/env';
+import { isPurchaseKindEnabled, type PurchaseKind } from '@/lib/server/pricing';
+import { PASS_TIERS, isPassTierId, passIsActive } from '@/lib/money';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,8 +58,13 @@ export async function POST(req: Request) {
     const userId = await getSessionUserId();
     if (!userId) return unauthorized();
 
-    const body = (await readJsonBody(req)) as { kind?: string } | null;
+    const body = (await readJsonBody(req)) as { kind?: string; passTier?: string } | null;
     const kind = body?.kind as PurchaseKind | undefined;
+    // Which tier this stands in for. Defaults to the entry month rather than
+    // being refused: a test door that can only ever buy one tier would leave the
+    // lifetime path — the one that sets a NULL expiry, the case most likely to be
+    // wrong — untestable, which is the exact gap this route exists to close.
+    const tierId = isPassTierId(body?.passTier) ? body.passTier : 'pass1m';
     if (kind !== 'unlock') {
       // v1 sells exactly one thing. Anything else would be pooling money owed to
       // a companion, which is the payment-aggregator licence Companio does not
@@ -68,27 +74,39 @@ export async function POST(req: Request) {
     if (!isPurchaseKindEnabled(kind)) {
       return json({ error: 'purchase_kind_disabled' }, 409);
     }
+    // The same supply-first gate the real checkout enforces. A test door that
+    // can grant something the paid door refuses is a test door that lies about
+    // what the product does.
+    if (!passSalesEnabled()) {
+      return json({ error: 'pass_sales_disabled' }, 409);
+    }
 
     const { prisma } = await import('@/lib/prisma');
     const { settlePurchase } = await import('@/lib/server/payments');
 
-    // Already unlocked: say so rather than writing a second purchase row.
+    // Already holding a LIVE pass: say so rather than writing a second purchase
+    // row. Keyed on passIsActive, not on `unlocked` — a lapsed pass must be
+    // re-buyable, and `unlocked` stays true forever once set.
     const me = await prisma.user.findUnique({
       where: { id: userId },
-      select: { unlocked: true },
+      select: { unlocked: true, unlockedUntil: true },
     });
-    if (me?.unlocked) return json({ ok: true, alreadyUnlocked: true });
+    if (me && passIsActive(me.unlocked, me.unlockedUntil, new Date())) {
+      return json({ ok: true, alreadyUnlocked: true });
+    }
 
     // The ids are prefixed so a test purchase is obvious in the database and in
-    // any export — nobody should have to guess whether ₹199 actually arrived.
+    // any export — nobody should have to guess whether money actually arrived.
     const orderId = `test_order_${randomUUID()}`;
     const paymentId = `test_pay_${randomUUID()}`;
+    const amount = PASS_TIERS[tierId].amount;
 
     await prisma.purchase.create({
       data: {
         userId,
         kind,
-        amount: UNLOCK_AMOUNT,
+        amount,
+        passTier: tierId,
         status: 'created',
         razorpayOrderId: orderId,
       },
@@ -103,6 +121,6 @@ export async function POST(req: Request) {
     const { notifyPurchaseSettled } = await import('@/lib/server/notify');
     await notifyPurchaseSettled(prisma, orderId, result);
 
-    return json({ ok: true, kind, amount: UNLOCK_AMOUNT, test: true });
+    return json({ ok: true, kind, passTier: tierId, amount, test: true });
   });
 }

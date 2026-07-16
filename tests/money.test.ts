@@ -11,6 +11,13 @@ import {
   HOURLY_MAX_PREMIUM,
 } from '@/lib/server/pricing';
 import {
+  PASS_TIERS,
+  isPassTierId,
+  perMonthPaise,
+  nextPassExpiry,
+  passIsActive,
+} from '@/lib/money';
+import {
   UNLOCK_AMOUNT as SHARED_UNLOCK,
   applyDiscount as sharedDiscount,
   formatPaise,
@@ -76,5 +83,81 @@ describe('gstComponent', () => {
   it('extracts the 18% GST embedded in a gross amount', () => {
     // ₹1,180 gross = ₹1,000 net + ₹180 GST
     expect(gstComponent(118000)).toBe(18000);
+  });
+});
+
+// ── The pass ────────────────────────────────────────────────────────────────
+
+describe('PASS_TIERS', () => {
+  it('prices the ladder in paise', () => {
+    expect(PASS_TIERS.pass1m.amount).toBe(19900);
+    expect(PASS_TIERS.pass3m.amount).toBe(49900);
+    expect(PASS_TIERS.pass12m.amount).toBe(99900);
+    expect(PASS_TIERS.passlife.amount).toBe(199900);
+  });
+  it('keeps UNLOCK_AMOUNT as the entry tier, so old copy and callers stay true', () => {
+    expect(UNLOCK_AMOUNT).toBe(PASS_TIERS.pass1m.amount);
+  });
+  it('marks lifetime with a null duration, not a big number', () => {
+    expect(PASS_TIERS.passlife.days).toBeNull();
+  });
+  it('accepts only real tier ids', () => {
+    expect(isPassTierId('pass3m')).toBe(true);
+    expect(isPassTierId('pass2m')).toBe(false);
+    expect(isPassTierId(undefined)).toBe(false);
+  });
+  it('gets cheaper per month as the term grows — the ladder has to be honest', () => {
+    const m1 = perMonthPaise(PASS_TIERS.pass1m)!;
+    const m3 = perMonthPaise(PASS_TIERS.pass3m)!;
+    const m12 = perMonthPaise(PASS_TIERS.pass12m)!;
+    expect(m3).toBeLessThan(m1);
+    expect(m12).toBeLessThan(m3);
+  });
+  it('has no per-month figure for lifetime rather than an invented one', () => {
+    expect(perMonthPaise(PASS_TIERS.passlife)).toBeNull();
+  });
+});
+
+describe('nextPassExpiry', () => {
+  const now = new Date('2026-07-17T00:00:00Z');
+  const DAY = 86_400_000;
+
+  it('dates a first pass from today', () => {
+    const until = nextPassExpiry(PASS_TIERS.pass1m, { now, current: null, hasLifetime: false });
+    expect(until!.getTime()).toBe(now.getTime() + 30 * DAY);
+  });
+  it('extends from the existing expiry when the pass is still live', () => {
+    const current = new Date(now.getTime() + 10 * DAY);
+    const until = nextPassExpiry(PASS_TIERS.pass1m, { now, current, hasLifetime: false });
+    expect(until!.getTime()).toBe(current.getTime() + 30 * DAY);
+  });
+  it('dates from today when the old pass has already lapsed', () => {
+    const current = new Date(now.getTime() - 10 * DAY);
+    const until = nextPassExpiry(PASS_TIERS.pass1m, { now, current, hasLifetime: false });
+    expect(until!.getTime()).toBe(now.getTime() + 30 * DAY);
+  });
+  it('returns null for a lifetime purchase', () => {
+    expect(nextPassExpiry(PASS_TIERS.passlife, { now, current: null, hasLifetime: false })).toBeNull();
+  });
+  it('never downgrades a lifetime holder to a dated pass', () => {
+    expect(nextPassExpiry(PASS_TIERS.pass1m, { now, current: null, hasLifetime: true })).toBeNull();
+  });
+});
+
+describe('passIsActive', () => {
+  const now = new Date('2026-07-17T00:00:00Z');
+  it('is false for someone who never paid', () => expect(passIsActive(false, null, now)).toBe(false));
+  it('is false for an unpaid user even with a future date somehow set', () => {
+    expect(passIsActive(false, new Date(now.getTime() + 86_400_000), now)).toBe(false);
+  });
+  // The whole reason viewerHasUnlocked can't be a plain `until > now`.
+  it('is true for a lifetime holder (unlocked, null expiry)', () => {
+    expect(passIsActive(true, null, now)).toBe(true);
+  });
+  it('is true while the pass is live', () => {
+    expect(passIsActive(true, new Date(now.getTime() + 1000), now)).toBe(true);
+  });
+  it('is false once the pass has lapsed', () => {
+    expect(passIsActive(true, new Date(now.getTime() - 1000), now)).toBe(false);
   });
 });

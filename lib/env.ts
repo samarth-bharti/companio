@@ -60,6 +60,7 @@ const schema = z.object({
   UPSTASH_REDIS_REST_URL:   z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   NEXT_PUBLIC_SITE_URL:     z.string().url().optional(),
+  PASS_SALES_ENABLED:       z.string().optional(),
 });
 
 type Env = z.infer<typeof schema>;
@@ -107,6 +108,26 @@ export function hasDatabase(): boolean {
 export function hasRazorpay(): boolean {
   const env = getServerEnv();
   return !isPlaceholder(env.RAZORPAY_KEY_ID) && !isPlaceholder(env.RAZORPAY_KEY_SECRET);
+}
+
+/**
+ * True when passes may actually be sold.
+ *
+ * Companio launched supply-first: the catalogue is empty until real people apply
+ * and pass an ID check, and a pass buys nothing but access to that catalogue.
+ * Charging ₹199 to unlock an empty grid is taking money for nothing, so checkout
+ * stays dark until there is supply worth paying for.
+ *
+ * DEFAULT OFF, and off for any unrecognised value — the failure mode of a typo
+ * must be "we didn't take money", never "we took money we shouldn't have".
+ * Razorpay keys must NOT arm this on their own; it is a separate, deliberate
+ * decision, exactly like MARKETPLACE_PAYMENTS_ENABLED.
+ *
+ * This is a server-side check on purpose. A NEXT_PUBLIC_ flag is baked into the
+ * bundle at build time and is the thing that gets shipped by accident.
+ */
+export function passSalesEnabled(): boolean {
+  return envValue('PASS_SALES_ENABLED') === 'true';
 }
 
 /** True when NEXTAUTH_SECRET is set (NextAuth sessions can be signed). */

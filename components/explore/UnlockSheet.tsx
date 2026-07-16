@@ -10,7 +10,14 @@ import { Button } from "@/components/ui/Button";
 import { PaymentMethodTiles } from "./PaymentMethodTiles";
 import { UnlockBenefits } from "./UnlockBenefits";
 import { payWithRazorpay, testCheckoutEnabled } from "@/lib/razorpayClient";
-import { UNLOCK_AMOUNT, applyDiscount, formatPaise } from "@/lib/money";
+import {
+  PASS_TIERS,
+  PASS_TIER_ORDER,
+  applyDiscount,
+  formatPaise,
+  perMonthPaise,
+  type PassTierId,
+} from "@/lib/money";
 
 type PayState = "idle" | "processing" | "success";
 const HEADLINE_ID = "unlock-sheet-headline";
@@ -38,6 +45,10 @@ export function UnlockSheet({
 }) {
   const reduced = useEffectiveReducedMotion();
   const [sel, setSel] = useState<string | null>(null);
+  // Which pass they are buying. Defaults to the entry month: pre-selecting the
+  // ₹1999 lifetime tier would be charging four figures to anyone who taps Pay
+  // without reading, which is not a growth tactic, it is a chargeback.
+  const [tier, setTier] = useState<PassTierId>('pass1m');
   const [pay, setPay] = useState<PayState>("idle");
   const [payError, setPayError] = useState<string | null>(null);
   // An unspent spin win. The server applies it when it fixes the order amount;
@@ -112,7 +123,8 @@ export function UnlockSheet({
   // Price after the spin win, then after a discount code. The server recomputes
   // both when it fixes the order amount — this only mirrors them so the member
   // can see what they will actually pay before committing.
-  const spinPrice = applyDiscount(UNLOCK_AMOUNT, discountPct);
+  const basePaise = PASS_TIERS[tier].amount;
+  const spinPrice = applyDiscount(basePaise, discountPct);
   const finalPaise = codeAmountPaise ?? spinPrice;
   const payPrice = formatPaise(finalPaise);
 
@@ -147,7 +159,7 @@ export function UnlockSheet({
       const res = await fetch('/api/discounts/validate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, passTier: tier }),
       });
       const data = (await res.json()) as {
         ok?: boolean;
@@ -178,6 +190,20 @@ export function UnlockSheet({
     setCodeInput('');
   }
 
+  /**
+   * Switching tier drops any applied code.
+   *
+   * `codeAmountPaise` is a server-quoted price for ONE tier. Keeping it across a
+   * switch would show the ₹199 discounted price on the ₹1999 card — the member
+   * would authorise what they read, and the gateway would charge what the server
+   * recomputed. Re-typing the code is a smaller cost than that surprise.
+   */
+  function pickTier(next: PassTierId) {
+    if (next === tier) return;
+    setTier(next);
+    if (appliedCode || codeAmountPaise !== null) clearCode();
+  }
+
   async function doPay() {
     if (payingRef.current) return;
     if (!sel) return; // a payment method must be chosen first
@@ -189,6 +215,7 @@ export function UnlockSheet({
     // send an amount.
     const result = await payWithRazorpay({
       kind: "unlock",
+      passTier: tier,
       ...(appliedCode ? { discountCode: appliedCode } : {}),
     });
 
@@ -296,6 +323,56 @@ export function UnlockSheet({
                   </p>
                 </div>
               )}
+              {/* The ladder. Guests don't choose a tier yet — they create an
+                  account first, and picking a price before there is anything to
+                  charge it to reads as "pay now". Every price here comes from
+                  PASS_TIERS, so what is on the button is what the server bills. */}
+              {!isGuest && (
+                <fieldset className="mb-3 min-w-0">
+                  <legend className="label-eyebrow mb-2" style={{ color: 'var(--color-azure)' }}>
+                    Choose your pass
+                  </legend>
+                  <div className="flex flex-col gap-2">
+                    {PASS_TIER_ORDER.map((id) => {
+                      const t = PASS_TIERS[id];
+                      const active = id === tier;
+                      const pm = perMonthPaise(t);
+                      return (
+                        <label
+                          key={id}
+                          className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 cursor-pointer min-w-0"
+                          style={{
+                            background: active ? 'rgba(46,107,255,0.06)' : 'transparent',
+                            border: `1.5px solid ${active ? 'var(--color-azure)' : 'rgba(0,0,0,0.12)'}`,
+                          }}
+                        >
+                          <span className="flex items-center gap-2.5 min-w-0">
+                            <input
+                              type="radio"
+                              name="pass-tier"
+                              value={id}
+                              checked={active}
+                              onChange={() => pickTier(id)}
+                              className="shrink-0 accent-[var(--color-azure)]"
+                            />
+                            <span className="min-w-0">
+                              <span className="block text-sm font-semibold text-[var(--color-ink)]">
+                                {t.label}
+                              </span>
+                              <span className="block text-xs text-[var(--color-ink-muted)]">
+                                {pm === null ? 'Pay once. Never again.' : `${formatPaise(pm)} a month`}
+                              </span>
+                            </span>
+                          </span>
+                          <span className="text-sm font-bold shrink-0 text-[var(--color-ink)]">
+                            {formatPaise(t.amount)}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              )}
               {/* Discount code. /admin/discounts could already mint codes; until now
                   nothing on the site would accept one. Guests never see it — a code
                   is applied to an order, and a guest has no order. */}
@@ -379,7 +456,7 @@ export function UnlockSheet({
                 )}
                 {isGuest && (
                   <p className="mt-2 text-xs text-center text-[var(--color-ink-muted)]">
-                    Step 1: free account · Step 2: pay ₹199 (one-time, no subscription)
+                    Step 1: free account · Step 2: choose a pass from {formatPaise(PASS_TIERS.pass1m.amount)} (no auto-renewal)
                   </p>
                 )}
                 {payError && (

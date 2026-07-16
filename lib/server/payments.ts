@@ -12,6 +12,7 @@
 import crypto from 'crypto';
 import type { PrismaClient } from '@prisma/client';
 import { gstComponent, type PurchaseKind } from './pricing';
+import { PASS_TIERS, isPassTierId, nextPassExpiry, type PassTierId } from '@/lib/money';
 import { TX } from '@/lib/server/tx';
 
 /** Constant-time string compare that also tolerates length mismatch. */
@@ -117,16 +118,36 @@ export async function settlePurchase(
         const w = await tx.wallet.upsert({
           where: { userId: buyerId },
           update: { credits: { increment: purchase.credits } },
-          create: { userId: buyerId, credits: 2 + purchase.credits },
+          create: { userId: buyerId, credits: 1 + purchase.credits },
         });
         await tx.creditLedger.create({
           data: { walletId: w.id, delta: purchase.credits, kind: 'topup', note: `purchase ${purchase.id}` },
         });
         break;
       }
-      case 'unlock':
-        await tx.user.update({ where: { id: buyerId }, data: { unlocked: true } });
-        // A spin win discounts the unlock, so the unlock is where it gets burnt.
+      case 'unlock': {
+        // The pass. `passTier` was fixed by create-order from PASS_TIERS; the
+        // client never names a duration any more than it names a price.
+        const tier = isPassTierId(purchase.passTier ?? undefined)
+          ? PASS_TIERS[purchase.passTier as PassTierId]
+          : PASS_TIERS.pass1m; // pre-ladder rows bought the ₹199 month
+        const holder = await tx.user.findUnique({
+          where: { id: buyerId },
+          select: { unlocked: true, unlockedUntil: true },
+        });
+        // Lifetime is absorbing, and a timed pass extends from whatever is left
+        // rather than replacing it — nextPassExpiry owns both rules so the math
+        // is testable without a database.
+        const until = nextPassExpiry(tier, {
+          now: new Date(),
+          current: holder?.unlockedUntil ?? null,
+          hasLifetime: !!holder?.unlocked && holder.unlockedUntil === null,
+        });
+        await tx.user.update({
+          where: { id: buyerId },
+          data: { unlocked: true, unlockedUntil: until },
+        });
+        // A spin win discounts the pass, so the pass is where it gets burnt.
         // The old code only ever burnt a win on a booking — which is the reason
         // no win was ever spendable at all.
         if (purchase.spinResultId) {
@@ -136,6 +157,7 @@ export async function settlePurchase(
           });
         }
         break;
+      }
       case 'plus':
         await tx.subscription.upsert({
           where: { userId: buyerId },
