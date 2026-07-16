@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
+import { formatPaise, PASS_TIERS } from '@/lib/money';
 
 export const metadata: Metadata = { title: 'Press, Companio' };
 
@@ -23,7 +24,7 @@ export default function PressPage() {
             // not launched. A press page is the one page a journalist will quote
             // back at you, so it states the model, not a community that does not
             // exist yet and a background check nobody runs.
-            'A one-time ₹199 unlock opens every companion profile in your city and includes your first two meetings. Every companion submits a government ID that our team reviews by hand before their profile goes live.',
+            `A pass opens every companion profile in your city and includes your first meeting. Four tiers, same access, differing only in length: ${formatPaise(PASS_TIERS.pass1m.amount)} for ${PASS_TIERS.pass1m.label}, ${formatPaise(PASS_TIERS.pass3m.amount)} for ${PASS_TIERS.pass3m.label}, ${formatPaise(PASS_TIERS.pass12m.amount)} for ${PASS_TIERS.pass12m.label}, ${formatPaise(PASS_TIERS.passlife.amount)} for ${PASS_TIERS.passlife.label.toLowerCase()}. A pass expires rather than renewing — there is no auto-debit and no subscription. Every companion submits a government ID that our team reviews by hand before their profile goes live.`,
           ],
         },
         {

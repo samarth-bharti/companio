@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { InfoPage } from '@/components/layout/InfoPage';
+import { formatPaise, PASS_TIERS } from '@/lib/money';
 
 export const metadata: Metadata = { title: 'About, Companio' };
 
@@ -28,11 +29,12 @@ export default function AboutPage() {
           body: [
             // Was: "a small commission on each booking, optional Companio Plus
             // membership, and credit packs". Companio sells exactly one thing
-            // today — the ₹199 unlock. Bookings are not charged for, Plus is not
-            // on sale, and the commission is 30%, which is not "small". Describing
+            // today — the pass. Bookings are not charged for, Plus is not on
+            // sale, and the commission is 30%, which is not "small". Describing
             // three revenue streams that do not exist, on the page about being
             // honest, is not a small thing to get wrong.
-            'One ₹199 payment, once. It opens every companion profile in your city and includes your first two meetings. There is no subscription, no auto-debit, and nothing else to buy.',
+            `The pass, from ${formatPaise(PASS_TIERS.pass1m.amount)}. It opens every companion profile in your city and includes your first meeting. The four tiers — ${PASS_TIERS.pass1m.label}, ${PASS_TIERS.pass3m.label}, ${PASS_TIERS.pass12m.label}, and ${PASS_TIERS.passlife.label.toLowerCase()} — differ only in how long they last; the access is identical.`,
+            'It is a pass, not a subscription. Nothing renews, nothing is auto-debited: a pass simply runs out, and you decide whether to buy another. There is nothing else to buy.',
             'We do not sell your data, and we never will. When we start charging a commission on bookings, this page will say what it is before you are asked to pay it.',
           ],
         },

@@ -75,7 +75,9 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <p className="font-sans font-semibold text-sm truncate" style={{ color: 'var(--color-ink)' }}>
-            {hasCredits ? `1 of ${wallet?.credits} included meetings` : 'Both included meetings used'}
+            {hasCredits
+              ? `${wallet?.credits} included meeting${(wallet?.credits ?? 0) === 1 ? '' : 's'} left`
+              : 'Included meeting used'}
           </p>
           <p className="font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
             {hasCredits ? '₹0 today' : 'Paid meetups coming soon'}
@@ -102,11 +104,11 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
         <p className="font-sans font-bold text-base" style={{ color: 'var(--color-ink)' }}>
           {hasCredits
             ? `${wallet?.credits} meeting${(wallet?.credits ?? 0) > 1 ? 's' : ''} included`
-            : 'Both included meetings used'}
+            : 'Included meeting used'}
         </p>
         <p className="font-sans text-sm mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
           {hasCredits
-            ? 'Yours anytime · no expiry · no subscription'
+            ? 'Yours anytime · no expiry · no auto-renewal'
             : 'ID-checked · paid meetups coming soon'}
         </p>
       </div>
@@ -171,7 +173,7 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
           style={{ minHeight: 44 }}
           aria-label={
             wallet !== null && !hasCredits
-              ? 'Booking unavailable — you have used both included meetings'
+              ? 'Booking unavailable — you have used your included meeting'
               : `Book a meetup with ${companion.firstName}`
           }
         >

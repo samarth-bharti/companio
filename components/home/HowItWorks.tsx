@@ -29,7 +29,7 @@ const STEPS: Step[] = [
     num: "02",
     icon: ShieldCheck,
     title: "Book safely",
-    desc: "Your first two meetings are included. You're never charged to meet.",
+    desc: "Your first meeting is included. You're never charged to meet.",
     stubLabel: "Book",
   },
   {

@@ -65,7 +65,7 @@ document.head.appendChild(l);
 
 const TITLE = "Companio, book a companion for the things you'd rather not do alone.";
 const DESCRIPTION =
-  "Book an ID-checked companion for a city walk, café chat or gym session. Strictly platonic. ₹199 unlocks every profile in your city, first 2 meetings included.";
+  "Book an ID-checked companion for a city walk, café chat or gym session. Strictly platonic. A pass from ₹199 unlocks every profile in your city, first meeting included.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

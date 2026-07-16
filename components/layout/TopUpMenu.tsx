@@ -15,8 +15,8 @@ const PANEL_STYLE: React.CSSProperties = {
 /**
  * TopUpMenu — wallet popover in the nav.
  *
- * v1 is unlock-only: the ₹199 unlock includes two meetings and there is nothing
- * further to buy, so this is a read-only balance view. The credit-pack purchase
+ * v1 is pass-only: a pass includes one meeting and there is nothing further to
+ * buy, so this is a read-only balance view. The credit-pack purchase
  * flow was removed rather than left as a dead affordance; it returns with
  * Razorpay Route (see app/pricing/page.tsx for why).
  */
@@ -72,8 +72,8 @@ export function TopUpMenu() {
             </p>
             <p className="font-sans text-xs mt-1" style={{ color: 'var(--color-ink-muted)' }}>
               {hasCredits
-                ? 'Included with your unlock. Yours anytime, no expiry.'
-                : "You've used both included meetings. More meetups are coming soon."}
+                ? 'Included with your pass. Yours anytime, no expiry.'
+                : "You've used your included meeting. More meetups are coming soon."}
             </p>
           </div>
           <Link

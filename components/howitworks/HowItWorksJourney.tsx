@@ -17,7 +17,7 @@ const STEPS = [
   { n: '01', icon: Search,       title: 'Browse companions',   color: '#2E6BFF', bg: '#EBF1FF', lottie: '/lottie/explore-scene.json',
     body: `Filter by activity, city, and schedule. ${VERIFICATION_SENTENCE}` },
   { n: '02', icon: MessageSquare, title: 'Book & chat before you meet', color: '#7A4FE0', bg: '#F0EBFF', lottie: '/lottie/scene-1.json',
-    body: "Message your companion, align on plans, ask any question. Your first two meetings are included, so there's nothing to pay to meet." },
+    body: "Message your companion, align on plans, ask any question. Your first meeting is included with your pass, so there's nothing to pay to meet." },
   { n: '03', icon: MapPin,        title: 'Meet in a public place',      color: '#1FAE6B', bg: '#E6F5EE', lottie: '/lottie/hiw-meet.json',
     body: 'All first meetings happen in public. In-app SOS and live-share are active the moment you check in.' },
   { n: '04', icon: Star,          title: 'Enjoy & rate honestly',       color: '#FFB23E', bg: '#FFF8EC', lottie: '/lottie/hiw-rate.json',

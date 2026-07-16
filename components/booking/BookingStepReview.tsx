@@ -171,14 +171,14 @@ export function BookingStepReview({ companion, state, onConfirm, onBack, submitt
               Unlock Companio to book
             </p>
             <p className="font-sans text-sm mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
-              One {formatPaise(UNLOCK_AMOUNT)} payment opens every profile in your city and
-              includes your first two meetings — this one would be the first.
+              A pass from {formatPaise(UNLOCK_AMOUNT)} opens every profile in your city and
+              includes your first meeting — this one.
             </p>
           </>
         ) : (
           <>
             <p className="font-sans font-bold text-base" style={{ color: 'var(--color-ink)' }}>
-              You&apos;ve used both included meetings
+              You&apos;ve used your included meeting
             </p>
             <p className="font-sans text-sm mt-0.5" style={{ color: 'var(--color-ink-muted)' }}>
               Paid meetups are coming soon. We&apos;ll email you the moment they open.
@@ -225,9 +225,9 @@ export function BookingStepReview({ companion, state, onConfirm, onBack, submitt
             // were already trying to book rather than a generic grid.
             onClick={() => { window.location.href = `/explore?unlock=${companion.id}`; }}
             style={{ minHeight: 44 }}
-            aria-label={`Unlock Companio for ${formatPaise(UNLOCK_AMOUNT)} to book this meetup`}
+            aria-label={`Get a Companio pass from ${formatPaise(UNLOCK_AMOUNT)} to book this meetup`}
           >
-            Unlock for {formatPaise(UNLOCK_AMOUNT)}
+            Unlock from {formatPaise(UNLOCK_AMOUNT)}
           </Button>
         ) : (
           <Button
@@ -241,7 +241,7 @@ export function BookingStepReview({ companion, state, onConfirm, onBack, submitt
             aria-label={
               hasCredits
                 ? 'Confirm your meetup booking'
-                : 'Booking unavailable — you have used both included meetings'
+                : 'Booking unavailable — you have used your included meeting'
             }
           >
             {submitting ? 'Confirming…' : hasCredits ? 'Confirm meetup' : 'No meetings left'}

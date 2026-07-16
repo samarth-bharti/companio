@@ -16,7 +16,7 @@ const CTA_BG =
 
 const REASSURANCES = [
   "Free to browse",
-  "Your first 2 meetings are included",
+  "Your first meeting is included",
   "Full refund within 7 days",
 ] as const;
 
