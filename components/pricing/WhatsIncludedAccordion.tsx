@@ -10,7 +10,7 @@ const ITEMS = [
   {
     Icon: ShieldCheck,
     title: 'Nothing to pay to meet',
-    body: 'Your first two meetings are included with the unlock. You are never charged to meet a companion.',
+    body: 'Your first meeting is included with your pass. You are never charged to meet a companion.',
   },
   {
     Icon: BadgeCheck,
@@ -19,13 +19,26 @@ const ITEMS = [
   },
   {
     Icon: Headphones,
-    title: '24/7 SOS support',
-    body: 'One tap gets a Companio safety rep on the phone at any point during your meetup.',
+    // Was: "24/7 SOS support — one tap gets a Companio safety rep on the phone at
+    // any point during your meetup."
+    //
+    // There is no rep, no phone line, and nobody staffing anything. lib/safety/sos.ts
+    // is deliberately the opposite: the browser's Geolocation API, a Google Maps
+    // link, and the Web Share API sending it to a contact the MEMBER chose — a
+    // path that works even when our servers are down, because it never touches
+    // them. That is a good feature. It is not a safety desk, and a member in
+    // trouble tapping it expecting a human to pick up is the worst possible
+    // moment to discover the difference.
+    title: 'SOS, built in',
+    body: 'One tap sends your live location and your companion’s name to a trusted contact you choose, over WhatsApp or SMS. It works without us — no Companio staff are involved, and there is no phone line to call.',
   },
   {
     Icon: RotateCcw,
+    // "Up to 4 hours before" was a number no code produced: the reschedule path
+    // (app/api/bookings/[id]) applies no time check at all. Rather than invent a
+    // cutoff or add one nobody asked for, say what actually happens.
     title: 'Free reschedule',
-    body: 'Plans change. Reschedule up to 4 hours before the meetup at no charge.',
+    body: 'Plans change. Move a meetup to another time at no charge — there is no cut-off and no fee.',
   },
   {
     Icon: Undo2,

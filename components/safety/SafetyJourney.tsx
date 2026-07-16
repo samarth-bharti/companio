@@ -28,9 +28,10 @@ const PILLARS: Pillar[] = [
   { icon: Fingerprint, title: 'ID checked, human-reviewed', color: '#2E6BFF',
     body: 'No one lists without uploading a government ID. We check it, confirm the photo and the document are two different images, and a person reviews every application by hand. Automated Aadhaar KYC and background checks are not live yet, and we say so on our Trust page rather than implying otherwise.' },
   { icon: Lock,        title: '7-day refund promise',      color: '#7A4FE0',
-    body: "Your first two meetings are included, and you're never charged to meet. Didn't find anyone you'd like to meet? Ask for a full refund within 7 days." },
+    body: "Your first meeting is included with your pass, and you're never charged to meet. Didn't find anyone you'd like to meet? Ask for a full refund within 7 days." },
   { icon: Siren,       title: 'SOS & live-share',          color: '#FFB23E', id: 'sos',
-    body: 'One tap activates emergency contact sharing and location broadcast during any active booking.' },
+    // A snapshot you send, not a broadcast we run — see lib/safety/sos.ts.
+    body: 'One tap sends your current location and your companion’s name to a trusted contact you have saved, over WhatsApp or SMS.' },
   { icon: ShieldCheck, title: 'Strictly platonic promise', color: '#1FAE6B', id: 'promise',
     body: 'Zero tolerance for any non-platonic conduct. Violations result in an immediate and permanent ban.' },
   { icon: Flag,        title: 'Report & block anytime',    color: '#2E6BFF',

@@ -17,7 +17,6 @@ import { CompanionGrid } from './CompanionGrid';
 import { UnlockSheet } from './UnlockSheet';
 import { MilestoneSeal } from '@/components/journey/MilestoneSeal';
 import { ParticleField } from '@/components/journey/ParticleField';
-import { ActivityToast } from '@/components/journey/ActivityToast';
 import { useViewerReady, useViewerResolved } from '@/lib/useViewerReady';
 import { useExploreFilters } from './useExploreFilters';
 import { WelcomeOverlay } from './WelcomeOverlay';
@@ -368,7 +367,6 @@ export function ExploreClient() {
         onSuccess={onSheetSuccess}
       />
 
-      <ActivityToast />
 
       {/* First-visit welcome overlay — plays once, guarded by localStorage. */}
       <WelcomeOverlay name={quizName || undefined} />

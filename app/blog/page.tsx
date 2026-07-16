@@ -3,35 +3,31 @@ import { InfoPage } from '@/components/layout/InfoPage';
 
 export const metadata: Metadata = { title: 'Blog, Companio' };
 
+/**
+ * There is no journal yet, so this page says that and nothing else.
+ *
+ * It used to tease three articles. One of them — "Meetups that became routines:
+ * real (anonymised) stories from members who found a regular gym partner" —
+ * described members Companio does not have and meetups that have not happened.
+ * A "coming soon" page is a fine thing to ship; a "coming soon" page that
+ * describes traction as though it already exists is not, and it is the same
+ * invented-traction problem that cost this site four fabricated stat counters.
+ *
+ * Add real entries here when they are written, about things that actually
+ * happened.
+ */
 export default function BlogPage() {
   return (
     <InfoPage
       eyebrow="Company"
       title="The Companio journal."
-      intro="Stories, safety guides, and city notes from the Companio community. The full journal is coming soon, here's a taste of what we'll be writing about."
+      intro="We haven't written anything yet. When we do, it will be here: safety guides, city notes, and what we learn as Companio gets going."
       sections={[
         {
-          heading: 'Making a new city feel like home',
+          heading: 'Nothing published yet',
           body: [
-            'Practical ways to build a routine and a small circle when you have just moved, from morning-walk regulars to the café where they remember your order.',
-          ],
-        },
-        {
-          heading: 'How we verify every companion',
-          body: [
-            // Was: "ID matching, selfie checks, and background screening". The
-            // background screening does not exist — we collect consent to run one
-            // and run none, which every other page on this site now says out loud
-            // (terms, privacy, trust, safety). This was the last page still
-            // advertising it, and a safety claim is the worst possible place to
-            // leave one lying around.
-            'A behind-the-scenes look at what actually happens before a profile goes live: a government ID, checked against the number the applicant typed; a photo confirmed to be a different image from the document; and a person who reviews every application by hand.',
-          ],
-        },
-        {
-          heading: 'Meetups that became routines',
-          body: [
-            'Real (anonymised) stories from members who found a regular gym partner, a museum buddy, or someone to share the Sunday market with.',
+            'Companio is new. Rather than fill this page with placeholder posts, we have left it empty until there is something worth reading.',
+            'If you want to know how we verify companions before their profile goes live, that is written up in full on our trust page — it is the one thing we would have written about first anyway.',
           ],
         },
       ]}
