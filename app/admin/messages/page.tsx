@@ -6,8 +6,19 @@
 // a refund ask typed into the contact form landed somewhere nobody would ever
 // look. The row was saved, faithfully, into a void. This is the screen that reads it.
 
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { ActionForm } from '@/components/admin/ActionForm';
+import { AdminSearch } from '@/components/admin/AdminSearch';
+import { AdminPager } from '@/components/admin/AdminPager';
+import { AdminEmpty } from '@/components/admin/AdminEmpty';
+import {
+  ADMIN_PAGE_SIZE,
+  parseQ,
+  parsePage,
+  like,
+  type AdminListSearchParams,
+} from '@/lib/server/adminList';
 import { setMessageHandled } from '../actions';
 
 export const metadata = { title: 'Inbox' };
@@ -26,13 +37,30 @@ const TOPIC_LABEL: Record<string, string> = {
 
 const URGENT = new Set(['refund', 'safety', 'privacy']);
 
-export default async function AdminMessages() {
-  const messages = await prisma.contactMessage.findMany({
-    orderBy: [{ handledAt: { sort: 'asc', nulls: 'first' } }, { createdAt: 'desc' }],
-    take: 200,
-  });
+const BASE = '/admin/messages';
 
-  const open = messages.filter((m) => !m.handledAt).length;
+export default async function AdminMessages({ searchParams }: { searchParams: AdminListSearchParams }) {
+  const sp = await searchParams;
+  const q = parseQ(sp.q);
+  const page = parsePage(sp.page);
+
+  const where: Prisma.ContactMessageWhereInput = q
+    ? { OR: [{ name: like(q) }, { email: like(q) }, { message: like(q) }] }
+    : {};
+
+  const [messages, total, open] = await Promise.all([
+    prisma.contactMessage.findMany({
+      where,
+      orderBy: [{ handledAt: { sort: 'asc', nulls: 'first' } }, { createdAt: 'desc' }],
+      take: ADMIN_PAGE_SIZE,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+    }),
+    prisma.contactMessage.count({ where }),
+    // Counted in the database, not off the loaded rows: with one page in hand,
+    // filtering the array would only ever have reported the unhandled messages
+    // that happened to be on this page.
+    prisma.contactMessage.count({ where: { ...where, handledAt: null } }),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,12 +69,15 @@ export default async function AdminMessages() {
           Inbox
         </h1>
         <p className="text-sm text-[var(--color-ink-muted)] mt-1">
-          {open === 0 ? 'Nothing waiting.' : `${open} waiting on a reply.`}
+          {open === 0 ? 'Nothing waiting.' : `${open.toLocaleString('en-IN')} waiting on a reply.`}
+          {q && ' Matching this search.'}
         </p>
       </div>
 
+      <AdminSearch q={q} label="Search the inbox" placeholder="Name, email or message text" />
+
       {messages.length === 0 && (
-        <p className="text-[var(--color-ink-muted)]">Nobody has written in yet.</p>
+        <AdminEmpty basePath={BASE} q={q} noun="messages" emptyLabel="Nobody has written in yet." />
       )}
 
       <div className="flex flex-col gap-3">
@@ -99,6 +130,15 @@ export default async function AdminMessages() {
           </div>
         ))}
       </div>
+
+      <AdminPager
+        basePath={BASE}
+        page={page}
+        pageSize={ADMIN_PAGE_SIZE}
+        total={total}
+        q={q}
+        label="Inbox pages"
+      />
     </div>
   );
 }

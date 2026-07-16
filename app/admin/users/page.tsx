@@ -1,9 +1,20 @@
 // app/admin/users/page.tsx — full user management: suspend, ban, role, credits,
 // messaging block, delete. All mutations are server-action forms.
 
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { ageInYears } from '@/lib/server/age';
 import { ActionForm } from '@/components/admin/ActionForm';
+import { AdminSearch } from '@/components/admin/AdminSearch';
+import { AdminPager } from '@/components/admin/AdminPager';
+import { AdminEmpty } from '@/components/admin/AdminEmpty';
+import {
+  ADMIN_PAGE_SIZE,
+  parseQ,
+  parsePage,
+  like,
+  type AdminListSearchParams,
+} from '@/lib/server/adminList';
 
 export const metadata = { title: "Users" };
 import {
@@ -30,28 +41,59 @@ function Badge({ label, variant = 'neutral' }: { label: string; variant?: 'neutr
   return <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${cls}`}>{label}</span>;
 }
 
-export default async function AdminUsers() {
-  const users = await prisma.user.findMany({
-    orderBy: { createdAt: 'desc' },
-    take: 200,
-    select: {
-      id: true, firstName: true, lastName: true, email: true, phone: true,
-      role: true, suspended: true, bannedAt: true, messageBlocked: true, createdAt: true,
-      dateOfBirth: true,
-      wallet: { select: { credits: true } },
-    },
-  });
+const BASE = '/admin/users';
+
+export default async function AdminUsers({ searchParams }: { searchParams: AdminListSearchParams }) {
+  const sp = await searchParams;
+  const q = parseQ(sp.q);
+  const page = parsePage(sp.page);
+
+  const where: Prisma.UserWhereInput = q
+    ? {
+        OR: [
+          { firstName: like(q) },
+          { lastName: like(q) },
+          { email: like(q) },
+          { phone: like(q) },
+          { id: like(q) },
+        ],
+      }
+    : {};
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: ADMIN_PAGE_SIZE,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      select: {
+        id: true, firstName: true, lastName: true, email: true, phone: true,
+        role: true, suspended: true, bannedAt: true, messageBlocked: true, createdAt: true,
+        dateOfBirth: true,
+        wallet: { select: { credits: true } },
+      },
+    }),
+    prisma.user.count({ where }),
+  ]);
   // One clock for the whole render (see the note in admin/discounts).
   const now = new Date();
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="font-display font-black text-[var(--color-ink)]" style={{ fontSize: 'var(--text-h2)' }}>
-        Users ({users.length})
+        Users ({total.toLocaleString('en-IN')})
       </h1>
 
+      <AdminSearch
+        q={q}
+        label="Search users"
+        placeholder="Name, email, phone or id"
+      />
+
       <div className="flex flex-col gap-3">
-        {users.length === 0 && <p className="text-[var(--color-ink-muted)]">No users yet.</p>}
+        {users.length === 0 && (
+          <AdminEmpty basePath={BASE} q={q} noun="users" emptyLabel="No users yet." />
+        )}
         {users.map((u) => {
           const isBanned = !!u.bannedAt;
           return (
@@ -157,6 +199,15 @@ export default async function AdminUsers() {
           );
         })}
       </div>
+
+      <AdminPager
+        basePath={BASE}
+        page={page}
+        pageSize={ADMIN_PAGE_SIZE}
+        total={total}
+        q={q}
+        label="User pages"
+      />
     </div>
   );
 }

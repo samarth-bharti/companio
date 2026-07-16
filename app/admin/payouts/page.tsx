@@ -1,8 +1,21 @@
 // app/admin/payouts/page.tsx — companion payouts owed vs paid.
 
+import type { Prisma, PayoutStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { rupees } from '@/lib/server/admin';
 import { ActionForm } from '@/components/admin/ActionForm';
+import { AdminSearch } from '@/components/admin/AdminSearch';
+import { AdminPager } from '@/components/admin/AdminPager';
+import { AdminEmpty } from '@/components/admin/AdminEmpty';
+import { AdminStatusChips } from '@/components/admin/AdminStatusChips';
+import {
+  ADMIN_PAGE_SIZE,
+  parseQ,
+  parsePage,
+  parseStatus,
+  like,
+  type AdminListSearchParams,
+} from '@/lib/server/adminList';
 import { markPayoutPaid } from '../actions';
 
 export const metadata = { title: "Payouts" };
@@ -10,18 +23,56 @@ export const metadata = { title: "Payouts" };
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminPayouts() {
-  const payouts = await prisma.companionPayout.findMany({
-    orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
-    take: 100,
-    // The panel told an admin how much was owed but never where to send it.
-    include: { companion: { select: { name: true, payoutUpi: true } } },
-  });
+const BASE = '/admin/payouts';
+
+const STATUSES = ['pending', 'paid'] as const satisfies readonly PayoutStatus[];
+
+export default async function AdminPayouts({ searchParams }: { searchParams: AdminListSearchParams }) {
+  const sp = await searchParams;
+  const q = parseQ(sp.q);
+  const page = parsePage(sp.page);
+  const status = parseStatus(sp.status, STATUSES);
+
+  // A payout carries no name or UPI id of its own — both live on the companion
+  // it is owed to.
+  const where: Prisma.CompanionPayoutWhereInput = {
+    ...(status ? { status } : {}),
+    ...(q
+      ? { OR: [{ companion: { name: like(q) } }, { companion: { payoutUpi: like(q) } }] }
+      : {}),
+  };
+
+  const [payouts, total] = await Promise.all([
+    prisma.companionPayout.findMany({
+      where,
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      take: ADMIN_PAGE_SIZE,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      // The panel told an admin how much was owed but never where to send it.
+      include: { companion: { select: { name: true, payoutUpi: true } } },
+    }),
+    prisma.companionPayout.count({ where }),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display font-black text-[var(--color-ink)]" style={{ fontSize: 'var(--text-h2)' }}>Payouts</h1>
-      {payouts.length === 0 && <p className="text-[var(--color-ink-muted)]">No payouts yet.</p>}
+      <h1 className="font-display font-black text-[var(--color-ink)]" style={{ fontSize: 'var(--text-h2)' }}>
+        Payouts ({total.toLocaleString('en-IN')})
+      </h1>
+
+      <AdminStatusChips
+        basePath={BASE}
+        active={status}
+        options={STATUSES}
+        q={q}
+        label="Filter payouts by status"
+      />
+
+      <AdminSearch q={q} label="Search payouts" placeholder="Companion name or UPI id" preserve={{ status }} />
+
+      {payouts.length === 0 && (
+        <AdminEmpty basePath={BASE} q={q} status={status} noun="payouts" emptyLabel="No payouts yet." />
+      )}
       <div className="flex flex-col gap-3">
         {payouts.map((p) => (
           <div key={p.id} className="rounded-2xl bg-white border border-[var(--color-ink)]/10 p-4 flex items-center gap-4 flex-wrap">
@@ -62,6 +113,16 @@ export default async function AdminPayouts() {
           </div>
         ))}
       </div>
+
+      <AdminPager
+        basePath={BASE}
+        page={page}
+        pageSize={ADMIN_PAGE_SIZE}
+        total={total}
+        q={q}
+        status={status}
+        label="Payout pages"
+      />
     </div>
   );
 }
