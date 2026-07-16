@@ -66,9 +66,19 @@ export async function createCompanion(_prev: ActionState, formData: FormData): P
     if (clash) return failed(`A companion with id "${id}" already exists.`);
 
     const hourlyRate = Math.max(0, Number(formData.get('hourlyRate')) || 50000);
-    const photo =
-      field(formData, 'photo') ||
-      'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=800';
+
+    // A photo is REQUIRED, and there is no default.
+    //
+    // This used to fall back to a fixed Unsplash portrait — so a companion
+    // created without one went live wearing a stock photograph of an unrelated
+    // stranger, over their real, ID-verified name. Members pay for a pass to see
+    // exactly this photo. Every argument against a catalogue of invented people
+    // applies just as hard to one invented face on a real profile.
+    const photo = field(formData, 'photo');
+    if (!photo) {
+      return failed('A photo URL is required — a profile must show the actual person.');
+    }
+
     const accent = field(formData, 'accent') || '#5b5bd6';
     const firstName = name.split(' ')[0];
     const lastInitial = name.split(' ')[1]?.[0];

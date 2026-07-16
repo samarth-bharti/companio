@@ -5,9 +5,20 @@
 // The create/edit/suspend/ban/delete actions existed for months but this page
 // never rendered them — an admin could not add a companion at all. It now does.
 
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { rupees } from '@/lib/server/admin';
 import { ActionForm } from '@/components/admin/ActionForm';
+import { AdminSearch } from '@/components/admin/AdminSearch';
+import { AdminPager } from '@/components/admin/AdminPager';
+import { AdminEmpty } from '@/components/admin/AdminEmpty';
+import {
+  ADMIN_PAGE_SIZE,
+  parseQ,
+  parsePage,
+  like,
+  type AdminListSearchParams,
+} from '@/lib/server/adminList';
 import { linkCompanion, unlinkCompanion } from '../actions';
 
 export const metadata = { title: "Companions" };
@@ -51,19 +62,34 @@ function Badge({ label, tone }: { label: string; tone: 'green' | 'red' | 'blue' 
   return <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${cls}`}>{label}</span>;
 }
 
-export default async function AdminCompanions() {
+const BASE = '/admin/companions';
+
+export default async function AdminCompanions({ searchParams }: { searchParams: AdminListSearchParams }) {
+  const sp = await searchParams;
+  const q = parseQ(sp.q);
+  const page = parsePage(sp.page);
+
   // Admin sees suspended and banned rows too — otherwise there is no way to
   // reverse either. Public reads go through VISIBLE_COMPANION instead.
-  const companions = await prisma.companion.findMany({
-    orderBy: { name: 'asc' },
-    take: 200,
-    include: { account: { select: { id: true, email: true, phone: true } } },
-  });
+  const where: Prisma.CompanionWhereInput = q
+    ? { OR: [{ name: like(q) }, { city: like(q) }, { id: like(q) }] }
+    : {};
+
+  const [companions, total] = await Promise.all([
+    prisma.companion.findMany({
+      where,
+      orderBy: { name: 'asc' },
+      take: ADMIN_PAGE_SIZE,
+      skip: (page - 1) * ADMIN_PAGE_SIZE,
+      include: { account: { select: { id: true, email: true, phone: true } } },
+    }),
+    prisma.companion.count({ where }),
+  ]);
 
   return (
     <div className="flex flex-col gap-8">
       <h1 className="font-display font-black text-[var(--color-ink)]" style={{ fontSize: 'var(--text-h2)' }}>
-        Companions ({companions.length})
+        Companions ({total.toLocaleString('en-IN')})
       </h1>
 
       {/* ── Create ─────────────────────────────────────────────────────────── */}
@@ -85,7 +111,10 @@ export default async function AdminCompanions() {
             <Field label="Id (optional)"><input name="id" className={inp} placeholder="auto from name" /></Field>
             <Field label="Hourly rate (paise)"><input name="hourlyRate" type="number" defaultValue={50000} className={inp} /></Field>
             <Field label="Accent (#rrggbb)"><input name="accent" className={inp} placeholder="#2E6BFF" /></Field>
-            <Field label="Photo URL"><input name="photo" className={inp} placeholder="https://…" /></Field>
+            {/* Required, and marked so. createCompanion refuses without it —
+                it used to substitute a stock Unsplash portrait, which put a
+                stranger's face on a real, ID-verified person's profile. */}
+            <Field label="Photo URL *"><input name="photo" required className={inp} placeholder="https://…" /></Field>
             <Field label="Availability"><input name="availability" className={inp} placeholder="Free this evening" /></Field>
             <Field label="Languages"><input name="languages" className={inp} placeholder="Hindi, English" /></Field>
             <Field label="Activities"><input name="activities" className={inp} placeholder="City Walk, Café Chat" /></Field>
@@ -96,9 +125,16 @@ export default async function AdminCompanions() {
       </details>
 
       {/* ── List ───────────────────────────────────────────────────────────── */}
+      <AdminSearch q={q} label="Search companions" placeholder="Name, city or id" />
+
       <div className="flex flex-col gap-4">
         {companions.length === 0 && (
-          <p className="text-[var(--color-ink-muted)]">No companion profiles yet. Add one above.</p>
+          <AdminEmpty
+            basePath={BASE}
+            q={q}
+            noun="companions"
+            emptyLabel="No companion profiles yet. Add one above."
+          />
         )}
 
         {companions.map((c) => {
@@ -219,6 +255,15 @@ export default async function AdminCompanions() {
           );
         })}
       </div>
+
+      <AdminPager
+        basePath={BASE}
+        page={page}
+        pageSize={ADMIN_PAGE_SIZE}
+        total={total}
+        q={q}
+        label="Companion pages"
+      />
     </div>
   );
 }

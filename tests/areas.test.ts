@@ -28,10 +28,11 @@ describe('getAreaAnchor', () => {
     expect(getAreaAnchor('mumbai', 'Atlantis')).toBeNull();
   });
 
-  it('resolves every area our real Mumbai companions actually live in', () => {
-    const mumbai = COMPANIONS.filter((c) => c.city === 'Mumbai');
-    expect(mumbai.length).toBeGreaterThan(0);
-    for (const c of mumbai) {
+  // The static catalogue is empty (see tests/catalogue.test.ts), so this is
+  // vacuous today and kept for the day it isn't: anyone listing in Mumbai must
+  // live in a neighbourhood the map can actually place.
+  it('resolves every area our Mumbai companions live in', () => {
+    for (const c of COMPANIONS.filter((x) => x.city === 'Mumbai')) {
       expect(getAreaAnchor('mumbai', c.area), `no anchor for "${c.area}"`).not.toBeNull();
     }
   });
