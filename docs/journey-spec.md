@@ -1,5 +1,19 @@
 # Companio — The Journey Build · Master Buildable Spec
 
+> ## ⚠️ Historical design spec (as of 2026-07-17).
+>
+> This is the design intent the site was built from, and it is still the best
+> explanation of *why the product feels the way it does*. It is **not** a
+> description of what exists now.
+>
+> Notably wrong: pricing (a pass at four durations, not a one-time ₹199 unlock),
+> included meetings (**one**, not two), and §8.4's "social proof" toast — which
+> was built, shipped invented member activity under a pulsing live-dot, and has
+> been deleted.
+>
+> For what exists: [`STATUS.md`](STATUS.md). For why the code is shaped as it is:
+> [`ARCHITECTURE.md`](ARCHITECTURE.md).
+
 **Audience:** sonnet/haiku ui-engineer + frontend-engineer agents building in 6 stages.
 **Status:** Build directly from this. Design decisions are already made — do not re-decide. If a
 detail is missing, match the nearest specced pattern; do not invent a new visual language.

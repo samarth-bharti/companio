@@ -1,117 +1,137 @@
 # Status & next steps
 
-_Last updated: 2026-07-13, after the de-faking pass._
+_Last updated: 2026-07-17, after the pass ladder + photo pipeline pass._
 
-The single source of truth for **where the project is and what to do next**.
-Keep this current — it's the first file to read when resuming.
-**Launch plan / buying / deploy steps live in [`GO-LIVE.md`](GO-LIVE.md).**
-**Parked chat work lives in [`CHAT-ROADMAP.md`](CHAT-ROADMAP.md).**
+The single source of truth for **where the project is and what to do next**. Keep
+it current — it is the first file to read when resuming.
+
+- Deploying, keys, costs → [`../DEPLOY.md`](../DEPLOY.md)
+- Why the code is shaped this way → [`ARCHITECTURE.md`](ARCHITECTURE.md)
+- Running it → [`OPERATIONS.md`](OPERATIONS.md)
+- Something broken → [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)
 
 ## The one-line summary
 
-**The software is real. The inventory is not.** Every feature on the site now does
-what it says, and the claims it makes are ones it can keep. What stands between
-this and a launch is twenty-two companions who do not exist, a Grievance Officer
-with no name, and two leaked secrets.
+**The product is ready. The business inputs are not.** The software does what it
+says, the claims are ones it can keep, and a companion can now go from
+application to a live profile with their own face without anyone touching a
+database. What stands between this and a launch is a Grievance Officer with no
+name, two leaked secrets, a Razorpay KYC that takes days, and **no companions**.
 
-## Quality gates (all green — verified 2026-07-13 by running them)
+## Quality gates (verified 2026-07-17 by running them)
 
 - `npx tsc --noEmit` → **0 errors**
-- `npx vitest run` → **368 passing** (28 files)
-- `npx eslint .` → **0 errors** (50 warnings remain)
-- `npx next build` → **success**
-- 25 public routes → **200**; `/admin` → **307** without an admin session
-- Walked in a real browser against the real Neon database, not just unit-tested:
-  sign-in, quiz, paywall, unlock, favourites, chat (both directions), spin,
-  booking, the 18+ gate, and the companion dashboard.
+- `npm test` → **443 passing** (32 files)
+- `npm run build` → **success**
+- Every public route → **200**; `/admin` → **307** signed-out
+- Driven in a real browser against real Neon, not just unit-tested: the pass
+  ladder at all four tiers, checkout → settle → 365 days granted, the paywall on
+  a real companion, application → approve → live profile, admin search, suspend →
+  audit → gone from the public API.
 
-## What was found and fixed on 2026-07-13
+## What changed on 2026-07-17
 
-The theme: **the tests were green and the product was lying.** A passing suite
-proves the code does what the code says. It says nothing about whether the screen
-tells the truth.
+The theme: **the tests were green and the product was still lying, in ways only
+clicking it could reveal.**
 
-1. **The site promised Aadhaar KYC, a live selfie match, and third-party
-   background checks in fourteen places — including the Terms of Service and the
-   Privacy Policy.** None of it exists. `app/api/application/upload/route.ts` has
-   always said so in its own header: it validates the *format* of an ID number and
-   the *bytes* of an image, and deliberately marks nothing as verified, because
-   only a KYC vendor querying UIDAI can prove a person owns an identity. The
-   marketing copy claimed the pipeline that file explicitly says does not exist.
-   → `lib/trust.ts` now holds the true claims behind a `KYC_VENDOR_ENABLED` flag,
-   and **`tests/trustClaims.test.ts` fails the build if the sentence comes back.**
+1. **The pass replaced the one-time unlock.** ₹199/1mo, ₹499/3mo, ₹999/12mo,
+   ₹1999 lifetime. Manual repurchase, no auto-debit. `nextPassExpiry()` makes
+   lifetime absorbing and extends a timed pass from the later of now and its
+   current expiry, so buying can never take time away.
 
-2. **Messaging was one-way.** A member could write to a companion; the companion
-   had no inbox, no endpoint and no screen, so every message landed in a thread
-   only the sender could see — under a line reading "they will see this and reply".
-   → Built `/api/companion/messages` and `CompanionDashMessages`. The
-   contact-sharing filter now also runs on the **companion's** words, which is
-   where it always belonged: they are the party with a reason to take the booking
-   off-platform.
+2. **`GET /api/companions` was serving every companion's `payoutUpi`** — a UPI ID,
+   which normally embeds a phone number — to anyone with `curl`, in the redacted
+   payload too. `toCompanion` spread the whole Prisma row while the callers
+   queried with no `select`. The serializer is an allowlist now.
 
-3. **`/verify` told members to check two things that did not exist**: a "blue
-   verified tick" no profile carries, and a "4-digit meetup code" that was never
-   generated. A safety page that cannot be followed is worse than none — it teaches
-   people to ignore it, and hands an impostor a ready excuse.
-   → The meetup code is now real (`Booking.meetupCode`, CSPRNG, shown to both
-   sides). The tick paragraph is gone.
+3. **`firstName` survived redaction** while `name` was masked to `Ana···`. The
+   mask was decoration; the client choosing to render `maskedName` was the only
+   thing hiding it.
 
-4. **Chat reactions deleted your conversation.** `ChatPanel` called
-   `reactToMessage()` from `lib/appState` (localStorage) and passed the result
-   straight to `setThread()`, so in http mode a single tap replaced the rendered
-   server thread with an empty local one. Reactions were also **unclickable with a
-   mouse** — the bar rendered above the bubble inside a scrolling log and was
-   clipped by it, so every click landed on the sticky header behind.
+4. **The 22 fictional companions are gone** — from the code *and* the database, in
+   a migration, along with the five "bookings" for meetups with people who do not
+   exist (two of them marked `completed`).
 
-5. **The site called people "undefined".** next-auth form-encodes credentials, so
-   `firstName: undefined` transmitted the literal string `"undefined"`, which is
-   truthy and sailed past the `|| 'Friend'` fallback. Two accounts were stored with
-   that name, **including the admin's**.
+5. **Photos work.** They could not before: the upload hashed the portrait and
+   discarded it, `next.config.ts` allowed only `images.unsplash.com` so a real
+   photo 400'd, and `blurredPhoto()` asked Unsplash to blur an image that was not
+   theirs. Now `lib/server/photoStore.ts` blurs with sharp at ingest and stores
+   both variants, and approval publishes the profile automatically.
 
-6. **The quiz promised same-gender matching and never asked the member's gender**,
-   so the filter silently did nothing while the screen said "Filtering for
-   same-gender companions…".
+6. **The unlock sheet quoted ₹199 while the ₹999 tier was selected.** Same class
+   as the ₹159/₹159.20 bug that created `lib/money.ts`, five times larger.
 
-### The recurring bug class — check this first, always
+7. **Fabricated social proof deleted.** `ActivityToast` rendered "Rohan just
+   booked a Cubbon Park walk in Bengaluru" under a pulsing green dot, announced
+   via `aria-live` as a live event, on the two screens where a member decides to
+   spend money.
 
-A component importing `lib/appState` or `lib/journeyState` **directly** instead of
-going through `dataClient`, so nothing reaches the server in http mode. Found in
-favourites (twice), the wallet (twice), notifications, and chat reactions.
+8. **Two false safety claims removed.** `/pricing` sold "24/7 SOS support — one
+   tap gets a Companio safety rep on the phone" (there is no rep and no phone
+   line). `/become-a-companion` told recruits members are "ID-checked" (only
+   companions submit ID) — the most dangerous sentence on the site.
+
+9. **`/api/user/unlocked` ignored expiry**, so a lapsed member's UI thought they
+   were paid and never saw checkout again. The ladder could not renew.
+
+10. **The favicon was the Next.js logo.** `app/favicon.ico` was the stock
+    `create-next-app` file.
+
+### The recurring bug classes — check these first, always
+
+**A component importing `lib/appState` / `lib/journeyState` directly** instead of
+going through `dataClient`, so nothing reaches the server in http mode:
 
 ```bash
 grep -rn "from '@/lib/appState'\|from '@/lib/journeyState'" components app | grep -v "import type"
 ```
 
-Anything that is not a `import type` is a bug until proven otherwise.
+**A component deriving its own price** instead of being handed one:
 
-## Testing it without any keys
+```bash
+grep -rn "UNLOCK_AMOUNT" components/
+```
 
-Both are deliberately impossible in production and turn themselves off the moment
-the real keys exist.
-
-| Want to test | Set | What happens |
-|---|---|---|
-| **Sign-in** | nothing | With no `RESEND_API_KEY`, the code is shown **on the sign-in screen**. Production refuses to run without email at all, so no real user's code can ever be handed back. |
-| **The ₹199 unlock** | `ALLOW_TEST_CHECKOUT=true` | The unlock completes for free via `POST /api/test-checkout`, granting the benefit through `settlePurchase()` — the same function the real webhook calls. **Setting `RAZORPAY_KEY_ID` kills it dead**, flag or no flag. |
+Both have bitten more than once.
 
 ## What is still not real
 
-- **The 22 companions are Unsplash stock photos of people who do not exist.** This
-  is the launch blocker. Everything else is a formality beside it.
-- `lib/photo.ts` blurs a locked portrait via Unsplash query parameters and will
-  **silently do nothing** on a non-Unsplash host — so a real face would leak on a
-  locked profile the day real photography lands. Needs a pre-blurred derivative or
-  an image proxy first.
-- The Grievance Officer's name and phone are `[[placeholders]]` in `lib/company.ts`
-  (DPDPA requirement; cannot be invented).
-- `NEXTAUTH_SECRET` and `CRON_SECRET` leaked at `07c46b1` in a public repo.
+- **There are no companions.** The catalogue is empty because that is the true
+  state of the business. This is the launch blocker; everything else is a
+  formality beside it.
+- **The Grievance Officer's name and phone are `[[placeholders]]`** in
+  `lib/company.ts`. Legally required (DPDPA 2023 / IT Act). Cannot be invented.
+  Nothing renders while they are unfilled, but the obligation stands.
+- **`NEXTAUTH_SECRET` and `CRON_SECRET` leaked at `07c46b1`** in a public repo.
   **Rotate them.**
-- Companions are paid ₹0 for the two included meetups (`payoutPaise: 0`). An
+- **Rate limiting is decorative without Upstash.** In-memory means per-instance
+  on serverless.
+- **No companion is `verified`.** The column is operator-owned and true of
+  nobody; the copy no longer pretends otherwise.
+- **Companions are paid ₹0** for included meetups (`payoutPaise: 0`). An
   unanswered business question, not a bug.
-- No companion is `verified`. The column is operator-owned and true of nobody, and
-  the copy no longer pretends otherwise.
+- **8 marketing photos still hotlink Unsplash** (`activityScenes.ts`,
+  `PeopleSection.tsx`). Legal under their licence; a credibility mismatch on a
+  product about meeting real people. Not a blocker.
+- **The sitemap reads the (empty) static list**, so real approved companions will
+  not be indexed. Should read the database. Small.
+- **Paid meetups need Razorpay Route** + companion KYC. Route is not self-serve —
+  see [`../DEPLOY.md` §7](../DEPLOY.md#7-the-line-you-must-not-cross).
 
-## Next
+## Next, in order
+
+1. **Merge the open PR.**
+2. **Start Razorpay KYC** — it takes days, so it gates everything else.
+3. **Fill the Grievance Officer details.** Legal.
+4. **Rotate the two leaked secrets.**
+5. **Vercel Pro** — Hobby forbids commercial use, so this is mandatory the day
+   payments go live, not a scaling decision.
+6. **Connect a Blob store + Upstash.**
+7. **One real transaction** after the keys land. Signature verification fails
+   silently and closed — see [`../DEPLOY.md` §12](../DEPLOY.md#12-what-must-be-verified-after-the-keys-land).
+8. **Recruit companions.** Then, and only then, `PASS_SALES_ENABLED=true`.
+   A city needs several: with one, she is the free preview and the pass sells
+   nothing there.
 
 Chat is half-designed and deliberately not started — see
 [`CHAT-ROADMAP.md`](CHAT-ROADMAP.md).

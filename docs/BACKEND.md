@@ -1,7 +1,17 @@
 # Backend reference
 
-The backend is **fully implemented but dormant** — every route exists, is typed,
-and is tested.
+> **Partly stale (as of 2026-07-17).** Useful as a route reference; wrong on the
+> product and on the state of play. Trust [`ARCHITECTURE.md`](ARCHITECTURE.md)
+> and [`STATUS.md`](STATUS.md) over anything here that conflicts.
+>
+> Known-wrong below: the backend is **not dormant** (it has been driven against
+> real Neon end to end); the product sells **a pass at four durations**, not a
+> one-time ₹199 unlock; `lib/photo.ts`'s Unsplash blur has been replaced by
+> `lib/server/photoStore.ts` (sharp at ingest, our own storage); and
+> `lib/data/companions.ts` is now **empty by design**.
+
+The backend is **fully implemented** — every route exists, is typed, and is
+tested.
 
 > **Updated 2026-07-10 (evening).** The gap this section used to describe is
 > mostly closed:
