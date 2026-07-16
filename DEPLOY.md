@@ -70,6 +70,7 @@ reaching a live API with garbage.
 | `NEXTAUTH_URL` | `https://trycompanio.com` | must match the real origin exactly |
 | `NEXT_PUBLIC_SITE_URL` | `https://trycompanio.com` | canonical URLs, OG tags, sitemap |
 | `ADMIN_EMAILS` | your own email(s), comma-separated | bootstrap only — see §4 |
+| `BLOB_READ_WRITE_TOKEN` | Vercel → Storage → create a **Blob** store → connect it to this project | **Companion portraits.** Vercel injects this automatically once the store is connected. Without it no companion can have a photo: approvals land hidden and the admin refuses to create a profile. See §4a. |
 
 ### Required before taking money
 
@@ -120,6 +121,34 @@ renders when both resolve), `NEXT_PUBLIC_GA_ID`, `NEXT_PUBLIC_POSTHOG_KEY` /
 > default-off and gated on real companion supply.
 
 ---
+
+## 4a. Photos (Vercel Blob)
+
+Vercel → **Storage** → **Create** → **Blob** → connect it to this project.
+`BLOB_READ_WRITE_TOKEN` is injected automatically; redeploy once so the running
+build picks it up.
+
+That is the entire setup. There is no image CDN to configure and no transform
+rules to write: `lib/server/photoStore.ts` resizes and blurs every portrait with
+sharp at ingest and stores both variants itself. The paywall never depends on a
+third party honouring a `?blur=` parameter.
+
+**How a portrait reaches a profile, with no manual step:**
+
+1. The applicant uploads their photo in `/become-a-companion`.
+2. `/api/application/upload` validates it, blurs it, and stores both variants.
+   (The **ID document** is still hashed and discarded — a portrait is published
+   by design; an Aadhaar image is a DPDPA liability once its number is checked.)
+3. Approving in `/admin/applications` copies both onto the profile, which goes
+   **live with the applicant's own face**.
+4. A member without a pass is served the blurred variant. The sharp URL is never
+   in the response at all.
+
+An operator can still paste a URL in `/admin/companions`; it is fetched, blurred
+and stored on our own blob rather than hotlinked.
+
+Free tier is 1 GB — a portrait is ~150 KB, so roughly 6,000 companions. Well
+inside the budget.
 
 ## 4. Google OAuth
 

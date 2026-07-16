@@ -47,7 +47,15 @@ export interface Companion {
   ratePerMeeting: number;
   bio: string;
   suggestions: string[];  // "What we'd do" — 3 city-specific ideas
-  photo: string;          // Unsplash portrait URL
+  photo: string;          // the real portrait
+  /**
+   * A copy of `photo` destroyed at ingest by sharp (lib/server/photoStore.ts).
+   *
+   * On a LOCKED payload this is undefined and `photo` already holds the blurred
+   * URL — redactCompanion swaps them, so the real one is never in the response
+   * at all. On an unlocked payload the reverse is true.
+   */
+  photoBlurred?: string;
   accent: string;         // one of the four theme hex values
   /**
    * The companion's own gender. Drives the same-gender filter, which is a

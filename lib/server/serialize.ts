@@ -103,6 +103,9 @@ export function toCompanion(c: PCompanion): Companion {
     bio: c.bio,
     suggestions: c.suggestions,
     photo: c.photo,
+    // Forwarded so redactCompanion can swap it into `photo` for a locked viewer.
+    // It is the destroyed copy, so it is safe in an unlocked payload too.
+    photoBlurred: c.photoBlurred ?? undefined,
     accent: c.accent,
     gender: (c.gender ?? undefined) as Companion['gender'],
     sameGenderNote: c.sameGenderNote ?? undefined,

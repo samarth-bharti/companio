@@ -3,7 +3,24 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   images: {
+    // next/image refuses any host not named here — it answers 400 and the card
+    // renders a broken image. That is a sane default and it was also the reason
+    // no real companion could have a face: the list held images.unsplash.com and
+    // nothing else, so the first real portrait 400'd.
+    //
+    // Companion portraits now live on our own Vercel Blob store, ingested and
+    // blurred by lib/server/photoStore.ts. `**.public.blob.vercel-storage.com`
+    // covers the per-store subdomain without pinning the store id, which differs
+    // per environment.
     remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**.public.blob.vercel-storage.com",
+        pathname: "/**",
+      },
+      // Marketing/activity imagery still hotlinks Unsplash (activityScenes.ts,
+      // PeopleSection.tsx). Portraits must NOT: a face we do not hold is a face
+      // we cannot blur.
       {
         protocol: "https",
         hostname: "images.unsplash.com",

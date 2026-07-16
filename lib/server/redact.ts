@@ -66,11 +66,21 @@ export function redactCompanion(c: Companion): Companion {
     bio: '',
     suggestions: [],
     reviewsList: [],
-    // '' when the photo cannot be blurred at its source. blurredPhoto() answers
-    // null rather than handing back the original — a face we cannot destroy is a
-    // face we do not send — and an empty string is how this type says "no photo"
-    // to the card, which renders a placeholder for it.
-    photo: blurredPhoto(c.photo) ?? '',
+    // The blurred variant REPLACES the photo field, so the locked payload cannot
+    // contain the real URL — not "contains it but the client doesn't render it",
+    // which is what firstName was doing until recently.
+    //
+    // Preference order:
+    //   1. photoBlurred — a file we generated with sharp at ingest. There is no
+    //      sharpening it back and no host we are trusting to blur on request.
+    //   2. blurredPhoto() — the legacy Unsplash query-parameter path, kept for
+    //      rows that predate the pipeline.
+    //   3. '' — we could not destroy it, so we do not send it. The card paints a
+    //      placeholder. A worse advert than a blurred café; infinitely better
+    //      than publishing a real person's face to anyone with curl.
+    photo: c.photoBlurred || blurredPhoto(c.photo) || '',
+    // Never hand back the sharp URL alongside the blurred one.
+    photoBlurred: undefined,
   };
 }
 

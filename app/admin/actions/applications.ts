@@ -26,6 +26,7 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
       select: {
         id: true, userId: true, name: true, city: true, gender: true,
         bio: true, activities: true, rate: true, status: true,
+        photoUrl: true, photoBlurUrl: true,
       },
     });
     if (!app) return failed('That application no longer exists.');
@@ -54,24 +55,39 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
           activities: app.activities,
           ratePerMeeting: app.rate,
           hourlyRate: app.rate,
-          // NO PHOTO, AND SUSPENDED UNTIL THERE IS ONE.
+          // THE APPLICANT'S OWN PHOTO, OR NO PHOTO AND SUSPENDED.
           //
-          // This used to be a hardcoded Unsplash URL. Approving a real person
-          // published a live, bookable profile in their real name, in their real
-          // city — wearing a stranger's face. The selfie they uploaded is only
-          // hashed (DPDPA), never stored, so there is no photo to use here and we
-          // must not invent one.
+          // This was once a hardcoded Unsplash URL: approving a real person
+          // published a live, bookable profile in their real name and city,
+          // wearing a stranger's face. Then it became `photo: ''` + suspended,
+          // which was honest but meant every approval waited on an operator to
+          // find a picture and paste a link — the reason the catalogue could not
+          // be filled.
           //
-          // The profile is created suspended: it exists, the companion owns it,
-          // and it is invisible to members until an admin adds a real photo and
-          // lifts the suspension.
-          photo: '',
-          suspended: true,
+          // The upload route now stores the portrait and its blurred copy
+          // (lib/server/photoStore.ts), so approval has the real thing and the
+          // profile goes live with the face the person actually submitted.
+          //
+          // If the photo is missing — an application from before the pipeline,
+          // or a blob store that was down — we fall back to the honest version:
+          // no photo, suspended, invisible. We never invent one.
+          photo: app.photoUrl ?? '',
+          photoBlurred: app.photoBlurUrl,
+          suspended: !app.photoUrl,
           accent: '#5b5bd6',
           suggestions: [],
           languages: [],
         },
-        update: {},           // already exists — leave it as-is
+        // Already exists. Attach the portrait if the row predates the pipeline
+        // and is still waiting for one, but never touch anything else: an
+        // operator may have edited this profile, and re-approving must not undo
+        // their work or silently un-suspend someone they removed.
+        update: app.photoUrl
+          ? {
+              photo: app.photoUrl,
+              photoBlurred: app.photoBlurUrl,
+            }
+          : {},
       });
       await tx.user.update({
         where: { id: app.userId },
@@ -95,8 +111,11 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
     revalidatePath(PATH);
     revalidatePath('/admin/companions');
     return succeeded(
-      `Approved. Profile ${companionId} created and HIDDEN until it has a real photo — ` +
-        `add their photo, area and languages, then unsuspend it to go live.`,
+      app.photoUrl
+        ? `Approved. Profile ${companionId} is LIVE with their own photo. ` +
+            `Add their area and languages to finish it off.`
+        : `Approved. Profile ${companionId} created and HIDDEN — this application has no ` +
+            `stored photo, so add one and unsuspend it to go live.`,
     );
   });
 }
