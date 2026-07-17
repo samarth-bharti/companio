@@ -42,6 +42,9 @@ const FORBIDDEN: { pattern: RegExp; why: string; allow?: string[] }[] = [
       join('app', 'trust', 'page.tsx'),
       join('app', 'terms', 'page.tsx'),
       join('app', 'privacy', 'page.tsx'),
+      // "It is a fraud check, not a criminal-background check" — §8 exists to
+      // stop a member reading the Verified badge as a safety guarantee.
+      join('app', 'community-guidelines', 'page.tsx'),
       join('components', 'safety', 'SafetyJourney.tsx'),
       join('components', 'companion', 'WizardStepVerify.tsx'),
       join('app', 'api', 'application', 'upload', 'route.ts'),

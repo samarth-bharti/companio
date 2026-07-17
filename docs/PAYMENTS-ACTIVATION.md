@@ -59,12 +59,22 @@ The catalogue a reviewer needs to see is `/pricing`. That page is real, and it w
 | 3 | Grievance Officer name and phone were `[[placeholders]]`. | **Fixed** — `lib/company.ts`, from the Grievance Redressal Policy §2. |
 | 4 | The site published `support@`, `privacy@` and `grievance@trycompanio.com`. No executed policy names any of them; all nine contact references say `trycompanio@gmail.com`. An unmonitored grievance inbox fails DPDPA and the gateway checklist. | **Fixed** — `lib/company.ts` now publishes the address the policies name. |
 | 5 | The site promised a 7-day, no-questions-asked refund in fifteen places, backed by a real route and dashboard button. The executed Refund Policy §2 offers no cooling-off window. | **Fixed** — see §4. |
-| 6 | Companion inventory is empty. | **Open — needs recruitment.** See §5. This is the real blocker. |
+| 6 | The sign-up checkbox bound members to "Terms & Community Guidelines", the link went to `/terms`, and **the Community Guidelines were published nowhere**. The Terms make them part of the agreement, and every suspension is decided under them. A rule a member cannot read is a rule that binds nobody. | **Fixed** — `app/community-guidelines/page.tsx`, linked from the sign-up box, the footer, `/terms` and the sitemap. |
+| 7 | `InfoPage` wrapped every body item in `<p>`, so a `<ul>` inside one produced invalid HTML and a React hydration error (#418) on a page that looked fine. | **Fixed** — `components/layout/InfoPage.tsx` uses `<p>` for prose and `<div>` for rich nodes. |
+| 8 | Companion inventory is empty. | **Open — needs recruitment.** See §5. This is the real blocker. |
 
-Verified: `tsc` clean, 445/445 tests pass (2 new), production build succeeds,
-`/delivery` and `/refunds` prerendered static and confirmed in a browser, footer
-disclosure renders "Grievance Officer, Prashant Yadav · trycompanio@gmail.com ·
-+91 90399 56337", and `/api/user/refund` returns 404 on both GET and POST.
+Verified: `tsc` clean, 445/445 tests pass (2 new), production build succeeds.
+`scripts/crawl-links.js` reports no href pointing at a missing route, and
+`scripts/error-sweep.js` reports no console error on any page beyond the expected
+signed-out 401s and the Vercel analytics 404s that only occur off-Vercel. A browser
+pass over 21 pages finds no surviving refund promise, no `[[placeholder]]`, and no
+dead `@trycompanio.com` address in the *rendered* text; 13 InfoPage routes hydrate
+without a React error; the footer prints "Grievance Officer, Prashant Yadav ·
+trycompanio@gmail.com · +91 90399 56337"; the dashboard Account tab renders its four
+cards with no refund control; and `/api/user/refund` returns 404 on GET and POST.
+
+The one route that still 404s is `/companion/ananya`, hard-coded in both sweep
+scripts. That is the empty-inventory problem in §5, not a broken link.
 
 ---
 
@@ -158,6 +168,7 @@ work the way the documents describe.** They need the lawyer to amend the text.
 | Refund Policy | **§2, §5** | "boosts or spent wallet credit"; a whole section on "Wallet and in-app credit". | **Boosts do not exist and cannot be bought. Wallet credit cannot be topped up with money** — `lib/server/pricing.ts` refuses `credits` and `plus` outright, because selling them would make Companio a payment aggregator under RBI rules. The wallet holds *included meetings*, not money. Strike the boost references; rewrite §5 to describe non-monetary meeting credits, or strike it. |
 | Terms of Service | **§4 Subscriptions and pricing** | "Paid plans renew automatically unless you cancel before renewal… we will give you at least 30 days' notice before the new price applies to you." | Same as above — no renewal, no plans. `/terms` on the live site says a pass "is not a subscription. It does not renew and we never auto-debit you." Align §4 to that. |
 | Terms of Service | **§2** | "subscriptions, boosts, wallet credit, or gifts purchased through the app" | Only the pass is purchasable. **Gifts do not exist.** Reduce the list to the pass. |
+| Community Guidelines | **§3(k)** | "Money on Companio is only ever for platform features, such as subscriptions, boosts, or gifts bought through the app" | Same list, same problem. The published page states the rule with the one product that exists; the document should match. |
 
 Until these are amended, do not upload those two PDFs anywhere a reviewer will read
 them. They advertise recurring billing, and **recurring billing is a second, slower

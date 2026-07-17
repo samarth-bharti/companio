@@ -14,6 +14,32 @@ export default function TermsPage() {
       footnote={`Last updated June 2026 · ${COMPANY_DISPLAY.legalName} · ${COMPANY_DISPLAY.registeredAddress}`}
       sections={[
         {
+          // The executed Terms make three other documents part of the agreement.
+          // Saying so is not decoration: a rule a member is bound by has to be a
+          // rule a member can find, and the Community Guidelines — the document
+          // every suspension is actually decided under — were linked from
+          // nowhere and published nowhere until now.
+          heading: 'What these terms include',
+          body: [
+            <>
+              These Terms should be read together with our{' '}
+              <a href="/community-guidelines" className="underline underline-offset-4">
+                Community Guidelines
+              </a>
+              ,{' '}
+              <a href="/privacy" className="underline underline-offset-4">
+                Privacy Policy
+              </a>{' '}
+              and{' '}
+              <a href="/refunds" className="underline underline-offset-4">
+                Refund Policy
+              </a>
+              . Those three form part of this agreement, and together with this page they are the
+              whole of it.
+            </>,
+          ],
+        },
+        {
           heading: '1. What Companio is',
           body: [
             'Companio connects members with ID-checked companions for shared activities, city walks, gym sessions, café conversations, live events, elder company, and everyday help.',

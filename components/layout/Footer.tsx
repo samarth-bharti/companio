@@ -28,6 +28,7 @@ const COLUMNS = [
     heading: "Legal",
     links: [
       { label: "Terms of service", href: "/terms" },
+      { label: "Community guidelines", href: "/community-guidelines" },
       { label: "Privacy policy",   href: "/privacy" },
       { label: "Refund policy",    href: "/refunds" },
       // "Delivery", not "Shipping". Nothing is shipped — but a payment

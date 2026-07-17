@@ -81,15 +81,33 @@ export function InfoPage({ eyebrow, title, intro, sections, footnote, children }
                   >
                     {s.heading}
                   </h2>
-                  {s.body.map((p, j) => (
-                    <p
-                      key={j}
-                      className="font-sans text-base leading-relaxed mb-3"
-                      style={{ color: 'var(--color-ink-muted)' }}
-                    >
-                      {p}
-                    </p>
-                  ))}
+                  {/* A paragraph for prose, a div for anything else.
+                      `body` is ReactNode[], and every entry used to be wrapped in
+                      a <p>. A <ul> is not allowed inside a <p>: the browser
+                      silently closes the paragraph before the list, so the DOM it
+                      builds does not match the one the server sent, and React
+                      throws a hydration error (#418) on a page that looks fine.
+                      Strings still get a real <p> — the semantics matter on the
+                      legal pages, which are mostly prose. */}
+                  {s.body.map((p, j) =>
+                    typeof p === 'string' ? (
+                      <p
+                        key={j}
+                        className="font-sans text-base leading-relaxed mb-3"
+                        style={{ color: 'var(--color-ink-muted)' }}
+                      >
+                        {p}
+                      </p>
+                    ) : (
+                      <div
+                        key={j}
+                        className="font-sans text-base leading-relaxed mb-3"
+                        style={{ color: 'var(--color-ink-muted)' }}
+                      >
+                        {p}
+                      </div>
+                    ),
+                  )}
                 </section>
               </Reveal>
             ))}

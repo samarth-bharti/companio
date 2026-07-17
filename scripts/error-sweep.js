@@ -5,8 +5,9 @@ const ROUTES = [
   '/', '/explore', '/explore?matched=1', '/quiz', '/login', '/register',
   '/pricing', '/dashboard', '/book?companion=ananya', '/companion/ananya',
   '/become-a-companion', '/become-a-companion/apply', '/companion-dashboard',
-  '/how-it-works', '/safety', '/terms', '/privacy', '/refunds', '/delivery',
-  '/cookies', '/trust', '/verify', '/about', '/blog', '/careers', '/press',
+  '/how-it-works', '/safety', '/terms', '/community-guidelines', '/privacy',
+  '/refunds', '/delivery', '/cookies', '/trust', '/verify', '/about', '/blog',
+  '/careers', '/press',
 ];
 
 (async () => {
