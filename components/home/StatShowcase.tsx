@@ -47,9 +47,9 @@ const PROMISES = [
   },
   {
     icon: Undo2,
-    headline: '7 days',
-    label: 'Full refund, no questions',
-    sub: "Didn't find anyone you'd like to meet? Take your money back.",
+    headline: 'Never',
+    label: 'Auto-debited',
+    sub: 'A pass is one payment. Nothing renews behind your back.',
     color: 'var(--color-emerald)',
     bg: '#E6F5EE',
     border: 'rgba(31,174,107,0.2)',

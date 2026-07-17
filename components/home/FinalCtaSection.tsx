@@ -17,7 +17,7 @@ const CTA_BG =
 const REASSURANCES = [
   "Free to browse",
   "Your first meeting is included",
-  "Full refund within 7 days",
+  "No auto-renewal",
 ] as const;
 
 export function FinalCtaSection() {

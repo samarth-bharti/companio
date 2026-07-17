@@ -469,8 +469,14 @@ export function UnlockSheet({
                 )}
               </div>
               <div className="flex flex-col items-center gap-1.5">
+                {/* The line under a Pay button is the last thing read before
+                    money moves, so it may only say what the Refund Policy will
+                    honour. It promised a 7-day refund that the policy does not
+                    offer. What it says now is the fact that actually reassures
+                    someone hesitating here: this is the only time they are
+                    charged. */}
                 <p className="text-xs text-[var(--color-ink-muted)] text-center">
-                  Didn&rsquo;t find anyone you&rsquo;d like to meet? Full refund in 7 days.
+                  One payment. No auto-renewal, ever.
                 </p>
                 <div className="flex items-center gap-1.5 text-xs text-[var(--color-ink-muted)]">
                   <Lock size={12} aria-hidden="true" /><span>Secured by Razorpay</span>

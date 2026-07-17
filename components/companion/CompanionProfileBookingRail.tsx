@@ -146,8 +146,8 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
               No reviews yet
             </p>
             <p className="font-sans text-xs leading-relaxed" style={{ color: 'var(--color-ink-muted)' }}>
-              {companion.firstName}&rsquo;s government ID has been verified. If the meetup isn&rsquo;t right,
-              tell us within 7 days and we&rsquo;ll refund the unlock in full.
+              {companion.firstName}&rsquo;s government ID has been verified by a person, not a
+              script. Your first meeting is included, and you are never charged to meet.
             </p>
           </>
         )}
@@ -186,7 +186,7 @@ export function CompanionProfileBookingRail({ companion, mobile }: Props) {
         className="font-sans text-xs text-center leading-relaxed"
         style={{ color: 'var(--color-ink-muted)' }}
       >
-        Free to cancel any time before you meet · full refund in 7 days
+        Free to cancel any time before you meet · never charged to meet
       </p>
     </div>
   );

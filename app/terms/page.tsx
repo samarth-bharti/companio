@@ -31,7 +31,7 @@ export default function TermsPage() {
           body: [
             `Companio currently sells one thing: a pass, which unlocks every ID-checked companion profile in your city and includes your first meeting. It is offered in four tiers, identical in what they unlock and differing only in how long they last: ${formatPaise(PASS_TIERS.pass1m.amount)} for ${PASS_TIERS.pass1m.label}, ${formatPaise(PASS_TIERS.pass3m.amount)} for ${PASS_TIERS.pass3m.label}, ${formatPaise(PASS_TIERS.pass12m.amount)} for ${PASS_TIERS.pass12m.label}, and ${formatPaise(PASS_TIERS.passlife.amount)} for ${PASS_TIERS.passlife.label.toLowerCase()} access. You are not charged to book or attend your included meeting.`,
             'A pass is not a subscription. It does not renew and we never auto-debit you: a timed pass simply expires at the end of its term, after which profiles are locked again and you may choose to buy another pass or not. Buying a timed pass while one is still active adds its length to the time you have left rather than replacing it, and a lifetime pass is never shortened by a later purchase.',
-            'If you have not found anyone you would like to meet, you may request a full refund of what you paid for your pass, at any tier, within 7 days of payment.',
+            'A pass is non-refundable once it is active, because it delivers everything it promises the moment you buy it. We do refund a payment that succeeded without activating your pass, a duplicate charge, and anything the law entitles you to. Our Refund Policy sets this out in full, and nothing here removes your rights under the Consumer Protection Act, 2019.',
             'Payments are processed by Razorpay. Companio does not currently collect, hold, or settle any payment between you and a companion. Companions are compensated by Companio directly. Paying or accepting payment off-platform breaks these terms and removes every protection we offer.',
             'Paid meetups beyond your included meeting are not yet available. When they launch, the price will always be shown before you book, and these terms will be updated before any such charge is made. Applicable taxes (including GST, once we are registered) will be shown at checkout. Your included meeting never expires.',
           ],
@@ -46,7 +46,7 @@ export default function TermsPage() {
         {
           heading: '5. Cancellations & refunds',
           body: [
-            'Cancel free of charge up to 24 hours before a meetup. If a companion cancels, your credit or payment is returned in full, automatically. Full details are in our Refund Policy.',
+            'Cancel free of charge up to 24 hours before a meetup. If a companion cancels, your included meeting returns to your wallet automatically — meetups are not charged for, so there is no payment to reverse. Full details are in our Refund Policy.',
           ],
         },
         {

@@ -38,7 +38,11 @@ const INCLUDED = [
   'Your first meeting, included',
   'Chat with any companion before you meet',
   'In-app SOS and live location sharing',
-  'Full refund within 7 days',
+  // Not "Full refund within 7 days" — the executed Refund Policy offers no
+  // cooling-off window, and a pricing page may not sell a promise the policy
+  // does not keep. What replaces it is the thing members actually ask about at
+  // checkout, and it is a real differentiator rather than a consolation.
+  'No auto-renewal — you are never charged twice',
 ] as const;
 
 /** Sub-label for a tier. Lifetime has no per-month figure, so it doesn't get one. */

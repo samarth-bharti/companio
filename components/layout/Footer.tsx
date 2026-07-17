@@ -9,6 +9,7 @@ const COLUMNS = [
     heading: "Explore",
     links: [
       { label: "Find a companion", href: "/explore" },
+      { label: "Pricing",          href: "/pricing" },
       { label: "Categories",       href: "/explore#categories" },
       { label: "Cities",           href: "/explore#cities" },
     ],
@@ -29,6 +30,10 @@ const COLUMNS = [
       { label: "Terms of service", href: "/terms" },
       { label: "Privacy policy",   href: "/privacy" },
       { label: "Refund policy",    href: "/refunds" },
+      // "Delivery", not "Shipping". Nothing is shipped — but a payment
+      // aggregator's checklist looks for this page by either name, and its
+      // absence reads as an unanswered question about physical goods.
+      { label: "Delivery policy",  href: "/delivery" },
       { label: "Cookie policy",    href: "/cookies" },
     ],
   },

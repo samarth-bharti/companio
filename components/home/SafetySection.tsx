@@ -15,8 +15,8 @@ const TRUST_PILLARS = [
   },
   {
     icon: Lock,
-    title: "7-day refund promise",
-    body: "Didn't find anyone you'd like to meet? Ask for a full refund within 7 days.",
+    title: "One payment, never a second",
+    body: "A pass is bought once. Nothing renews, nothing auto-debits, and we never keep a mandate against your card.",
     color: "#7A4FE0",
   },
   {
