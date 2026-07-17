@@ -22,8 +22,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/press`,                   changeFrequency: 'monthly', priority: 0.5 },
     // ── Legal ─────────────────────────────────────────────────────────────────
     { url: `${SITE_URL}/terms`,                   changeFrequency: 'yearly',  priority: 0.3 },
+    { url: `${SITE_URL}/community-guidelines`,    changeFrequency: 'yearly',  priority: 0.3 },
     { url: `${SITE_URL}/privacy`,                 changeFrequency: 'yearly',  priority: 0.3 },
     { url: `${SITE_URL}/refunds`,                 changeFrequency: 'yearly',  priority: 0.3 },
+    { url: `${SITE_URL}/delivery`,                changeFrequency: 'yearly',  priority: 0.3 },
     { url: `${SITE_URL}/cookies`,                 changeFrequency: 'yearly',  priority: 0.3 },
   ];
 

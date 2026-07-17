@@ -21,34 +21,69 @@ import { join } from 'node:path';
 
 const ROOTS = ['app', 'components'];
 
-/** Phrases that assert a check nobody runs. */
-const FORBIDDEN: { pattern: RegExp; why: string }[] = [
+/**
+ * Phrases the product cannot back up.
+ *
+ * `allow` is per-rule, not global. It used to be one list covering every rule,
+ * which quietly meant a file excused for one claim was excused for all of them —
+ * app/terms/page.tsx may truthfully say "we run no background check", and that
+ * exemption would have let a refund promise back into the Terms unnoticed. An
+ * exemption is granted for a reason, so it is granted against a reason.
+ */
+const FORBIDDEN: { pattern: RegExp; why: string; allow?: string[] }[] = [
   // Collecting CONSENT for a check is honest — it is how we become able to run
   // one. Asserting that the check has HAPPENED is the lie. So the word is only
   // allowed immediately before "consent", or in the sentence that denies it.
   {
     pattern: /background[-\s]?check(ed|s)?\b(?!\s+(consent|on me))/i,
     why: 'no background-check vendor is integrated',
+    allow: [
+      join('lib', 'trust.ts'),
+      join('app', 'trust', 'page.tsx'),
+      join('app', 'terms', 'page.tsx'),
+      join('app', 'privacy', 'page.tsx'),
+      // "It is a fraud check, not a criminal-background check" — §8 exists to
+      // stop a member reading the Verified badge as a safety guarantee.
+      join('app', 'community-guidelines', 'page.tsx'),
+      join('components', 'safety', 'SafetyJourney.tsx'),
+      join('components', 'companion', 'WizardStepVerify.tsx'),
+      join('app', 'api', 'application', 'upload', 'route.ts'),
+    ],
   },
-  { pattern: /selfie match/i, why: 'no biometric selfie match exists' },
-  { pattern: /verified against Aadhaar/i, why: 'no UIDAI/Aadhaar KYC integration exists' },
-  { pattern: /Aadhaar[-\s]?(KYC|verified)/i, why: 'no UIDAI/Aadhaar KYC integration exists' },
+  // /terms and SafetyJourney name these to DENY them — "we do not currently run
+  // an automated Aadhaar KYC check, a biometric selfie match…". Naming the thing
+  // you do not do is the honest sentence, not the forbidden one.
+  { pattern: /selfie match/i, why: 'no biometric selfie match exists',
+    allow: [join('lib', 'trust.ts'), join('app', 'trust', 'page.tsx'),
+            join('app', 'terms', 'page.tsx')] },
+  { pattern: /verified against Aadhaar/i, why: 'no UIDAI/Aadhaar KYC integration exists',
+    allow: [join('lib', 'trust.ts'), join('app', 'trust', 'page.tsx')] },
+  { pattern: /Aadhaar[-\s]?(KYC|verified)/i, why: 'no UIDAI/Aadhaar KYC integration exists',
+    allow: [join('lib', 'trust.ts'), join('app', 'trust', 'page.tsx'),
+            join('app', 'terms', 'page.tsx'),
+            join('components', 'safety', 'SafetyJourney.tsx'),
+            join('components', 'companion', 'WizardStepVerify.tsx')] },
   { pattern: /verified review/i, why: 'no review has ever been written; there is nothing to verify' },
-];
 
-/**
- * Files allowed to say these words, because they say them truthfully — either to
- * deny the claim, to name the thing that is missing, or to collect consent for a
- * check that may run later.
- */
-const ALLOWED = [
-  join('lib', 'trust.ts'),
-  join('app', 'trust', 'page.tsx'),
-  join('app', 'terms', 'page.tsx'),
-  join('app', 'privacy', 'page.tsx'),
-  join('components', 'safety', 'SafetyJourney.tsx'),
-  join('components', 'companion', 'WizardStepVerify.tsx'),
-  join('app', 'api', 'application', 'upload', 'route.ts'),
+  // ── The refund promise ──────────────────────────────────────────────────────
+  //
+  // The site promised "full refund within 7 days, no questions asked" in fifteen
+  // places, and backed it with a real route and a dashboard button. The executed
+  // Refund Policy §2 offers no cooling-off window, so every one of those was a
+  // promise the signed document would not honour — the site was the generous one,
+  // which is the pleasant-looking half of the same failure: a page and a contract
+  // that disagree about money.
+  //
+  // "7 business days" is our response time for a billing query and is deliberately
+  // not matched here. Only a refund *entitlement* keyed to 7 days is.
+  {
+    pattern: /7[-\s]day refund|refund[^.]{0,40}\b(within|in) 7 days\b/i,
+    why: 'the executed Refund Policy offers no cooling-off window — a pass is non-refundable once active',
+  },
+  {
+    pattern: /refund[^.]{0,30}no questions/i,
+    why: 'there is no no-questions-asked refund; refunds are for non-delivery, duplicates, and legal entitlement',
+  },
 ];
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -72,14 +107,14 @@ function userVisibleText(src: string): string {
     .replace(/\b\w+Consent\b/g, ' ');      // the consent field name
 }
 
-describe('safety claims match what the product actually does', () => {
-  const files = ROOTS.flatMap((r) => walk(r)).filter(
-    (f) => !ALLOWED.some((a) => f.endsWith(a)),
-  );
+describe('safety and money claims match what the product actually does', () => {
+  const files = ROOTS.flatMap((r) => walk(r));
 
-  for (const { pattern, why } of FORBIDDEN) {
+  for (const { pattern, why, allow = [] } of FORBIDDEN) {
     it(`no page claims ${pattern.source} — ${why}`, () => {
-      const offenders = files.filter((f) => pattern.test(userVisibleText(readFileSync(f, 'utf8'))));
+      const offenders = files
+        .filter((f) => !allow.some((a) => f.endsWith(a)))
+        .filter((f) => pattern.test(userVisibleText(readFileSync(f, 'utf8'))));
       expect(offenders, `${offenders.join(', ')} — ${why}`).toEqual([]);
     });
   }

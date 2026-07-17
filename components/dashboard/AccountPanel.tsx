@@ -6,16 +6,15 @@
 // worked, and nothing in the entire app called either one — so the sentence was
 // false, in a document that is legally binding. This panel is what makes it true.
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useState, useSyncExternalStore } from 'react';
 import { signOut, useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
-import { Download, Trash2, AlertTriangle, IndianRupee } from 'lucide-react';
+import { Download, Trash2, AlertTriangle } from 'lucide-react';
 import { dataClient, isServerBacked, localStorageKeys } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
 import { useViewerReady } from '@/lib/useViewerReady';
 import { COMPANY, GRIEVANCE_OFFICER_PHRASE } from '@/lib/company';
-import { formatPaise } from '@/lib/money';
 import { getConsent, setConsent, onConsentChange, type ConsentState } from '@/lib/consent';
 import { spring } from '@/lib/motion';
 
@@ -23,10 +22,6 @@ import { spring } from '@/lib/motion';
 const CONFIRM_WORD = 'DELETE';
 
 type DeleteState = 'idle' | 'working' | 'error';
-type RefundState = 'idle' | 'working' | 'done' | 'error';
-
-/** What the server says is refundable, if anything. */
-type RefundOffer = { eligible: boolean; amountPaise?: number; daysLeft?: number };
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
@@ -68,50 +63,6 @@ export function AccountPanel() {
   const [confirm, setConfirm] = useState('');
   const [state, setState] = useState<DeleteState>('idle');
   const [error, setError] = useState('');
-
-  // Refund eligibility is the SERVER's answer, read from the purchase row. The
-  // button only appears when there is genuinely something to refund, so nobody is
-  // offered a refund and then told no.
-  const [refund, setRefund] = useState<RefundOffer | null>(null);
-  const [refundState, setRefundState] = useState<RefundState>('idle');
-  const [refundMsg, setRefundMsg] = useState('');
-
-  useEffect(() => {
-    // A guest has no purchase to refund, and the route answers 401 for them.
-    if (!serverBacked || !signedIn) return;
-    let live = true;
-    void fetch('/api/user/refund')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: RefundOffer | null) => {
-        if (live && d?.eligible) setRefund(d);
-      })
-      .catch(() => {});
-    return () => { live = false; };
-  }, [serverBacked, signedIn]);
-
-  const requestRefund = useCallback(async () => {
-    setRefundState('working');
-    try {
-      const res = await fetch('/api/user/refund', { method: 'POST' });
-      const body = (await res.json().catch(() => null)) as
-        | { ok?: boolean; message?: string; alreadyRequested?: boolean }
-        | null;
-      if (res.ok && body?.ok) {
-        setRefundState('done');
-        setRefundMsg(
-          body.alreadyRequested
-            ? 'That refund is already with us — we are on it.'
-            : 'Refund requested. We will process it to your original payment method and email you when it is done.',
-        );
-        return;
-      }
-      setRefundState('error');
-      setRefundMsg(body?.message ?? 'We could not file that request. Try again in a moment.');
-    } catch {
-      setRefundState('error');
-      setRefundMsg('We could not reach the server. Check your connection and try again.');
-    }
-  }, []);
 
   const armed = confirm.trim() === CONFIRM_WORD && state !== 'working';
 
@@ -290,43 +241,6 @@ export function AccountPanel() {
           </p>
         )}
       </Card>
-
-      {/* ── Refund (the policy's "one tap from your dashboard") ─────────────── */}
-      {refund?.eligible && (
-        <Card>
-          <h2 className="font-display font-bold mb-1" style={{ fontSize: 'var(--text-h4)', color: 'var(--color-ink)' }}>
-            Refund your unlock
-          </h2>
-          <p className="font-sans text-sm mb-4" style={{ color: 'var(--color-ink-muted)' }}>
-            {refundState === 'done'
-              ? refundMsg
-              : `Didn't find anyone you'd like to meet? Full refund of ${formatPaise(refund.amountPaise ?? 0)}, no questions asked — ${
-                  refund.daysLeft === 1 ? 'today is the last day' : `${refund.daysLeft} days left`
-                } of the 7-day window.`}
-          </p>
-
-          {refundState !== 'done' && (
-            <motion.button
-              type="button"
-              onClick={requestRefund}
-              disabled={refundState === 'working'}
-              whileTap={reduced ? {} : { scale: 0.97 }}
-              transition={spring.snappy}
-              className="inline-flex items-center gap-2 min-h-[44px] px-5 rounded-pill text-sm font-semibold disabled:opacity-60"
-              style={{ border: '1.5px solid var(--color-azure)', color: 'var(--color-azure-deep)' }}
-            >
-              <IndianRupee size={16} aria-hidden="true" />
-              {refundState === 'working' ? 'Requesting…' : 'Request a refund'}
-            </motion.button>
-          )}
-
-          {refundState === 'error' && (
-            <p role="alert" className="font-sans text-sm mt-3" style={{ color: '#B23A2E' }}>
-              {refundMsg}
-            </p>
-          )}
-        </Card>
-      )}
 
       {/* ── Right to erasure (DPDP s.12) ────────────────────────────────────── */}
       <Card>

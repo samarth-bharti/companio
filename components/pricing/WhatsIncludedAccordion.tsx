@@ -42,8 +42,8 @@ const ITEMS = [
   },
   {
     Icon: Undo2,
-    title: '7-day refund window',
-    body: "Didn't find anyone you'd like to meet? Full refund within 7 days, no questions.",
+    title: 'Nothing renews',
+    body: 'A pass is a single payment. We never store a mandate against your card or UPI, so you are never charged a second time without asking for it.',
   },
 ] as const;
 

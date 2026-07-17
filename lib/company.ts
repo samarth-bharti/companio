@@ -3,10 +3,13 @@
 // SINGLE SOURCE OF TRUTH for company + compliance contact facts. These appear in
 // the Privacy Policy, Terms of Service and the site footer.
 //
-// ⚠️  GO-LIVE: replace every [[ ... ]] placeholder with the real, verified value.
 // DPDPA 2023 and the IT Act both REQUIRE a published, reachable Grievance Officer
-// and a registered address. Publishing wrong/placeholder details is worse than
-// none — fill these from the incorporation papers before launch.
+// and a registered address. Publishing wrong details is worse than publishing none.
+//
+// Every value here is transcribed from the executed policy documents — the
+// Grievance Redressal Policy §2 names the officer, and all six policies give one
+// contact address. If a policy is re-issued, this file changes with it: the site
+// and the signed documents may never disagree about who to contact.
 
 export const COMPANY = {
   legalName: 'TRYCOMPANIOLABS LLP',
@@ -15,14 +18,20 @@ export const COMPANY = {
   llpin: 'ACY-1464',
   registeredAddress:
     'DPT 808B, F 79–80, 8th Floor, DLF Prime Tower, Okhla Industrial Area Phase-I, New Delhi – 110020, Delhi, India',
-  // Contact — confirm these mailboxes exist and are monitored:
-  supportEmail: 'support@trycompanio.com',
-  privacyEmail: 'privacy@trycompanio.com',
-  // DPDPA / IT Act Grievance Officer — MUST be a real, reachable person:
+  // Contact. One monitored inbox, not three vanity aliases on the domain.
+  //
+  // This file used to publish support@, privacy@ and grievance@trycompanio.com.
+  // None of them are named anywhere in the executed policies, which give this
+  // address nine times and no other. An unmonitored grievance inbox is not a
+  // cosmetic problem: DPDPA 2023 requires the officer be *reachable*, so a
+  // handsome address nobody reads fails the law that a plain one satisfies.
+  supportEmail: 'trycompanio@gmail.com',
+  privacyEmail: 'trycompanio@gmail.com',
+  // DPDPA / IT Act Grievance Officer — Grievance Redressal Policy §2.
   grievanceOfficer: {
-    name: '[[Grievance Officer full name]]',
-    email: 'grievance@trycompanio.com',
-    phone: '[[Grievance Officer phone]]',
+    name: 'Prashant Yadav',
+    email: 'trycompanio@gmail.com',
+    phone: '+91 90399 56337',
   },
   // Legal venue for disputes:
   jurisdiction: 'New Delhi, India',

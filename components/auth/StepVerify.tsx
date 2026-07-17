@@ -128,6 +128,10 @@ export function StepVerify({ form, patch, onBack, onNext }: Props) {
                 aria-describedby={termsErr ? 'sv-terms-err' : undefined}
               />
               <span className="font-sans text-sm" style={{ color: 'var(--color-ink-muted)' }}>
+                {/* Two documents, two links. This bound people to the "Terms &
+                    Community Guidelines" behind a single href to /terms, and the
+                    Guidelines were not published anywhere at all — so the tick
+                    box asked for consent to a document that could not be read. */}
                 I agree to the{' '}
                 <a
                   href="/terms"
@@ -136,7 +140,17 @@ export function StepVerify({ form, patch, onBack, onNext }: Props) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Terms &amp; Community Guidelines
+                  Terms
+                </a>{' '}
+                &amp;{' '}
+                <a
+                  href="/community-guidelines"
+                  className="font-semibold underline underline-offset-2"
+                  style={{ color: 'var(--color-azure-deep)' }}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Community Guidelines
                 </a>
                 . I understand Companio is a{' '}
                 <strong style={{ color: 'var(--color-ink)' }}>strictly platonic platform</strong>, no romantic or sexual

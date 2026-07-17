@@ -31,7 +31,10 @@ export function BookingsPanel() {
     await dataClient.updateBooking(id, { status: 'cancelled' });
     await dataClient.addNotification({
       title: 'Booking cancelled',
-      body: 'Your meetup was cancelled. Full refund within 7 days.',
+      // Meetups are never charged for, so there was never a payment to reverse
+      // here — this promised a refund of nothing. Cancelling returns the meeting
+      // to the wallet, which is what actually happens.
+      body: 'Your meetup was cancelled. The meeting is back in your wallet.',
     });
     setCancelTarget(null);
   };

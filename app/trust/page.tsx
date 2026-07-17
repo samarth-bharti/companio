@@ -19,7 +19,7 @@ export default function TrustPage() {
         {
           heading: 'Money protection',
           body: [
-            `A pass, from ${formatPaise(PASS_TIERS.pass1m.amount)}, unlocks every profile in your city and includes your first meeting. You are never charged to meet. Nothing renews and nothing is auto-debited — a pass expires and you decide whether to buy another. If nobody feels like the right fit, ask for a full refund within 7 days.`,
+            `A pass, from ${formatPaise(PASS_TIERS.pass1m.amount)}, unlocks every profile in your city and includes your first meeting. You are never charged to meet. Nothing renews and nothing is auto-debited — a pass expires and you decide whether to buy another. A pass is non-refundable once active, but a payment that never activated one, or a duplicate charge, we refund without argument.`,
           ],
         },
         {
