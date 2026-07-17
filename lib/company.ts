@@ -30,7 +30,6 @@ export const COMPANY = {
   // DPDPA / IT Act Grievance Officer — Grievance Redressal Policy §2.
   grievanceOfficer: {
     name: 'Prashant Yadav',
-    designation: 'Designated Partner',
     email: 'trycompanio@gmail.com',
     phone: '+91 90399 56337',
   },
