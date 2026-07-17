@@ -48,3 +48,8 @@ next-env.d.ts
 
 # Local dev-server log
 .devlog.txt
+
+# Agent tooling: settings and hooks are tracked, but vendored skills
+# reinstall themselves and their caches are regenerable.
+/.claude/skills/
+/.impeccable/
