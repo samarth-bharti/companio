@@ -1,8 +1,18 @@
 // lib/server/emailTemplates.ts
 //
-// Pure template functions — no side effects, no imports. Each returns
-// { subject, html, text } ready to pass straight to sendEmail().
+// Pure template functions — no side effects. Each returns { subject, html, text }
+// ready to pass straight to sendEmail().
 // Copy is warm, professional, and strictly platonic throughout.
+//
+// The one import is lib/company.ts, which is a frozen const and keeps these
+// templates pure. It is here because the receipt hard-coded
+// support@trycompanio.com — a mailbox no executed policy names and nobody reads —
+// as the address to write to about a charge. An email is not covered by the
+// checks that sweep the site's pages, so it kept the dead address after every
+// page had lost it. The address a customer is given when their money is missing
+// is the last one that should be guessed.
+
+import { COMPANY } from '@/lib/company';
 
 // ---------------------------------------------------------------------------
 // Shared layout helpers
@@ -161,7 +171,7 @@ export function receiptEmail(opts: {
       ${detail('Description', description)}
       ${detail('Amount paid', rupees)}
     </table>
-    ${p(`Questions about this charge? Contact us at <a href="mailto:support@trycompanio.com" style="color:${BRAND_COLOR};">support@trycompanio.com</a>.`)}
+    ${p(`Questions about this charge? Contact us at <a href="mailto:${COMPANY.supportEmail}" style="color:${BRAND_COLOR};">${COMPANY.supportEmail}</a>.`)}
     ${p(`Thank you for being part of Companio.<br><strong>The Companio Team</strong>`)}
   `;
 
@@ -173,7 +183,7 @@ export function receiptEmail(opts: {
     `Description : ${description}`,
     `Amount paid : ${rupees}`,
     ``,
-    `Questions? Email support@trycompanio.com.`,
+    `Questions? Email ${COMPANY.supportEmail}.`,
     ``,
     `— The Companio Team`,
   ].join('\n');

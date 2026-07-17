@@ -19,7 +19,11 @@ import { join } from 'node:path';
  * Adding the sentence back to a page is not one of them.
  */
 
-const ROOTS = ['app', 'components'];
+// `lib` is swept too. It was not, and the payment receipt in
+// lib/server/emailTemplates.ts kept telling customers to write to
+// support@trycompanio.com long after every page had dropped it — an email is not
+// a page, so nothing that walked the site could ever have caught it.
+const ROOTS = ['app', 'components', 'lib'];
 
 /**
  * Phrases the product cannot back up.
@@ -83,6 +87,22 @@ const FORBIDDEN: { pattern: RegExp; why: string; allow?: string[] }[] = [
   {
     pattern: /refund[^.]{0,30}no questions/i,
     why: 'there is no no-questions-asked refund; refunds are for non-delivery, duplicates, and legal entitlement',
+  },
+
+  // ── Contact addresses ───────────────────────────────────────────────────────
+  //
+  // The executed policies name trycompanio@gmail.com nine times and no other
+  // address. support@, privacy@ and grievance@trycompanio.com are mailboxes no
+  // document names and nobody reads, and DPDPA 2023 requires the Grievance
+  // Officer be *reachable* — so publishing one is not a cosmetic slip.
+  //
+  // Every contact address must come from lib/company.ts. Hard-coding one is how
+  // the receipt email kept a dead address after the whole site had lost it.
+  // hello@trycompanio.com is deliberately not matched: it is the EMAIL_FROM
+  // sender identity, not somewhere a human is invited to write.
+  {
+    pattern: /\b(support|privacy|grievance)@trycompanio\.com/i,
+    why: 'no executed policy names these mailboxes; contact addresses come from lib/company.ts',
   },
 ];
 
