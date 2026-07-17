@@ -6,6 +6,11 @@ real keys exist.
 
 Target stack: **Vercel + Neon + Razorpay + Resend**.
 
+> **Want the ordered path rather than the reference?** Read
+> [`docs/LAUNCH.md`](docs/LAUNCH.md) first. It says what to do, in what order, and
+> links back here for the detail. This file is the reference; that one is the plan.
+
+- Getting the gateway approved → [`docs/PAYMENTS-ACTIVATION.md`](docs/PAYMENTS-ACTIVATION.md)
 - Running it once it is live → [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
 - When something breaks → [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md)
 - Why the code is shaped this way → [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
@@ -295,9 +300,13 @@ Leave `GST_ACTIVE=false` until registration is real.
 
 - [ ] Vercel **Pro** (commercial use — §1)
 - [ ] `NEXTAUTH_SECRET` and `CRON_SECRET` **rotated** (§5)
-- [ ] Grievance Officer name + phone filled in `lib/company.ts` — **legally
-      required** under DPDPA 2023 / the IT Act. Cannot be invented; nothing
-      renders while they are `[[placeholders]]`, but the obligation stands.
+- [ ] Someone is actually reading `trycompanio@gmail.com` and answering
+      +91 90399 56337. The Grievance Officer details are filled in
+      `lib/company.ts` and published on every page, along with a 24h
+      acknowledgement and 15-day resolution promise. DPDPA requires the officer be
+      **reachable** — publishing the details is the easy half.
+- [ ] The lawyer has amended the Refund Policy, Terms and Community Guidelines —
+      [`docs/PAYMENTS-ACTIVATION.md`](docs/PAYMENTS-ACTIVATION.md) §4
 - [ ] Blob store connected
 - [ ] Upstash set (rate limiting is otherwise decorative)
 - [ ] Razorpay KYC done, webhook created, delivery log checked
@@ -306,7 +315,7 @@ Leave `GST_ACTIVE=false` until registration is real.
 
 ## 12. What must be verified after the keys land
 
-Everything below is tested as far as it can be without live credentials — 443
+Everything below is tested as far as it can be without live credentials — 445
 unit tests, a clean typecheck, a clean build, and the whole flow driven in a
 browser against real Neon. These are the things that **cannot** be proven without
 a real transaction. Budget fifteen minutes.

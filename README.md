@@ -20,7 +20,7 @@ Neon Postgres · Auth.js · Razorpay · sharp + Vercel Blob · Vitest**
 
 Companio has **not launched**. It has no companions, no members and no revenue.
 
-- The software is real and tested: **443 tests**, clean typecheck, clean build,
+- The software is real and tested: **445 tests**, clean typecheck, clean build,
   and the full flow driven in a browser against a real Neon database.
 - The catalogue is **empty on purpose**. It used to hold 22 invented people with
   stock portraits; selling access to them would have been selling access to
@@ -31,6 +31,10 @@ Companio has **not launched**. It has no companions, no members and no revenue.
 
 **The launch is the companion funnel, not the buyer funnel.** See
 [`docs/STATUS.md`](docs/STATUS.md).
+
+> **Launching it?** [`docs/LAUNCH.md`](docs/LAUNCH.md) is the whole path in order —
+> what to do today, what to buy, every env var, how to get Razorpay approved, and
+> the five things that cannot be verified until real keys exist.
 
 ## What it sells
 
@@ -121,8 +125,10 @@ scripts/        Icon generation, the deploy migration runner
 
 Start here, in this order:
 
+- [`docs/LAUNCH.md`](docs/LAUNCH.md) — **the whole path to going live, in order.** Read this first.
 - [`docs/STATUS.md`](docs/STATUS.md) — **what is done, what is left, what blocks launch.**
 - [`DEPLOY.md`](DEPLOY.md) — deploying: every key, where to get it, what it costs.
+- [`docs/PAYMENTS-ACTIVATION.md`](docs/PAYMENTS-ACTIVATION.md) — getting a payment gateway to approve you, and what to do when it does not.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how it works and **why** — the invariants, and the bug behind each one.
 - [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — running it: incidents, the database, backups, scaling, refunds.
 - [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) — symptom → cause → fix.
@@ -132,7 +138,7 @@ Start here, in this order:
 - [`docs/journey-spec.md`](docs/journey-spec.md), [`docs/FEATURE-AUDIT.md`](docs/FEATURE-AUDIT.md),
   [`docs/LAUNCH-AUDIT.md`](docs/LAUNCH-AUDIT.md), [`docs/GO-LIVE.md`](docs/GO-LIVE.md),
   [`docs/CHAT-ROADMAP.md`](docs/CHAT-ROADMAP.md) — **historical.** Useful for intent,
-  stale on specifics. Trust the four above over these.
+  stale on specifics. Trust the maintained ones above over these.
 
 ## Hard rules
 

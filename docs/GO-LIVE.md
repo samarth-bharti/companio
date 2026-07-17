@@ -2,8 +2,9 @@
 
 > # ⚠️ SUPERSEDED — do not follow this to deploy.
 >
-> **[`../DEPLOY.md`](../DEPLOY.md) is the live runbook.** It has verified July
-> 2026 pricing, every environment variable and where each one comes from, and the
+> **[`LAUNCH.md`](LAUNCH.md) is the live runbook** — the whole path in order.
+> [`../DEPLOY.md`](../DEPLOY.md) is the reference behind it: verified July 2026
+> pricing, every environment variable and where each one comes from, and the
 > RBI / Razorpay Route position.
 >
 > This file is kept for its reasoning and its history. Its specifics are wrong in

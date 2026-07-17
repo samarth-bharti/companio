@@ -1,10 +1,12 @@
 # Status & next steps
 
-_Last updated: 2026-07-17, after the pass ladder + photo pipeline pass._
+_Last updated: 2026-07-17, after the policy-alignment pass._
 
-The single source of truth for **where the project is and what to do next**. Keep
-it current — it is the first file to read when resuming.
+**Launching? Read [`LAUNCH.md`](LAUNCH.md) instead — it is the ordered path.**
+This file is where the *code* is; that one is what to *do*.
 
+- The whole launch path, in order → [`LAUNCH.md`](LAUNCH.md)
+- Getting a payment gateway approved → [`PAYMENTS-ACTIVATION.md`](PAYMENTS-ACTIVATION.md)
 - Deploying, keys, costs → [`../DEPLOY.md`](../DEPLOY.md)
 - Why the code is shaped this way → [`ARCHITECTURE.md`](ARCHITECTURE.md)
 - Running it → [`OPERATIONS.md`](OPERATIONS.md)
@@ -13,15 +15,16 @@ it current — it is the first file to read when resuming.
 ## The one-line summary
 
 **The product is ready. The business inputs are not.** The software does what it
-says, the claims are ones it can keep, and a companion can now go from
-application to a live profile with their own face without anyone touching a
-database. What stands between this and a launch is a Grievance Officer with no
-name, two leaked secrets, a Razorpay KYC that takes days, and **no companions**.
+says, the claims are ones it can keep, and a companion can go from application to
+a live profile with their own face without anyone touching a database. What stands
+between this and a launch is two leaked secrets, a Razorpay KYC that takes days,
+three policy documents that describe features the product does not have, and
+**no companions**.
 
 ## Quality gates (verified 2026-07-17 by running them)
 
 - `npx tsc --noEmit` → **0 errors**
-- `npm test` → **443 passing** (32 files)
+- `npm test` → **445 passing** (32 files)
 - `npm run build` → **success**
 - Every public route → **200**; `/admin` → **307** signed-out
 - Driven in a real browser against real Neon, not just unit-tested: the pass
@@ -99,11 +102,18 @@ Both have bitten more than once.
 - **There are no companions.** The catalogue is empty because that is the true
   state of the business. This is the launch blocker; everything else is a
   formality beside it.
-- **The Grievance Officer's name and phone are `[[placeholders]]`** in
-  `lib/company.ts`. Legally required (DPDPA 2023 / IT Act). Cannot be invented.
-  Nothing renders while they are unfilled, but the obligation stands.
+- **Three executed policy documents describe a product that does not exist.** The
+  Refund Policy (§1, §4), Terms (§4, §2) and Community Guidelines (§3(k)) promise
+  auto-renewal, boosts, gifts and wallet top-ups. None can be bought; auto-renewal
+  does not exist at all. **The lawyer must amend them** — the site cannot be made
+  to match without building products the RBI rules forbid. Table:
+  [`PAYMENTS-ACTIVATION.md`](PAYMENTS-ACTIVATION.md) §4.
 - **`NEXTAUTH_SECRET` and `CRON_SECRET` leaked at `07c46b1`** in a public repo.
   **Rotate them.**
+- **The Gmail inbox is now a published legal commitment.** `trycompanio@gmail.com`
+  is the support, privacy *and* grievance address, and the site now promises 24h
+  acknowledgement, 15-day resolution and a 7-business-day billing response.
+  Someone has to actually read it, and answer +91 90399 56337.
 - **Rate limiting is decorative without Upstash.** In-memory means per-instance
   on serverless.
 - **No companion is `verified`.** The column is operator-owned and true of
@@ -120,13 +130,16 @@ Both have bitten more than once.
 
 ## Next, in order
 
-1. **Merge the open PR.**
+**The ordered path with the detail is [`LAUNCH.md`](LAUNCH.md).** In brief:
+
+1. **Set the Razorpay business category to Services** — free, and probably the
+   whole reason the "5 products" checklist appeared.
 2. **Start Razorpay KYC** — it takes days, so it gates everything else.
-3. **Fill the Grievance Officer details.** Legal.
+3. **Send the lawyer the amendment list** ([`PAYMENTS-ACTIVATION.md`](PAYMENTS-ACTIVATION.md) §4).
 4. **Rotate the two leaked secrets.**
 5. **Vercel Pro** — Hobby forbids commercial use, so this is mandatory the day
    payments go live, not a scaling decision.
-6. **Connect a Blob store + Upstash.**
+6. **Connect a Blob store + Upstash + Resend.**
 7. **One real transaction** after the keys land. Signature verification fails
    silently and closed — see [`../DEPLOY.md` §12](../DEPLOY.md#12-what-must-be-verified-after-the-keys-land).
 8. **Recruit companions.** Then, and only then, `PASS_SALES_ENABLED=true`.
