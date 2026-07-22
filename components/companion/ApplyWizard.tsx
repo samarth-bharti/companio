@@ -55,10 +55,19 @@ export function ApplyWizard() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [isUnlocked, setIsUnlocked] = useState(false);
   const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
     let cancelled = false;
+
+    // Load unlocked subscription status
+    void dataClient
+      .getUnlocked()
+      .then((u) => {
+        if (!cancelled) setIsUnlocked(!!u);
+      })
+      .catch(() => {});
 
     // Load pre-existing draft or submitted application
     void dataClient
@@ -269,6 +278,7 @@ export function ApplyWizard() {
           {step === 3 && (
             <WizardStepPreview
               data={data}
+              isUnlocked={isUnlocked}
               onSubmit={handleSubmit}
               isSubmitting={submitting}
             />
