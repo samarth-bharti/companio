@@ -173,5 +173,3 @@ export function WizardStepPreview({ data, isUnlocked, onSubmit, isSubmitting }: 
     </div>
   );
 }
-  );
-}
