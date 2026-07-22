@@ -2,6 +2,7 @@
 
 import { CITIES } from '@/lib/data/cities';
 import type { GenderId } from '@/lib/journeyState';
+import { maxAdultDob } from '@/lib/age';
 
 const BIO_MAX = 280;
 
@@ -9,6 +10,7 @@ export interface AboutData {
   name: string;
   city: string;
   gender: GenderId | '';
+  dateOfBirth?: string;
   bio: string;
 }
 
@@ -129,6 +131,30 @@ export function WizardStepAbout({ data, onChange }: Props) {
         <p className="mt-1 font-sans text-xs" style={{ color: 'var(--color-ink-muted)' }}>
           Members can ask to meet only companions of their own gender. Without this you
           will not appear for them.
+        </p>
+      </div>
+
+      {/* Date of Birth — 18+ required */}
+      <div className="mb-5">
+        <label
+          htmlFor="wiz-dob"
+          className="font-sans text-sm font-semibold block mb-2"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          Date of birth <span aria-hidden="true" style={{ color: '#C7161A' }}>*</span>
+        </label>
+        <input
+          id="wiz-dob"
+          type="date"
+          max={maxAdultDob()}
+          value={data.dateOfBirth ?? ''}
+          onChange={(e) => onChange({ dateOfBirth: e.target.value })}
+          className="w-full h-11 px-4 font-sans text-sm"
+          style={fieldStyle}
+          required
+        />
+        <p className="font-sans text-xs mt-1.5" style={{ color: 'var(--color-ink-muted)' }}>
+          Companions must be 18 years or older. This is kept private and used for verification.
         </p>
       </div>
 

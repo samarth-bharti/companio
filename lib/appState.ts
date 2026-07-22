@@ -188,9 +188,8 @@ export function setPlan(p: Plan): void {
   else localStorage.removeItem(KEY_PLAN);
 }
 
-// ── Companion application (become-a-companion wizard) ────────────────────────
-
 export interface CompanionApplication {
+  id?: string;
   name: string;
   city: string;
   /** Carried onto the approved profile — the same-gender filter matches on it. */
@@ -201,13 +200,37 @@ export interface CompanionApplication {
   /** Mock verification flags ticked during the wizard. */
   idUploaded: boolean;
   backgroundConsent: boolean;
-  status: 'draft' | 'submitted';
+  status: 'draft' | 'submitted' | 'approved' | 'rejected';
+  photoUrl?: string;
+  idDocType?: string;
+  idDocNumber?: string;
+  ocrMatched?: boolean;
+}
+
+const KEY_APPLICATIONS = 'companio_applications_list';
+
+export function getApplications(): CompanionApplication[] {
+  const list = readJSON<CompanionApplication[]>(KEY_APPLICATIONS, []);
+  const single = readJSON<CompanionApplication | null>(KEY_APPLICATION, null);
+  if (single && single.name && !list.some((a) => a.name.trim().toLowerCase() === single.name.trim().toLowerCase())) {
+    list.push(single);
+  }
+  return list;
 }
 
 export function getApplication(): CompanionApplication | null {
-  return readJSON<CompanionApplication | null>(KEY_APPLICATION, null);
+  const list = getApplications();
+  return list.length > 0 ? list[list.length - 1] : readJSON<CompanionApplication | null>(KEY_APPLICATION, null);
 }
 
 export function saveApplication(a: CompanionApplication): void {
   writeJSON(KEY_APPLICATION, a);
+  const list = getApplications();
+  const index = list.findIndex((item) => item.name.trim().toLowerCase() === a.name.trim().toLowerCase());
+  if (index >= 0) {
+    list[index] = { ...list[index], ...a };
+  } else {
+    list.push(a);
+  }
+  writeJSON(KEY_APPLICATIONS, list);
 }

@@ -142,7 +142,9 @@ export function BookingWizard() {
       submittingRef.current = false;
       setSubmitting(false);
       const message = err instanceof Error ? err.message : '';
-      if (message.includes('insufficient_credits') || message.includes('402')) {
+      if (message.includes('cannot_book_yourself')) {
+        setBookingError('You cannot book a meetup with yourself.');
+      } else if (message.includes('insufficient_credits') || message.includes('402')) {
         setBookingError("You've used both included meetups. Additional paid meetups aren't available yet.");
       } else if (message.includes('age_verification_required') || message.includes('403')) {
         setBookingError('We need your date of birth before you can book. Add it from your dashboard.');

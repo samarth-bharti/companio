@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     // make the client collect it. Checked before the credit is spent.
     const me = await prisma.user.findUnique({
       where: { id: userId },
-      select: { dateOfBirth: true },
+      select: { dateOfBirth: true, companionId: true },
     });
     if (!isAdult(me?.dateOfBirth)) {
       return json(
@@ -58,6 +58,15 @@ export async function POST(req: Request) {
           detail: 'Confirm your date of birth before booking. Companio is for adults aged 18 and over.',
         },
         403,
+      );
+    }
+    if (me?.companionId && me.companionId === fields.companionId) {
+      return json(
+        {
+          error: 'cannot_book_yourself',
+          detail: 'You cannot book a meetup with yourself.',
+        },
+        400,
       );
     }
 

@@ -98,11 +98,56 @@ export function makeLocalStorageDataClient(): DataClient {
     // free of top-level side-effects that might trip SSR tree-shaking
     async getCompanions() {
       const { COMPANIONS } = await import('./data/companions');
-      return COMPANIONS;
+      const { getApplications } = await import('./appState');
+      const apps = getApplications();
+      const appCompanions: Companion[] = apps
+        .filter((app) => app.name)
+        .map((app) => {
+          const firstName = app.name.trim().split(' ')[0] || app.name;
+          const lastInitial = app.name.trim().split(' ')[1]?.[0];
+          const maskedName = lastInitial ? `${firstName} ${lastInitial}.` : `${firstName} ···`;
+          const slug = `c-${firstName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+          const cityName = app.city ? (app.city.charAt(0).toUpperCase() + app.city.slice(1).toLowerCase()) : 'Indore';
+          return {
+            id: slug,
+            name: app.name,
+            firstName,
+            maskedName,
+            city: cityName,
+            area: cityName,
+            age: 24,
+            activities: app.activities && app.activities.length ? app.activities : ['City Walk', 'Café Chat'],
+            languages: ['English', 'Hindi'],
+            rating: 4.9,
+            reviews: 1,
+            ratePerMeeting: app.rate || 49900,
+            hourlyRate: app.rate || 49900,
+            bio: app.bio || 'Friendly companion passionate about city walks and deep conversations.',
+            suggestions: ['Explore historic spots', 'Café meetup', 'City stroll'],
+            photo: app.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+            photoBlurred: undefined,
+            accent: '#2E6BFF',
+            gender: (app.gender as any) ?? 'male',
+            verified: true,
+            availableNow: true,
+            availability: 'Available today',
+            distanceKm: 2,
+            matchScore: 95,
+            reviewsList: [],
+          };
+        });
+
+      const list = [...appCompanions];
+      for (const c of COMPANIONS) {
+        if (!list.some((item) => item.id === c.id)) {
+          list.push(c);
+        }
+      }
+      return list;
     },
     async getCompanion(id) {
-      const { getCompanion } = await import('./data/companions');
-      return getCompanion(id);
+      const companions = await this.getCompanions();
+      return companions.find((c) => c.id === id || c.id === `c-${id.toLowerCase()}`);
     },
 
     // wallet

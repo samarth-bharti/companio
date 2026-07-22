@@ -176,7 +176,7 @@ export function useExploreFilters(): ExploreFiltersState {
    * name. A member in Jaipur was shown someone who lives 900 km away.
    */
   const cityCompanions = useMemo(
-    () => companions.filter((c) => c.city === selectedCity.name),
+    () => companions.filter((c) => c.city.toLowerCase() === selectedCity.name.toLowerCase() || c.city.toLowerCase() === selectedCity.id.toLowerCase()),
     [companions, selectedCity],
   );
 

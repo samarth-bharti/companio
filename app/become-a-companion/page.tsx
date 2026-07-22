@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { EarningsCalculator } from "@/components/companion/EarningsCalculator";
 import { ApplySteps } from "@/components/companion/ApplySteps";
 import { VerificationTimeline } from "@/components/companion/VerificationTimeline";
+import { COMPANION_SHARE_PCT } from "@/lib/money";
 
 export const metadata: Metadata = {
   title: "Become a Companion, Companio",
@@ -34,7 +35,7 @@ const BENEFITS = [
     //      one included in a member's pass, and a credit-funded booking creates
     //      no payout row at all. A companion joining today earns nothing yet.
     // Saying so costs a signup. Not saying so costs someone their time.
-    body: "Set your own rate. Paid bookings are not open yet — the first meetups are the one included in a member's pass — so treat this as early access, not income. When paid bookings open, you keep 70% of your rate and we pay it to your UPI id.",
+    body: `Set your own rate. Paid bookings are not open yet — the first meetups are the one included in a member's pass — so treat this as early access, not income. When paid bookings open, you keep ${COMPANION_SHARE_PCT}% of your rate and we pay it to your UPI id.`,
     color: "#7A4FE0",
     bg: "#F0EBFF",
   },

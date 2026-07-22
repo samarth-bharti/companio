@@ -46,11 +46,11 @@ describe('the price shown is the price charged', () => {
 });
 
 describe('splitMoney (commission)', () => {
-  it('takes 30% from a standard user', () => {
-    expect(splitMoney(100000, false)).toEqual({ pricePaid: 100000, commissionPaise: 30000, payoutPaise: 70000 });
+  it('takes 12% from a standard user', () => {
+    expect(splitMoney(100000, false)).toEqual({ pricePaid: 100000, commissionPaise: 12000, payoutPaise: 88000 });
   });
-  it('takes only 10% from a Plus user', () => {
-    expect(splitMoney(100000, true)).toEqual({ pricePaid: 100000, commissionPaise: 10000, payoutPaise: 90000 });
+  it('takes only 8% from a Plus user', () => {
+    expect(splitMoney(100000, true)).toEqual({ pricePaid: 100000, commissionPaise: 8000, payoutPaise: 92000 });
   });
   it('never loses a paisa (commission + payout == price)', () => {
     const s = splitMoney(49999, false);

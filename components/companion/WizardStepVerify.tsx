@@ -17,6 +17,7 @@ const UPLOADS_ENABLED = process.env.NEXT_PUBLIC_DATA_CLIENT === 'http';
 
 export interface VerifyData {
   photoFile:        File | null;
+  photoUrl?:        string;
   idFile:           File | null;
   backgroundConsent: boolean;
   platonicAck:      boolean;
@@ -89,7 +90,16 @@ export function WizardStepVerify({ data, onChange }: Props) {
       return;
     }
     setter('ok');
-    onChange(type === 'photo' ? { photoFile: file } : { idFile: file, ocrMatched: null });
+    if (type === 'photo') {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        onChange({ photoFile: file, photoUrl: dataUrl });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      onChange({ idFile: file, ocrMatched: null });
+    }
   };
 
   return (

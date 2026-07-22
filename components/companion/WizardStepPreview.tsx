@@ -1,6 +1,6 @@
 'use client';
 
-import { BadgeCheck } from 'lucide-react';
+import { BadgeCheck, Loader2 } from 'lucide-react';
 import { CITIES } from '@/lib/data/cities';
 import { Button } from '@/components/ui/Button';
 
@@ -15,9 +15,10 @@ export interface PreviewData {
 interface Props {
   data: PreviewData;
   onSubmit: () => void;
+  isSubmitting?: boolean;
 }
 
-export function WizardStepPreview({ data, onSubmit }: Props) {
+export function WizardStepPreview({ data, onSubmit, isSubmitting }: Props) {
   const cityName = CITIES.find((c) => c.id === data.city)?.name ?? 'Your city';
   const initial = data.name.trim()[0]?.toUpperCase() ?? '?';
 
@@ -90,18 +91,53 @@ export function WizardStepPreview({ data, onSubmit }: Props) {
         </div>
       </div>
 
-      {/* Submit */}
+      {/* Platform Subscription Card */}
+      <div
+        className="rounded-2xl p-6 mb-8 max-w-md mx-auto text-left"
+        style={{
+          background: 'linear-gradient(135deg, rgba(46,107,255,0.06), rgba(122,79,224,0.08))',
+          border: '1.5px solid rgba(46,107,255,0.2)',
+        }}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <BadgeCheck size={20} style={{ color: 'var(--color-azure)' }} />
+            <h3 className="font-sans font-bold text-base" style={{ color: 'var(--color-ink)' }}>
+              Platform Access Subscription
+            </h3>
+          </div>
+          <span className="font-display font-bold text-lg" style={{ color: 'var(--color-azure-deep)' }}>
+            ₹199<span className="text-xs font-sans font-normal text-slate-500">/mo</span>
+          </span>
+        </div>
+        <p className="font-sans text-xs leading-relaxed mb-3" style={{ color: 'var(--color-ink-muted)' }}>
+          All users — both companions and members — activate the ₹199 monthly platform pass. This unlocks full marketplace access, messaging, and verified profile status.
+        </p>
+        <div className="flex items-center gap-2 text-xs font-semibold" style={{ color: '#157A4A' }}>
+          <span>✓ Keep 88% – 92% of your hourly rate on every completed meetup.</span>
+        </div>
+      </div>
+
+      {/* Submit & Pay */}
       <div className="text-center">
         <Button
           variant="cta"
           size="xl"
           onClick={onSubmit}
-          className="w-full sm:w-auto"
+          disabled={isSubmitting}
+          className="w-full sm:w-auto flex items-center justify-center gap-2"
         >
-          Submit application
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Activating profile & submitting...</span>
+            </>
+          ) : (
+            'Pay ₹199 & Activate Companion Profile →'
+          )}
         </Button>
         <p className="font-sans text-xs mt-3" style={{ color: 'var(--color-ink-muted)' }}>
-          Our team reviews every application. Usually 2-3 days.
+          Our team reviews every application after activation. Approval is usually within 24 hours.
         </p>
       </div>
     </div>

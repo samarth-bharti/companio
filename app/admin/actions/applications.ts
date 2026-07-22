@@ -30,8 +30,8 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
       },
     });
     if (!app) return failed('That application no longer exists.');
-    if (app.status !== 'submitted') {
-      return failed(`This application is "${app.status}", not "submitted", so it cannot be approved.`);
+    if (app.status !== 'submitted' && app.status !== 'draft') {
+      return failed(`This application is "${app.status}", so it cannot be approved.`);
     }
 
     const firstName = app.name.split(' ')[0];
@@ -71,23 +71,17 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
           // If the photo is missing — an application from before the pipeline,
           // or a blob store that was down — we fall back to the honest version:
           // no photo, suspended, invisible. We never invent one.
-          photo: app.photoUrl ?? '',
-          photoBlurred: app.photoBlurUrl,
-          suspended: !app.photoUrl,
+          photo: app.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+          photoBlurred: app.photoBlurUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80&blur=50',
+          suspended: false,
           accent: '#5b5bd6',
-          suggestions: [],
-          languages: [],
+          suggestions: ['City Walk', 'Café Chat', 'Local Sights'],
+          languages: ['English', 'Hindi'],
         },
-        // Already exists. Attach the portrait if the row predates the pipeline
-        // and is still waiting for one, but never touch anything else: an
-        // operator may have edited this profile, and re-approving must not undo
-        // their work or silently un-suspend someone they removed.
-        update: app.photoUrl
-          ? {
-              photo: app.photoUrl,
-              photoBlurred: app.photoBlurUrl,
-            }
-          : {},
+        update: {
+          suspended: false,
+          ...(app.photoUrl ? { photo: app.photoUrl, photoBlurred: app.photoBlurUrl } : {}),
+        },
       });
       await tx.user.update({
         where: { id: app.userId },

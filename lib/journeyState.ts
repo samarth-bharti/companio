@@ -127,9 +127,20 @@ export function setQuiz(q: QuizResult): void {
 
 // ── Demo user ─────────────────────────────────────────────────────────────────
 
-/** Returns the stored demo user (from register/quiz name step), or null. */
+/** Returns the stored demo user (from register/quiz name step), or default demo user. */
 export function getUser(): DemoUser | null {
-  return readJSON<DemoUser | null>(KEY_USER, null);
+  const user = readJSON<DemoUser | null>(KEY_USER, null);
+  if (!user && canUseStorage()) {
+    const defaultUser: DemoUser = {
+      firstName: 'Prashant',
+      city: 'indore',
+      gender: 'male',
+      dateOfBirth: '1998-05-15',
+    };
+    writeJSON(KEY_USER, defaultUser);
+    return defaultUser;
+  }
+  return user;
 }
 
 export function setUser(u: DemoUser): void {

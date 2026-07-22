@@ -69,13 +69,13 @@ export const UNLOCK_AMOUNT = PASS_TIERS.pass1m.amount;
 // Basis points (1% = 100 bps) avoid floating-point drift.
 
 /** Platform's cut of a booking, in basis points. */
-export const COMMISSION_STD_BPS = 3000;  // 30% — standard members
-export const COMMISSION_PLUS_BPS = 1000; // 10% — Companio Plus members
+export const COMMISSION_STD_BPS = 1200;  // 12% — standard members (in 8%-15% target range)
+export const COMMISSION_PLUS_BPS = 800;   // 8% — Companio Plus members
 
 /** The companion's share, as a whole percentage. Derived — never typed twice. */
-export const COMPANION_SHARE_PCT = (100 * (10_000 - COMMISSION_STD_BPS)) / 10_000;      // 70
-export const COMPANION_SHARE_PLUS_PCT = (100 * (10_000 - COMMISSION_PLUS_BPS)) / 10_000; // 90
-export const PLATFORM_SHARE_PCT = 100 - COMPANION_SHARE_PCT;                             // 30
+export const COMPANION_SHARE_PCT = (100 * (10_000 - COMMISSION_STD_BPS)) / 10_000;      // 88
+export const COMPANION_SHARE_PLUS_PCT = (100 * (10_000 - COMMISSION_PLUS_BPS)) / 10_000; // 92
+export const PLATFORM_SHARE_PCT = 100 - COMPANION_SHARE_PCT;                             // 12
 
 // ── Pass expiry ─────────────────────────────────────────────────────────────
 

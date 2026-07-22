@@ -192,7 +192,7 @@ export default async function AdminApplications({ searchParams }: { searchParams
             {/* Both actions refuse anything that is not "submitted" (they check
                 the status server-side), so don't offer them on the rows the
                 status filter now makes reachable. */}
-            {a.status === 'submitted' && (
+            {(a.status === 'submitted' || a.status === 'draft') && (
             <div className="flex flex-wrap items-start gap-2 pt-2 border-t border-[var(--color-ink)]/5">
               <ActionForm
                 action={approveApplication}

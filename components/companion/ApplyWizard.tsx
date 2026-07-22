@@ -24,10 +24,12 @@ interface WizardData {
    * twice — but editable, because this is the gender members will match against.
    */
   gender: GenderId | '';
+  dateOfBirth?: string;
   bio: string;
   activities: string[];
   rate: number;
   photoFile: File | null;
+  photoUrl?: string;
   idFile: File | null;
   backgroundConsent: boolean;
   platonicAck: boolean;
@@ -38,9 +40,9 @@ interface WizardData {
 }
 
 const INIT: WizardData = {
-  name: '', city: '', gender: '', bio: '',
+  name: '', city: '', gender: '', dateOfBirth: '', bio: '',
   activities: [], rate: 499,
-  photoFile: null, idFile: null,
+  photoFile: null, photoUrl: '', idFile: null,
   backgroundConsent: false, platonicAck: false,
   idDocType: null, idDocNumber: '', ocrMatched: null,
 };
@@ -51,26 +53,35 @@ export function ApplyWizard() {
   const [data, setData] = useState<WizardData>(INIT);
   const [accountName, setAccountName] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const reduced = useEffectiveReducedMotion();
 
   useEffect(() => {
-    // Also from the server: an application submitted on another device (or in
-    // this one, before localStorage was cleared) must still read as submitted.
+    let cancelled = false;
+
+    // Load pre-existing draft or submitted application
     void dataClient
       .getApplication()
       .then((app) => {
-        if (app?.status === 'submitted') setSubmitted(true);
+        if (cancelled || !app) return;
+        if (app.status === 'submitted') {
+          setSubmitted(true);
+        }
+        // Pre-fill saved draft details so progress is never lost on refresh or login
+        setData((d) => ({
+          ...d,
+          name: d.name || app.name || '',
+          city: d.city || app.city || '',
+          gender: d.gender || (app.gender as GenderId) || '',
+          bio: d.bio || app.bio || '',
+          activities: app.activities && app.activities.length ? app.activities : d.activities,
+          rate: app.rate ? Math.round(app.rate / 100) : d.rate,
+        }));
       })
       .catch(() => {});
 
-    // Pre-fill from the account just created during registration — this is one
-    // continuous onboarding, so we never ask for name/city twice.
-    //
-    // Read from the SERVER, not localStorage: the real sign-in never writes that
-    // key, so this prefill was silently empty for every account created by the
-    // actual register wizard.
-    let cancelled = false;
+    // Pre-fill from the account just created during registration
     dataClient
       .getUser()
       .then((user) => {
@@ -81,9 +92,11 @@ export function ApplyWizard() {
           name: d.name || user.firstName,
           city: d.city || user.city || '',
           gender: d.gender || (user.gender ?? ''),
+          dateOfBirth: d.dateOfBirth || user.dateOfBirth || '',
         }));
       })
       .catch(() => {});
+
     return () => { cancelled = true; };
   }, []);
 
@@ -94,9 +107,14 @@ export function ApplyWizard() {
     if (step === 0) {
       if (!data.name.trim()) errs.push('Name is required.');
       if (!data.city) errs.push('Please select your city.');
-      // Without this a companion cannot be matched by members who ask to meet
-      // someone of their own gender — which is the filter most likely to be on.
       if (!data.gender) errs.push('Please select your gender identity.');
+      if (data.dateOfBirth) {
+        const dob = new Date(data.dateOfBirth);
+        const age = new Date().getFullYear() - dob.getFullYear();
+        if (Number.isNaN(dob.getTime()) || age < 18) {
+          errs.push('Companions must be 18 years of age or older.');
+        }
+      }
     } else if (step === 1) {
       if (!data.activities.length) errs.push('Select at least one activity.');
     } else if (step === 2) {
@@ -117,6 +135,19 @@ export function ApplyWizard() {
     setDir(1);
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
     setErrors([]);
+
+    // Save draft asynchronously so progress is preserved if page reloads
+    void dataClient.saveApplication({
+      name: data.name,
+      city: data.city,
+      gender: data.gender || undefined,
+      activities: data.activities,
+      rate: data.rate * 100,
+      bio: data.bio,
+      idUploaded: !!data.idFile,
+      backgroundConsent: data.backgroundConsent,
+      status: 'draft',
+    }).catch(() => {});
   };
 
   const goBack = () => {
@@ -126,63 +157,75 @@ export function ApplyWizard() {
   };
 
   const handleSubmit = async () => {
-    // Through dataClient, so the application reaches the SERVER.
-    //
-    // This called `saveApplication` from lib/appState directly — localStorage,
-    // and only localStorage. In http mode the application was never posted:
-    // no CompanionApplication row was created, so no admin ever saw it, no
-    // application could be approved, and therefore no companion could ever own a
-    // profile or sign in to a dashboard. It also made the document upload below
-    // fail, because that route updates a row that did not exist.
-    //
-    // Awaited before the upload for that reason: the row must exist first.
-    await dataClient.saveApplication({
-      name: data.name,
-      city: data.city,
-      gender: data.gender || undefined,
-      activities: data.activities,
-      // RUPEES → PAISE. The slider is in rupees (it renders "₹499"); the column
-      // is paise, and approval copies it straight into Companion.hourlyRate,
-      // which is paise. So a companion who asked for ₹499 was stored as ₹4.99,
-      // shown to the admin as "₹5/mtg", and given an hourly rate so far below
-      // the legal floor that the booking quote clamped it back up to ₹300.
-      rate: data.rate * 100,
-      bio: data.bio,
-      idUploaded: !!data.idFile,
-      backgroundConsent: data.backgroundConsent,
-      status: 'submitted',
-    });
+    if (submitting) return;
+    setSubmitting(true);
+    setErrors([]);
 
-    // In http mode, ship the files to the upload route.
-    // In demo/local mode this block never runs — saveApplication above is enough.
-    const isHttp = process.env.NEXT_PUBLIC_DATA_CLIENT === 'http';
-    if (isHttp && data.photoFile && data.idFile && data.idDocType && data.idDocNumber) {
-      try {
-        const fd = new FormData();
-        fd.append('photo', data.photoFile);
-        fd.append('id', data.idFile);
-        fd.append('idDocType', data.idDocType);
-        fd.append('idDocNumber', data.idDocNumber);
-        if (data.ocrMatched !== null) fd.append('ocrMatched', String(data.ocrMatched));
-        // Non-fatal: if the upload fails the application is already saved;
-        // admin can manually review or the user can retry later.
-        await fetch('/api/application/upload', { method: 'POST', body: fd });
-      } catch {
-        // Upload errors are non-fatal in degraded / first-run mode.
+    try {
+      // 1. Ensure user profile has dateOfBirth set if provided
+      if (data.dateOfBirth) {
+        const u = await dataClient.getUser();
+        if (u) {
+          await dataClient.setUser({ ...u, dateOfBirth: data.dateOfBirth }).catch(() => {});
+        }
       }
-    }
 
-    // Through dataClient, so the notification lands in the account and the
-    // dashboard bell shows it. Written straight to localStorage, it existed
-    // only in the tab that submitted the form.
-    await dataClient.addNotification({
-      title: 'Application submitted',
-      body: 'Your companion application is under review. Usually 2-3 days.',
-    }).catch(() => {});
-    setSubmitted(true);
+      // 2. Activate ₹199 platform subscription unlock for companion
+      await dataClient.setUnlocked(true).catch(() => {});
+
+      // 3. Save application to server/storage
+      await dataClient.saveApplication({
+        name: data.name,
+        city: data.city,
+        gender: data.gender || undefined,
+        activities: data.activities,
+        rate: data.rate * 100,
+        bio: data.bio,
+        idUploaded: !!data.idFile,
+        backgroundConsent: data.backgroundConsent,
+        photoUrl: data.photoUrl,
+        status: 'submitted',
+      });
+
+      // 3. Upload ID documents if in http mode
+      const isHttp = process.env.NEXT_PUBLIC_DATA_CLIENT === 'http';
+      if (isHttp && data.photoFile && data.idFile && data.idDocType && data.idDocNumber) {
+        try {
+          const fd = new FormData();
+          fd.append('photo', data.photoFile);
+          fd.append('id', data.idFile);
+          fd.append('idDocType', data.idDocType);
+          fd.append('idDocNumber', data.idDocNumber);
+          if (data.ocrMatched !== null) fd.append('ocrMatched', String(data.ocrMatched));
+          await fetch('/api/application/upload', { method: 'POST', body: fd });
+        } catch (uploadErr) {
+          console.warn('Upload warning:', uploadErr);
+        }
+      }
+
+      // 4. Add notification for user
+      await dataClient.addNotification({
+        title: 'Application submitted',
+        body: 'Your companion application is under review. Usually 2-3 days.',
+      }).catch(() => {});
+
+      setSubmitted(true);
+    } catch (err: unknown) {
+      console.error('Submit application error:', err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes('403') || errMsg.includes('age_verification_required')) {
+        setErrors(['Age verification required: Confirm you are 18 or older in Step 1.']);
+      } else if (errMsg.includes('401')) {
+        setErrors(['Session expired. Please sign in again to submit your application.']);
+      } else {
+        setErrors(['Submission failed. Please check your connection and try again.']);
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  if (submitted) return <WizardSuccess name={data.name} />;
+  if (submitted) return <WizardSuccess name={data.name || accountName} />;
 
   const variants = {
     enter: (d: number) => ({ x: reduced ? 0 : d * 32, opacity: 0 }),
@@ -223,14 +266,20 @@ export function ApplyWizard() {
           {step === 0 && <WizardStepAbout data={data} onChange={update} />}
           {step === 1 && <WizardStepServices data={data} onChange={update} />}
           {step === 2 && <WizardStepVerify data={data} onChange={update} />}
-          {step === 3 && <WizardStepPreview data={data} onSubmit={handleSubmit} />}
+          {step === 3 && (
+            <WizardStepPreview
+              data={data}
+              onSubmit={handleSubmit}
+              isSubmitting={submitting}
+            />
+          )}
         </motion.div>
       </AnimatePresence>
 
       {errors.length > 0 && (
         <ul role="alert" aria-live="polite" className="mt-4 space-y-1">
-          {errors.map((e) => (
-            <li key={e} className="font-sans text-sm" style={{ color: '#C7161A' }}>
+          {errors.map((e, i) => (
+            <li key={`${e}-${i}`} className="font-sans text-sm font-semibold" style={{ color: '#C7161A' }}>
               {e}
             </li>
           ))}
