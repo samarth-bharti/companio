@@ -298,6 +298,7 @@ promise about that grid.**
 Kept current:
 
 - **`docs/LAUNCH.md`** — this file. The ordered path.
+- [`CHANGING-THINGS.md`](CHANGING-THINGS.md) — **"the lawyer said something different, now what?"** One row per answer that might come back different, and the exact file to edit. Written for someone who is not a developer.
 - [`../DEPLOY.md`](../DEPLOY.md) — the deep reference: costs, every env var, the licence boundary.
 - [`PAYMENTS-ACTIVATION.md`](PAYMENTS-ACTIVATION.md) — why "5 products" is a myth, the lawyer's amendment table, provider comparison, rejection playbook.
 - [`STATUS.md`](STATUS.md) — where the code is.
