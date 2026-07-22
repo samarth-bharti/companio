@@ -154,6 +154,8 @@ export const applicationBody = z.object({
   // server-side. The raw file goes via FormData to /api/application/upload.
   idDocType: z.enum(['aadhaar', 'pan']).optional(),
   idDocNumber: z.string().optional(), // validated + masked server-side, never stored raw
+  photoUrl: z.string().optional(),
+  idPhotoUrl: z.string().optional(),
 });
 
 // ── Admin control schemas ──────────────────────────────────────────────────────

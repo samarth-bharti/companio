@@ -530,6 +530,7 @@ model CompanionApplication {
   // with no reason to exist once its number has been checked.
   photoUrl          String?
   photoBlurUrl      String?
+  idPhotoUrl        String?
   idVerifyStatus    DocVerifyStatus   @default(pending)
   photoVerifyStatus DocVerifyStatus   @default(pending)
   ocrMatched        Boolean?          // did OCR find the typed number on the image
