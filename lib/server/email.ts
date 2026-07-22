@@ -32,7 +32,7 @@ export async function sendEmail(msg: {
     return { sent: false, reason: 'email_disabled' };
   }
 
-  const from = envValue('EMAIL_FROM') ?? 'Companio <hello@trycompanio.com>';
+  const from = envValue('EMAIL_FROM') ?? 'Companio <hello@trycompanio.in>';
 
   let res: Response;
   try {

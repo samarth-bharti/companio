@@ -20,7 +20,7 @@ import { COMPANY } from '@/lib/company';
 
 const BRAND_COLOR = '#6B46C1'; // purple — matches the UI
 const FOOTER_TEXT = `You're receiving this because you have a Companio account.
-To manage your notification preferences, visit trycompanio.com/dashboard.`;
+To manage your notification preferences, visit trycompanio.in/dashboard.`;
 
 function layout(bodyHtml: string): string {
   return `<!DOCTYPE html>
