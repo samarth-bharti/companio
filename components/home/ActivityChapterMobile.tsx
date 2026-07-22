@@ -200,7 +200,7 @@ export function ActivityChapterMobile({
           aria-label="A day with company: five activities"
           tabIndex={0}
           className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-6 pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-2 focus-visible:outline-[var(--color-azure)]"
-          style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' }}
+          style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain', touchAction: 'pan-x pan-y' }}
         >
           {scenes.map((scene, i) => {
             const dark = !!scene.dark;
@@ -212,7 +212,7 @@ export function ActivityChapterMobile({
                 aria-label={`${i + 1} of ${scenes.length}: ${scene.title}`}
                 className="snap-center shrink-0 rounded-[var(--radius-lg)] overflow-hidden"
                 style={{
-                  width: 'min(85vw, 400px)',
+                  width: 'min(85vw, 560px)',
                   background: dark ? 'var(--color-ink-dark-panel)' : 'var(--color-surface)',
                   boxShadow: 'var(--shadow-lift)',
                 }}

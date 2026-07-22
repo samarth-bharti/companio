@@ -155,8 +155,8 @@ rather than reaching a live API with garbage.
 | `DATABASE_URL` | Neon, **pooled** | |
 | `DIRECT_URL` | Neon, **direct** | migrations only |
 | `NEXTAUTH_SECRET` | `openssl rand -base64 32` | also salts the OTP hash — **changing it invalidates every live code and session** |
-| `NEXTAUTH_URL` | `https://trycompanio.com` | must match the real origin exactly |
-| `NEXT_PUBLIC_SITE_URL` | `https://trycompanio.com` | canonical URLs, OG tags, sitemap |
+| `NEXTAUTH_URL` | `https://trycompanio.in` | must match the real origin exactly |
+| `NEXT_PUBLIC_SITE_URL` | `https://trycompanio.in` | canonical URLs, OG tags, sitemap |
 | `ADMIN_EMAILS` | your own email(s), comma-separated | bootstrap only — §8 |
 | `NEXT_PUBLIC_DATA_CLIENT` | `http` | **`local` is the localStorage demo.** Production must be `http` |
 

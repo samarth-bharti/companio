@@ -63,6 +63,18 @@ export function HeroCopyState0() {
           How it works →
         </Link>
       </div>
+      <div className="mt-6 flex items-center justify-center w-full">
+        <Link
+          href="/login"
+          className="inline-block text-base font-bold underline underline-offset-4 transition-opacity hover:opacity-80 focus-visible:outline-azure"
+          style={{
+            color: 'var(--color-ink)',
+            textShadow: '0 1px 10px rgba(255, 255, 255, 0.9)',
+          }}
+        >
+          Sign in
+        </Link>
+      </div>
     </div>
   );
 }

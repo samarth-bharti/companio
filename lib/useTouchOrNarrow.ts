@@ -17,11 +17,22 @@ export function useTouchOrNarrow(): boolean {
   const [match, setMatch] = useState(false);
 
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 1023px), (pointer: coarse)');
-    setMatch(mq.matches);
-    const onChange = () => setMatch(mq.matches);
-    mq.addEventListener?.('change', onChange);
-    return () => mq.removeEventListener?.('change', onChange);
+    const checkMatch = () => {
+      const isNarrow = window.matchMedia('(max-width: 1024px)').matches;
+      const isCoarse = window.matchMedia('(pointer: coarse)').matches;
+      const hasTouch = typeof navigator !== 'undefined' && (navigator.maxTouchPoints > 0 || 'ontouchstart' in window);
+      
+      setMatch(isNarrow || isCoarse || (hasTouch && window.innerWidth <= 1366));
+    };
+
+    checkMatch();
+    const mq = window.matchMedia('(max-width: 1024px), (pointer: coarse)');
+    mq.addEventListener?.('change', checkMatch);
+    window.addEventListener('resize', checkMatch);
+    return () => {
+      mq.removeEventListener?.('change', checkMatch);
+      window.removeEventListener('resize', checkMatch);
+    };
   }, []);
 
   return match;

@@ -101,7 +101,7 @@ export function ActivityChapter() {
       style={{ height: '520vh', position: 'relative' }}
     >
       {/* ── Sticky viewport ── */}
-      <div className="sticky top-0 h-screen overflow-hidden" style={{ background: GRADIENTS[0] }}>
+      <div className="sticky top-0 h-screen overflow-hidden" style={{ background: GRADIENTS[0], touchAction: 'pan-y' }}>
 
         {/* Five crossfading day-phase gradient layers */}
         {GRADIENTS.map((grad, i) => (
