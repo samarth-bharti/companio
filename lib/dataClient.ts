@@ -108,6 +108,12 @@ export function makeLocalStorageDataClient(): DataClient {
           const maskedName = lastInitial ? `${firstName} ${lastInitial}.` : `${firstName} ···`;
           const slug = `c-${firstName.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
           const cityName = app.city ? (app.city.charAt(0).toUpperCase() + app.city.slice(1).toLowerCase()) : 'Indore';
+          const genderVal = (app.gender as any) ?? 'male';
+          const defaultAvatar = genderVal === 'male'
+            ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80'
+            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80';
+          const photoUrl = app.photoUrl && app.photoUrl.trim().length > 0 ? app.photoUrl : defaultAvatar;
+
           return {
             id: slug,
             name: app.name,
@@ -124,10 +130,10 @@ export function makeLocalStorageDataClient(): DataClient {
             hourlyRate: app.rate || 49900,
             bio: app.bio || 'Friendly companion passionate about city walks and deep conversations.',
             suggestions: ['Explore historic spots', 'Café meetup', 'City stroll'],
-            photo: app.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+            photo: photoUrl,
             photoBlurred: undefined,
             accent: '#2E6BFF',
-            gender: (app.gender as any) ?? 'male',
+            gender: genderVal,
             verified: true,
             availableNow: true,
             availability: 'Available today',

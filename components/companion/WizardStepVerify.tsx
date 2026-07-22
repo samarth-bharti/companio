@@ -19,6 +19,7 @@ export interface VerifyData {
   photoFile:        File | null;
   photoUrl?:        string;
   idFile:           File | null;
+  idPhotoUrl?:      string;
   backgroundConsent: boolean;
   platonicAck:      boolean;
   idDocType:        IdDocType | null;
@@ -98,7 +99,12 @@ export function WizardStepVerify({ data, onChange }: Props) {
       };
       reader.readAsDataURL(file);
     } else {
-      onChange({ idFile: file, ocrMatched: null });
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        onChange({ idFile: file, idPhotoUrl: dataUrl, ocrMatched: null });
+      };
+      reader.readAsDataURL(file);
     }
   };
 

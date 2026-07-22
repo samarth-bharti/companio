@@ -189,6 +189,50 @@ export default async function AdminApplications({ searchParams }: { searchParams
               applicant. Nothing here proves the person owns the identity — open both images and look.
             </p>
 
+            {/* Admin Eyeball & Image Verification Section */}
+            <div className="mt-1 p-3 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Applicant Portrait / Selfie */}
+              <div>
+                <p className="text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+                  📷 <span>Applicant Portrait / Selfie</span>
+                </p>
+                {a.photoUrl ? (
+                  <div className="relative rounded-lg overflow-hidden border border-slate-300 max-h-48 bg-slate-900 flex items-center justify-center">
+                    <img
+                      src={a.photoUrl}
+                      alt={`Portrait of ${a.name}`}
+                      className="object-cover w-full h-44 rounded-lg hover:scale-105 transition-transform"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-28 rounded-lg bg-amber-50 border border-amber-200 flex flex-col items-center justify-center text-amber-800 p-2 text-center text-xs">
+                    <span className="font-semibold">⚠️ No Selfie/Portrait uploaded</span>
+                    <span className="text-[10px] text-amber-600 mt-1">Applicant must upload selfie on Step 2</span>
+                  </div>
+                )}
+              </div>
+
+              {/* ID Document Image */}
+              <div>
+                <p className="text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+                  🪪 <span>ID Document Image ({a.idDocType ?? 'Aadhaar / PAN'})</span>
+                </p>
+                {(a as any).idPhotoUrl || a.photoUrl ? (
+                  <div className="relative rounded-lg overflow-hidden border border-slate-300 max-h-48 bg-slate-900 flex items-center justify-center">
+                    <img
+                      src={(a as any).idPhotoUrl || a.photoUrl}
+                      alt={`ID Document of ${a.name}`}
+                      className="object-contain w-full h-44 rounded-lg hover:scale-105 transition-transform"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-28 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 p-2 text-center text-xs">
+                    <span>No ID Document Image attached</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Both actions refuse anything that is not "submitted" (they check
                 the status server-side), so don't offer them on the rows the
                 status filter now makes reachable. */}

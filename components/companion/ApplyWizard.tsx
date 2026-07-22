@@ -19,10 +19,6 @@ const STEPS = ['About', 'Services', 'Verify', 'Preview'];
 interface WizardData {
   name: string;
   city: string;
-  /**
-   * Pre-filled from the account — they told us at registration, so we do not ask
-   * twice — but editable, because this is the gender members will match against.
-   */
   gender: GenderId | '';
   dateOfBirth?: string;
   bio: string;
@@ -31,6 +27,7 @@ interface WizardData {
   photoFile: File | null;
   photoUrl?: string;
   idFile: File | null;
+  idPhotoUrl?: string;
   backgroundConsent: boolean;
   platonicAck: boolean;
   // Document-validation fields (step 2)
@@ -42,7 +39,7 @@ interface WizardData {
 const INIT: WizardData = {
   name: '', city: '', gender: '', dateOfBirth: '', bio: '',
   activities: [], rate: 499,
-  photoFile: null, photoUrl: '', idFile: null,
+  photoFile: null, photoUrl: '', idFile: null, idPhotoUrl: '',
   backgroundConsent: false, platonicAck: false,
   idDocType: null, idDocNumber: '', ocrMatched: null,
 };
@@ -193,6 +190,7 @@ export function ApplyWizard() {
         idUploaded: !!data.idFile,
         backgroundConsent: data.backgroundConsent,
         photoUrl: data.photoUrl,
+        idPhotoUrl: data.idPhotoUrl,
         status: 'submitted',
       });
 

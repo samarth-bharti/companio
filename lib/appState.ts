@@ -202,6 +202,7 @@ export interface CompanionApplication {
   backgroundConsent: boolean;
   status: 'draft' | 'submitted' | 'approved' | 'rejected';
   photoUrl?: string;
+  idPhotoUrl?: string;
   idDocType?: string;
   idDocNumber?: string;
   ocrMatched?: boolean;

@@ -71,8 +71,12 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
           // If the photo is missing — an application from before the pipeline,
           // or a blob store that was down — we fall back to the honest version:
           // no photo, suspended, invisible. We never invent one.
-          photo: app.photoUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
-          photoBlurred: app.photoBlurUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80&blur=50',
+          photo: app.photoUrl || (app.gender === 'male'
+            ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80'
+            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80'),
+          photoBlurred: app.photoBlurUrl || (app.gender === 'male'
+            ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80'
+            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80'),
           suspended: false,
           accent: '#5b5bd6',
           suggestions: ['City Walk', 'Café Chat', 'Local Sights'],
