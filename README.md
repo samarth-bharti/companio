@@ -126,6 +126,7 @@ scripts/        Icon generation, the deploy migration runner
 Start here, in this order:
 
 - [`docs/LAUNCH.md`](docs/LAUNCH.md) — **the whole path to going live, in order.** Read this first.
+- [`docs/CHANGING-THINGS.md`](docs/CHANGING-THINGS.md) — a fact changed (a name, a price, a policy)? The exact file to edit, and what not to touch alone.
 - [`docs/STATUS.md`](docs/STATUS.md) — **what is done, what is left, what blocks launch.**
 - [`DEPLOY.md`](DEPLOY.md) — deploying: every key, where to get it, what it costs.
 - [`docs/PAYMENTS-ACTIVATION.md`](docs/PAYMENTS-ACTIVATION.md) — getting a payment gateway to approve you, and what to do when it does not.
