@@ -336,7 +336,7 @@ export function makeHttpDataClient(): DataClient {
   // Strict read — throws on any non-2xx. For data that is always expected
   // (e.g. the public companion catalogue).
   async function get<T>(path: string): Promise<T> {
-    const res = await fetch(path);
+    const res = await fetch(path, { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status} ${path}`);
     return res.json() as Promise<T>;
   }
@@ -345,7 +345,7 @@ export function makeHttpDataClient(): DataClient {
   // localStorage client gives a fresh user, so flipping to http mode never
   // crashes a page for an unauthenticated visitor. Other errors still throw.
   async function getOr<T>(path: string, fallback: T): Promise<T> {
-    const res = await fetch(path);
+    const res = await fetch(path, { cache: 'no-store' });
     if (res.status === 401) return fallback;
     if (!res.ok) throw new Error(`HTTP ${res.status} ${path}`);
     return res.json() as Promise<T>;
@@ -357,7 +357,7 @@ export function makeHttpDataClient(): DataClient {
     },
     async getCompanion(id) {
       // 404 → undefined, mirroring the local getCompanion for an unknown id.
-      const res = await fetch(`/api/companions/${id}`);
+      const res = await fetch(`/api/companions/${id}`, { cache: 'no-store' });
       if (res.status === 404) return undefined;
       if (!res.ok) throw new Error(`HTTP ${res.status} /api/companions/${id}`);
       return res.json() as Promise<Companion>;
@@ -378,7 +378,7 @@ export function makeHttpDataClient(): DataClient {
       return getOr<boolean>('/api/user/unlocked', false);
     },
     async setUnlocked(v) {
-      await post('/api/user/unlocked', { value: v });
+      await post('/api/user/unlocked', { value: v }).catch(() => {});
     },
 
     async getWelcomed() {
