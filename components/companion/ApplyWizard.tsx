@@ -13,6 +13,7 @@ import { WizardStepServices } from './WizardStepServices';
 import { WizardStepVerify } from './WizardStepVerify';
 import { WizardStepPreview } from './WizardStepPreview';
 import { WizardSuccess } from './WizardSuccess';
+import { payWithRazorpay } from '@/lib/razorpayClient';
 
 const STEPS = ['About', 'Services', 'Verify', 'Preview'];
 
@@ -176,8 +177,35 @@ export function ApplyWizard() {
         }
       }
 
-      // 2. Activate ₹199 platform subscription unlock for companion
-      await dataClient.setUnlocked(true).catch(() => {});
+      // 2. Activate ₹199 platform subscription unlock for companion if not already unlocked
+      if (!isUnlocked) {
+        const payRes = await payWithRazorpay({
+          kind: 'unlock',
+          passTier: 'pass1m',
+        });
+
+        if (payRes === 'dismissed') {
+          setSubmitting(false);
+          return;
+        }
+
+        if (payRes === 'auth_required') {
+          setErrors(['Session expired. Please sign in again to submit your application.']);
+          setSubmitting(false);
+          return;
+        }
+
+        if (payRes !== 'success') {
+          if (payRes === 'unconfigured') {
+            await dataClient.setUnlocked(true).catch(() => {});
+          } else {
+            setErrors(['Payment was not completed. Please try again to activate your companion profile.']);
+            setSubmitting(false);
+            return;
+          }
+        }
+        setIsUnlocked(true);
+      }
 
       // 3. Save application to server/storage
       await dataClient.saveApplication({
