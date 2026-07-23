@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL } from '@/lib/seo';
-import { COMPANIONS } from '@/lib/data/companions';
+import { listVisibleCompanions } from '@/lib/server/catalogue';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     // ── Core ──────────────────────────────────────────────────────────────────
     { url: SITE_URL,                              changeFrequency: 'weekly',  priority: 1.0 },
@@ -29,7 +29,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/cookies`,                 changeFrequency: 'yearly',  priority: 0.3 },
   ];
 
-  const companionRoutes: MetadataRoute.Sitemap = COMPANIONS.map((c) => ({
+  const companions = await listVisibleCompanions();
+  const companionRoutes: MetadataRoute.Sitemap = companions.map((c) => ({
     url: `${SITE_URL}/companion/${c.id}`,
     changeFrequency: 'weekly',
     priority: 0.7,

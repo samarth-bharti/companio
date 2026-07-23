@@ -7,7 +7,6 @@ import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { dataClient } from '@/lib/dataClient';
 import { emitDataChange } from '@/lib/dataEvents';
 import { track } from '@/lib/analytics';
-import { topMatchIdFor, freeNowCountIn, getCompanion } from '@/lib/data/companions';
 import type { Companion } from '@/lib/data/companions';
 import { CITIES } from '@/lib/data/cities';
 import { ExploreHeader } from './ExploreHeader';
@@ -79,13 +78,16 @@ export function ExploreClient() {
     sameGenderOnly, setSameGenderOnly, myGender,
     cityCompanions,
     filteredCompanions,
+    allCompanions,
     isFiltered, clearFilters,
     loading, loadError,
   } = useExploreFilters();
 
   // The one profile a locked visitor sees unblurred, in THIS city. Undefined
   // when the city has no companions — there is nothing to tease.
-  const teaserId = topMatchIdFor(selectedCity.name);
+  const teaserId = cityCompanions.length > 0
+    ? (cityCompanions.find((c) => c.topMatch)?.id || cityCompanions.reduce((best, c) => (c.matchScore > best.matchScore ? c : best)).id)
+    : undefined;
 
   const handleSurpriseMe = useCallback(() => {
     // Locked visitors only have the teaser clear — point them at it, which is
@@ -182,7 +184,7 @@ export function ExploreClient() {
     // found nothing whenever the companion they were booking lived anywhere else
     // — which is most of them. Switch the city to where the companion actually is,
     // so the sheet's "and N more in <city>" is true as well.
-    const target = getCompanion(unlockParam);
+    const target = allCompanions.find(c => c.id === unlockParam);
     if (!target) return;
 
     unlockSeededRef.current = true;
@@ -274,7 +276,7 @@ export function ExploreClient() {
         selectedCityId={cityId}
         onCityChange={setCityId}
         quizDone={quizDone}
-        freeNowCount={freeNowCountIn(selectedCity.name)}
+        freeNowCount={cityCompanions.filter(c => c.availableNow).length}
       />
 
       <ActivityTicker />
@@ -325,7 +327,7 @@ export function ExploreClient() {
             loadError={loadError}
           />
         ) : (
-          <MapView companions={filteredCompanions} cityId={cityId} unlocked={unlocked} onCityChange={setCityId} quizDone={quizDone} highlightId={highlightId} />
+          <MapView companions={filteredCompanions} allCompanions={allCompanions} cityId={cityId} unlocked={unlocked} onCityChange={setCityId} quizDone={quizDone} highlightId={highlightId} />
         )}
         {showParticles && <ParticleField count={20} color="#FFB23E" fade />}
       </div>

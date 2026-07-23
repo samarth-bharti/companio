@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { useViewerReady } from '@/lib/useViewerReady';
 import { dataClient } from '@/lib/dataClient';
-import { getCompanion } from '@/lib/data/companions';
 import type { ChatMessage } from '@/lib/appState';
 import type { Companion } from '@/lib/data/companions';
 import { ChatPanel } from './ChatPanel';
@@ -29,7 +28,7 @@ export function MessagesPanel({ initialCompanionId }: MessagesPanelProps) {
     if (!signedIn) return;
     let cancelled = false;
     Promise.all([dataClient.getThreads(), dataClient.getBookings()])
-      .then(([loaded, bookings]) => {
+      .then(async ([loaded, bookings]) => {
         if (cancelled) return;
         setThreads(loaded);
         const allIds = [...new Set([
@@ -37,7 +36,8 @@ export function MessagesPanel({ initialCompanionId }: MessagesPanelProps) {
           ...Object.keys(loaded),
           ...bookings.map((b) => b.companionId),
         ])];
-        setCompanions(allIds.map((id) => getCompanion(id)).filter((c): c is Companion => !!c));
+        const resolved = await Promise.all(allIds.map(id => dataClient.getCompanion(id)));
+        if (!cancelled) setCompanions(resolved.filter((c): c is Companion => !!c));
       })
       .catch(() => { if (!cancelled) setCompanions([]); });
     return () => { cancelled = true; };
@@ -49,7 +49,7 @@ export function MessagesPanel({ initialCompanionId }: MessagesPanelProps) {
   // to it, planted so the inbox never looked empty. An empty thread now looks
   // empty, and ChatPanel invites the member to say the first word.
 
-  const selected = selectedId ? getCompanion(selectedId) : undefined;
+  const selected = selectedId ? companions.find(c => c.id === selectedId) : undefined;
 
   return (
     <div className="flex gap-4" style={{ minHeight: 480 }}>

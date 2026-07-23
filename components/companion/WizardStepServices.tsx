@@ -2,7 +2,7 @@
 
 import { useId, useMemo } from 'react';
 import { CITIES } from '@/lib/data/cities';
-import { companionsInCity } from '@/lib/data/companions';
+import { useCompanions } from '@/lib/useCompanions';
 import { COMPANION_SHARE_PCT } from '@/lib/money';
 import { cn } from '@/lib/utils';
 
@@ -39,11 +39,13 @@ export function WizardStepServices({ data, onChange }: Props) {
   const sliderId = useId();
   const cityName = CITIES.find((c) => c.id === data.city)?.name ?? 'your city';
   const fillPct = ((data.rate - RATE_MIN) / (RATE_MAX - RATE_MIN)) * 100;
+  const { companions } = useCompanions();
 
   // The real spread of what companions in this city charge — or nothing at all,
   // when there are too few of them for the word "most" to mean anything.
   const peerRange = useMemo(() => {
-    const rates = companionsInCity(cityName)
+    const rates = companions
+      .filter(c => c.city.toLowerCase() === cityName.toLowerCase())
       .map((c) => c.ratePerMeeting)
       .filter((r) => Number.isFinite(r) && r > 0);
     if (rates.length < MIN_PEERS_FOR_A_RANGE) return null;

@@ -5,7 +5,7 @@ import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
 import { useViewerReady } from '@/lib/useViewerReady';
-import { getCompanion } from '@/lib/data/companions';
+import { useCompanions } from '@/lib/useCompanions';
 import type { Booking, Plan } from '@/lib/appState';
 import type { Wallet } from '@/lib/journeyState';
 import { WalletCard } from './WalletCard';
@@ -26,6 +26,7 @@ export function OverviewPanel() {
   // A guest previewing the dashboard has no rows to read; asking anyway is 401s.
   const signedIn = useViewerReady();
   const reduced = useEffectiveReducedMotion();
+  const { companions } = useCompanions();
 
   // Each slice re-reads on its own change event, so cancelling a booking in
   // another tab, or paying in this one, updates the panel without a reload.
@@ -50,12 +51,12 @@ export function OverviewPanel() {
     .filter((b) => b.status === 'upcoming')
     .sort((a, b) => a.dateISO.localeCompare(b.dateISO));
   const nextBooking    = upcoming[0];
-  const nextCompanion  = nextBooking ? getCompanion(nextBooking.companionId) : undefined;
+  const nextCompanion  = nextBooking ? companions.find(c => c.id === nextBooking.companionId) : undefined;
 
   const rebookCandidate = [...bookings]
     .filter((b) => b.status === 'completed' && !b.review)
     .sort((a, b) => b.dateISO.localeCompare(a.dateISO))[0];
-  const rebookCompanion = rebookCandidate ? getCompanion(rebookCandidate.companionId) : undefined;
+  const rebookCompanion = rebookCandidate ? companions.find(c => c.id === rebookCandidate.companionId) : undefined;
 
   return (
     // Stagger container: each motion.div child inherits variants and staggers in

@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import type { Companion } from '@/lib/data/companions';
-import { companionsInCity } from '@/lib/data/companions';
 import { getCity, CITIES } from '@/lib/data/cities';
 import { getAreaAnchor } from '@/lib/data/areas';
 import { getTileConfig } from '@/lib/map/tiles';
@@ -11,6 +10,7 @@ import 'leaflet/dist/leaflet.css';
 
 interface MapViewProps {
   companions: Companion[];
+  allCompanions: Companion[];
   cityId: string;
   unlocked: boolean;
   /** Switch the active city (clicking another city's marker on the map). */
@@ -68,7 +68,7 @@ function placeCompanion(
   return [cityLat + (a - 0.5) * 0.075, cityLng + (b - 0.5) * 0.085];
 }
 
-export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, highlightId }: MapViewProps) {
+export function MapView({ companions, allCompanions, cityId, unlocked, onCityChange, quizDone, highlightId }: MapViewProps) {
   const city = getCity(cityId);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import('leaflet').Map | undefined>(undefined);
@@ -137,7 +137,7 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
     // nobody in it draws a small hollow ring that says so.
     CITIES.forEach((ct) => {
       if (ct.id === cityId) return;
-      const count = companionsInCity(ct.name).length;
+      const count = allCompanions.filter(c => c.city.toLowerCase() === ct.name.toLowerCase() || c.city.toLowerCase() === ct.id.toLowerCase()).length;
       const live = count > 0;
       const m = L.circleMarker([ct.lat, ct.lng], {
         radius: live ? 6 + Math.min(count, 12) : 5,
@@ -256,7 +256,7 @@ export function MapView({ companions, cityId, unlocked, onCityChange, quizDone, 
           because every city re-skinned the same Mumbai people. The grid no
           longer does that, so the only thing left to say is that we are not
           live here. Shown when the city has no companions at all. */}
-      {companionsInCity(city.name).length === 0 && (
+      {allCompanions.filter(c => c.city.toLowerCase() === city.name.toLowerCase() || c.city.toLowerCase() === city.id.toLowerCase()).length === 0 && (
         <p
           className="mt-3 text-xs leading-relaxed rounded-xl px-3.5 py-2.5"
           style={{

@@ -70,6 +70,7 @@ export interface ExploreFiltersState {
   /** Everyone in the selected city, before filters. Empty ⇒ city not served. */
   cityCompanions: Companion[];
   filteredCompanions: Companion[];
+  allCompanions: Companion[];
   isFiltered: boolean;
   clearFilters: () => void;
   loading: boolean;
@@ -269,6 +270,7 @@ export function useExploreFilters(): ExploreFiltersState {
     sameGenderOnly, setSameGenderOnly, myGender,
     cityCompanions,
     filteredCompanions,
+    allCompanions: companions,
     isFiltered, clearFilters,
     loading, loadError,
   };

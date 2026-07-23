@@ -7,7 +7,7 @@ import { dataClient } from '@/lib/dataClient';
 import { useData } from '@/lib/useData';
 import { useViewerReady } from '@/lib/useViewerReady';
 import { CalendarDays } from 'lucide-react';
-import { getCompanion } from '@/lib/data/companions';
+import { useCompanions } from '@/lib/useCompanions';
 import type { Booking } from '@/lib/appState';
 import { ReviewModal } from './ReviewModal';
 import { UpcomingCard, PastCard } from './BookingCard';
@@ -19,6 +19,7 @@ const NO_BOOKINGS: Booking[] = [];
 export function BookingsPanel() {
   // A guest previewing the dashboard has no rows to read; asking anyway is 401s.
   const signedIn = useViewerReady();
+  const { companions } = useCompanions();
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [reviewTarget, setReviewTarget] = useState<Booking | null>(null);
 
@@ -56,7 +57,7 @@ export function BookingsPanel() {
               />
             )
             : upcoming.map((b) => {
-                const c = getCompanion(b.companionId);
+                const c = companions.find(x => x.id === b.companionId);
                 if (!c) return null;
                 return (
                   <UpcomingCard
@@ -77,7 +78,7 @@ export function BookingsPanel() {
           {past.length === 0
             ? <EmptyState compact title="No past meetups yet" />
             : past.map((b) => {
-                const c = getCompanion(b.companionId);
+                const c = companions.find(x => x.id === b.companionId);
                 if (!c) return null;
                 return (
                   <PastCard
