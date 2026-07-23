@@ -8,7 +8,7 @@ import { useEffectiveReducedMotion } from '@/lib/motionPreference';
 import { calm } from '@/lib/motion';
 import { dataClient } from '@/lib/dataClient';
 import { track } from '@/lib/analytics';
-import { getCompanion } from '@/lib/data/companions';
+import { type Companion } from '@/lib/data/companions';
 import { SegmentedPill } from '@/components/journey/SegmentedPill';
 import { FlowTopBar } from '@/components/layout/FlowTopBar';
 import { BookingStepActivity } from './BookingStepActivity';
@@ -40,17 +40,44 @@ interface FormState {
 export function BookingWizard() {
   const params = useSearchParams();
   const companionId = params.get('companion') ?? '';
-  const companion = getCompanion(companionId);
+  
+  const [companion, setCompanion] = useState<Companion | null>(null);
+  const [loadingCompanion, setLoadingCompanion] = useState(true);
+
+  useEffect(() => {
+    if (!companionId) {
+      setLoadingCompanion(false);
+      return;
+    }
+    let cancelled = false;
+    dataClient.getCompanion(companionId).then(c => {
+      if (!cancelled) {
+        setCompanion(c || null);
+        setLoadingCompanion(false);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setLoadingCompanion(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [companionId]);
 
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [form, setForm] = useState<FormState>({
-    activity: companion?.activities[0] ?? '',
+    activity: '',
     dateISO: '',
     dateLabel: '',
     time: '',
     place: '',
   });
+
+  useEffect(() => {
+    if (companion && !form.activity) {
+      setForm(f => ({ ...f, activity: companion.activities[0] ?? '' }));
+    }
+  }, [companion, form.activity]);
   const [confirmed, setConfirmed] = useState(false);
   const [booking, setBooking] = useState<Booking | null>(null);
   const [safetyOpen, setSafetyOpen] = useState(false);
@@ -71,6 +98,22 @@ export function BookingWizard() {
 
   // No valid companion in the URL — don't silently book a random person.
   // Send the user back to choose, with their context intact.
+  if (loadingCompanion) {
+    return (
+      <main
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: 'var(--grad-hero-bg)' }}
+      >
+        <div
+          className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
+          style={{ borderColor: 'var(--color-azure)', borderTopColor: 'transparent' }}
+          role="status"
+          aria-label="Loading booking form"
+        />
+      </main>
+    );
+  }
+
   if (!companion) {
     return (
       <main
