@@ -287,7 +287,7 @@ export function ApplyWizard() {
       } else if (errMsg.includes('Failed to fetch') || errMsg.includes('network') || errMsg.toLowerCase().includes('internet')) {
         setErrors(['Connection lost. Please check your internet and try again. No payment was taken.']);
       } else {
-        setErrors(['Something went wrong. Please try again. If you already paid, your application will be saved — contact support@trycompanio.in']);
+        setErrors([`Something went wrong: ${errMsg}. Please contact support@trycompanio.in`]);
       }
     } finally {
       setSubmitting(false);

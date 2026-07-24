@@ -329,7 +329,10 @@ export function makeHttpDataClient(): DataClient {
     });
     // Writes must surface failures — a 401/403/500 means the action did not
     // happen, and the caller needs to know (the UI gates these behind auth).
-    if (!res.ok) throw new Error(`HTTP ${res.status} ${path}`);
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status} ${path} - ${text}`);
+    }
     return res.json() as Promise<T>;
   }
 
