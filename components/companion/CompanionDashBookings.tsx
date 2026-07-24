@@ -66,7 +66,7 @@ function MeetupCard({
             ? 'This meetup was paid by card. Contact support to cancel it.'
             : body.error === 'not_declinable'
               ? 'This meetup can no longer be declined.'
-              : 'Something went wrong. Please try again.',
+              : 'Network error or session expired. Please try again.',
         );
         setBusy(false);
         return;

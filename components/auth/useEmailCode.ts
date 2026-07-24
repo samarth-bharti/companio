@@ -53,7 +53,7 @@ export function useEmailCode() {
         error?: string;
       };
       if (!res.ok || !data.ok) {
-        setError(SEND_ERRORS[data.error ?? ''] ?? 'Something went wrong. Please try again.');
+        setError(SEND_ERRORS[data.error ?? ''] ?? 'Network error or system busy. Please try again.');
         return false;
       }
       setDelivery(data.delivery ?? 'email');

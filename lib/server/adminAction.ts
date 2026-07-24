@@ -34,6 +34,10 @@ function describeError(e: unknown): string {
       return 'Other records still reference this row, so it cannot be deleted. Ban or suspend it instead.';
     default:
       console.error('[admin action]', e);
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('timeout') || msg.includes('connection')) {
+         return 'Database is busy (too many connections). Please try again in a few seconds.';
+      }
       return 'Something went wrong. The change was not saved.';
   }
 }
