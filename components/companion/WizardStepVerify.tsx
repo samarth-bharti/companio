@@ -92,21 +92,30 @@ export function WizardStepVerify({ data, onChange }: Props) {
     }
     setter('ok');
     if (type === 'photo') {
+      // Compress the selfie client-side before upload. Phone cameras produce
+      // 8–15 MB HEIC/JPEG files; Vercel serverless functions reject bodies
+      // over 4.5 MB with a silent network error that looks like "no internet".
+      // Canvas re-encode to ≤1200 px, quality 0.82 → typically 200–600 KB.
+      const compressed = await compressImage(file, 1200, 0.82);
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = reader.result as string;
-        onChange({ photoFile: file, photoUrl: dataUrl });
+        onChange({ photoFile: compressed, photoUrl: dataUrl });
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressed);
     } else {
+      // ID document: compress images, pass PDFs through unchanged.
+      const compressed = file.type.startsWith('image/') ? await compressImage(file, 1400, 0.88) : file;
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = reader.result as string;
-        onChange({ idFile: file, idPhotoUrl: dataUrl, ocrMatched: null });
+        onChange({ idFile: compressed, idPhotoUrl: dataUrl, ocrMatched: null });
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(compressed);
     }
   };
+
+
 
   return (
     <div>
@@ -295,3 +304,58 @@ function CheckRow({ id, checked, onChange, required, children }: CheckRowProps) 
     </label>
   );
 }
+
+/* ─── compressImage ──────────────────────────────────────────────────────── */
+
+/**
+ * Re-encode an image file via a canvas element to stay under Vercel's 4.5 MB
+ * serverless body limit. Works on every device that runs a canvas (Android ≥4,
+ * iOS ≥8, all desktop browsers). HEIC files are decoded by the browser's own
+ * native decoder before the canvas reads them — no WASM needed.
+ *
+ * @param file     The original image file from <input type="file">.
+ * @param maxSide  Longest dimension to keep (px). Smaller images are untouched.
+ * @param quality  JPEG quality 0–1.
+ * @returns        A new File with the compressed bytes, same name, image/jpeg.
+ */
+async function compressImage(file: File, maxSide: number, quality: number): Promise<File> {
+  return new Promise((resolve) => {
+    // If compression cannot run (e.g. SSR, no canvas support), return the
+    // original so the caller can still attempt the upload.
+    if (typeof window === 'undefined' || !('createObjectURL' in URL)) {
+      resolve(file);
+      return;
+    }
+
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { naturalWidth: w, naturalHeight: h } = img;
+      const scale = Math.min(1, maxSide / Math.max(w, h));
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { resolve(file); return; }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { resolve(file); return; }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }));
+        },
+        'image/jpeg',
+        quality,
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file); // fall back to original on decode failure
+    };
+
+    img.src = url;
+  });
+}
+

@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     const seedStatus = status === 'submitted' ? 'submitted' : 'draft';
     await prisma.companionApplication.upsert({
       where: { userId },
-      update: updateFields,
+      update: { ...updateFields, status: seedStatus },
       create: { userId, ...updateFields, status: seedStatus },
     });
     return json({ ok: true });

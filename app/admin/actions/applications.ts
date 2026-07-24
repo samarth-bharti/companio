@@ -40,70 +40,59 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
     // Stable slug derived from the userId tail — unique per applicant.
     const companionId = `c-${app.userId.slice(-8)}`;
 
-    await prisma.$transaction(async (tx) => {
-      await tx.companion.upsert({
-        where: { id: companionId },
-        create: {
-          id: companionId,
-          name: app.name,
-          firstName,
-          maskedName,
-          city: app.city,
-          area: app.city,     // admin can edit the area later
-          gender: app.gender, // drives the same-gender filter; null ⇒ unmatchable
-          bio: app.bio,
-          activities: app.activities,
-          ratePerMeeting: app.rate,
-          hourlyRate: app.rate,
-          // THE APPLICANT'S OWN PHOTO, OR NO PHOTO AND SUSPENDED.
-          //
-          // This was once a hardcoded Unsplash URL: approving a real person
-          // published a live, bookable profile in their real name and city,
-          // wearing a stranger's face. Then it became `photo: ''` + suspended,
-          // which was honest but meant every approval waited on an operator to
-          // find a picture and paste a link — the reason the catalogue could not
-          // be filled.
-          //
-          // The upload route now stores the portrait and its blurred copy
-          // (lib/server/photoStore.ts), so approval has the real thing and the
-          // profile goes live with the face the person actually submitted.
-          //
-          // If the photo is missing — an application from before the pipeline,
-          // or a blob store that was down — we fall back to the honest version:
-          // no photo, suspended, invisible. We never invent one.
-          photo: app.photoUrl || (app.gender === 'male'
-            ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80'
-            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80'),
-          photoBlurred: app.photoBlurUrl || (app.gender === 'male'
-            ? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80'
-            : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80'),
-          suspended: false,
-          accent: '#5b5bd6',
-          suggestions: ['City Walk', 'Café Chat', 'Local Sights'],
-          languages: ['English', 'Hindi'],
-        },
-        update: {
-          suspended: false,
-          ...(app.photoUrl ? { photo: app.photoUrl, photoBlurred: app.photoBlurUrl } : {}),
-        },
-      });
-      await tx.user.update({
-        where: { id: app.userId },
-        data: { companionId, role: 'companion' },
-      });
-      // 'manual' = a human looked at the documents and accepted them. It is the
-      // strongest status this system can honestly assert; 'verified' is reserved
-      // for a KYC vendor that has queried UIDAI / the Income Tax database.
-      await tx.companionApplication.update({
-        where: { id },
-        data: {
-          status: 'approved',
-          idVerifyStatus: 'manual',
-          photoVerifyStatus: 'manual',
-          verifiedAt: new Date(),
-        },
-      });
-    }, TX);
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.companion.upsert({
+          where: { id: companionId },
+          create: {
+            id: companionId,
+            name: app.name,
+            firstName,
+            maskedName,
+            city: app.city,
+            area: app.city,     // admin can edit the area later
+            gender: app.gender, // drives the same-gender filter; null ⇒ unmatchable
+            bio: app.bio,
+            activities: app.activities,
+            ratePerMeeting: app.rate,
+            hourlyRate: app.rate,
+            photo: app.photoUrl || '',
+            photoBlurred: app.photoBlurUrl || '',
+            suspended: !app.photoUrl,
+            accent: '#5b5bd6',
+            suggestions: ['City Walk', 'Café Chat', 'Local Sights'],
+            languages: ['English', 'Hindi'],
+          },
+          update: {
+            suspended: !app.photoUrl,
+            ...(app.photoUrl ? { photo: app.photoUrl, photoBlurred: app.photoBlurUrl } : {}),
+          },
+        });
+        await tx.user.update({
+          where: { id: app.userId },
+          data: { companionId, role: 'companion' },
+        });
+        // 'manual' = a human looked at the documents and accepted them.
+        await tx.companionApplication.update({
+          where: { id },
+          data: {
+            status: 'approved',
+            idVerifyStatus: 'manual',
+            photoVerifyStatus: 'manual',
+            verifiedAt: new Date(),
+          },
+        });
+      }, TX);
+    } catch (txErr) {
+      // Surface timeout / pool-exhaustion as a retryable message rather than
+      // a generic "Something went wrong". Neon free tier has 5 connections and
+      // the first admin action after a cold start often queues for a slot.
+      const msg = txErr instanceof Error ? txErr.message : '';
+      if (msg.includes('timed out') || msg.includes('timeout') || msg.includes('Connection pool')) {
+        return failed('Database was busy — please try again in a few seconds.');
+      }
+      throw txErr; // re-throw so adminAction's describeError handler maps Prisma codes
+    }
 
     await logAdminAction(adminId, 'approveApplication', 'application', id, companionId);
     revalidatePath(PATH);
@@ -117,6 +106,7 @@ export async function approveApplication(_prev: ActionState, formData: FormData)
     );
   });
 }
+
 
 export async function rejectApplication(_prev: ActionState, formData: FormData): Promise<ActionState> {
   return adminAction(async (adminId) => {

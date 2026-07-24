@@ -207,6 +207,8 @@ export function ApplyWizard() {
         setIsUnlocked(true);
       }
 
+      const isHttp = process.env.NEXT_PUBLIC_DATA_CLIENT === 'http';
+
       // 3. Save application to server/storage
       await dataClient.saveApplication({
         name: data.name,
@@ -217,13 +219,12 @@ export function ApplyWizard() {
         bio: data.bio,
         idUploaded: !!data.idFile,
         backgroundConsent: data.backgroundConsent,
-        photoUrl: data.photoUrl,
-        idPhotoUrl: data.idPhotoUrl,
+        photoUrl: data.photoUrl?.startsWith('data:') ? undefined : data.photoUrl,
+        idPhotoUrl: data.idPhotoUrl?.startsWith('data:') ? undefined : data.idPhotoUrl,
         status: 'submitted',
       });
 
-      // 3. Upload ID documents if in http mode
-      const isHttp = process.env.NEXT_PUBLIC_DATA_CLIENT === 'http';
+      // 4. Upload ID documents if in http mode
       if (isHttp && data.photoFile && data.idFile && data.idDocType && data.idDocNumber) {
         try {
           const fd = new FormData();
@@ -232,9 +233,30 @@ export function ApplyWizard() {
           fd.append('idDocType', data.idDocType);
           fd.append('idDocNumber', data.idDocNumber);
           if (data.ocrMatched !== null) fd.append('ocrMatched', String(data.ocrMatched));
-          await fetch('/api/application/upload', { method: 'POST', body: fd });
+          const uploadRes = await fetch('/api/application/upload', { method: 'POST', body: fd });
+          if (!uploadRes.ok) {
+            const uploadBody = await uploadRes.json().catch(() => ({})) as Record<string, unknown>;
+            // 413 = body too large (Vercel 4.5 MB limit hit despite client compression).
+            if (uploadRes.status === 413) {
+              throw new Error('Photo is too large. Please use a smaller image (under 2 MB) and try again.');
+            }
+            const uploadErr = uploadBody.error as string | undefined;
+            if (uploadErr === 'document_already_used') {
+              throw new Error('This ID document or photo has already been submitted by another applicant. Please contact support.');
+            }
+            if (uploadRes.status === 401) {
+              throw new Error('Session expired. Please sign in again to submit your application.');
+            }
+            // Non-fatal: ID upload failed but application text was saved.
+            // The admin sees "portrait: missing" and can request resubmission.
+            console.warn('Upload warning:', uploadRes.status, uploadErr);
+          }
         } catch (uploadErr) {
-          console.warn('Upload warning:', uploadErr);
+          // Re-throw only typed errors we set above; swallow network blips.
+          if (uploadErr instanceof Error && uploadErr.message !== 'Failed to fetch') {
+            throw uploadErr;
+          }
+          console.warn('Upload network warning:', uploadErr);
         }
       }
 

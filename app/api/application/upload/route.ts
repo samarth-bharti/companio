@@ -34,6 +34,14 @@ import { storePhoto, photoStoreConfigured } from '@/lib/server/photoStore';
 
 export const dynamic = 'force-dynamic';
 
+// Vercel Hobby/Pro default function timeout is 15 s. A companion photo upload
+// requires: FormData parse + magic-byte check + sharp render (WASM = slow on
+// first cold start) + two Blob PUT calls across the wire. We need more headroom.
+// Max is 60 s on Hobby, 300 s on Pro. 60 s is safe for both.
+export const maxDuration = 60;
+
+
+
 export async function POST(req: Request) {
   return guard(async () => {
     // ── 1. Auth + DB guard ────────────────────────────────────────────────────

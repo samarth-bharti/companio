@@ -13,6 +13,7 @@ import { rateLimit, clientKey } from '@/lib/server/rateLimit';
 import { envValue } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 const verifyBody = z.object({
   razorpay_order_id: z.string().min(1),
@@ -26,7 +27,9 @@ export async function POST(req: Request) {
     if (!userId) return unauthorized();
 
     // Throttle signature-verification attempts (defends the HMAC check itself).
-    const rl = await rateLimit({ key: clientKey(req, 'rzp-verify'), limit: 30, windowMs: 60_000 });
+    // 60 per minute: must match create-order limit — each order creates one verify
+    // call. A CGNAT mobile network could saturate the old limit of 30 instantly.
+    const rl = await rateLimit({ key: clientKey(req, 'rzp-verify'), limit: 60, windowMs: 60_000 });
     if (!rl.ok) return json({ error: 'rate_limited', retryAfter: rl.retryAfter }, 429);
 
     // envValue(): a placeholder secret is a publicly-known secret, which would

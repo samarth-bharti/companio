@@ -25,6 +25,7 @@ import { resolveDiscount, discountFailureMessage } from '@/lib/server/discounts'
 import { envValue, passSalesEnabled } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 export async function POST(req: Request) {
   return guard(async () => {
@@ -33,7 +34,10 @@ export async function POST(req: Request) {
 
     // Throttle order creation per client IP — payment endpoints are a prime
     // abuse target (card testing, order spam).
-    const rl = await rateLimit({ key: clientKey(req, 'create-order'), limit: 20, windowMs: 60_000 });
+    // 60 per minute instead of 20: mobile users behind carrier-grade NAT (CGNAT)
+    // share a single IP. 50 concurrent users on the same network exhausted the
+    // old limit and blocked all of them from paying at once.
+    const rl = await rateLimit({ key: clientKey(req, 'create-order'), limit: 60, windowMs: 60_000 });
     if (!rl.ok) return json({ error: 'rate_limited', retryAfter: rl.retryAfter }, 429);
 
     // envValue() so a placeholder key reads as unset and we answer an honest
