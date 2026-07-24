@@ -145,7 +145,7 @@ export const applicationBody = z.object({
    * Bounded to the band the wizard offers (₹299–₹999) so a hand-rolled request
    * cannot register a ₹0 or ₹50,000 companion.
    */
-  rate: z.number().int().min(29900).max(99900),
+  rate: z.number().int().min(19900).max(99900),
   bio: z.string(),
   idUploaded: z.boolean(),
   backgroundConsent: z.boolean(),
