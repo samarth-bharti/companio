@@ -21,13 +21,14 @@ export async function readJsonBody(req: Request): Promise<unknown> {
 export async function guard(fn: () => Promise<Response>): Promise<Response> {
   try {
     return await fn();
-  } catch (e) {
-    const code = (e as { code?: string } | null)?.code;
+  } catch (err) {
+    const code = (err as { code?: string } | null)?.code;
     if (code === 'P2025') return NextResponse.json({ error: 'not_found' }, { status: 404 });
     if (code === 'P2002') return NextResponse.json({ error: 'conflict' }, { status: 409 });
     if (code === 'P2003') return NextResponse.json({ error: 'invalid_reference' }, { status: 400 });
-    console.error('[api error]', e);
-    return NextResponse.json({ error: 'server_error' }, { status: 500 });
+    console.error('Unhandled route error:', err);
+    const msg = err instanceof Error ? err.message : String(err);
+    return json({ error: 'server_error', message: msg }, 500);
   }
 }
 
