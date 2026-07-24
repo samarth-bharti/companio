@@ -115,13 +115,19 @@ export function ApplyWizard() {
       if (!data.name.trim()) errs.push('Name is required.');
       if (!data.city) errs.push('Please select your city.');
       if (!data.gender) errs.push('Please select your gender identity.');
-      if (data.dateOfBirth) {
+      if (!data.dateOfBirth) {
+        errs.push('Date of birth is required. Companions must be 18 or older.');
+      } else {
         const dob = new Date(data.dateOfBirth);
-        const age = new Date().getFullYear() - dob.getFullYear();
+        const now = new Date();
+        let age = now.getFullYear() - dob.getFullYear();
+        const m = now.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
         if (Number.isNaN(dob.getTime()) || age < 18) {
           errs.push('Companions must be 18 years of age or older.');
         }
       }
+
     } else if (step === 1) {
       if (!data.activities.length) errs.push('Select at least one activity.');
     } else if (step === 2) {
@@ -270,17 +276,24 @@ export function ApplyWizard() {
     } catch (err: unknown) {
       console.error('Submit application error:', err);
       const errMsg = err instanceof Error ? err.message : String(err);
-      if (errMsg.includes('403') || errMsg.includes('age_verification_required')) {
-        setErrors(['Age verification required: Confirm you are 18 or older in Step 1.']);
+      if (errMsg.includes('Photo is too large') || errMsg.includes('413')) {
+        setErrors([errMsg.includes('Photo is too large') ? errMsg : 'Your photo is too large. Please use a smaller image (under 2 MB) and try again.']);
+      } else if (errMsg.includes('document_already_used') || errMsg.includes('already been submitted')) {
+        setErrors([errMsg]);
+      } else if (errMsg.includes('403') || errMsg.includes('age_verification_required')) {
+        setErrors(['Your payment was received but we need your date of birth to complete your application. Go back to Step 1 and enter your date of birth, then resubmit.']);
       } else if (errMsg.includes('401')) {
-        setErrors(['Session expired. Please sign in again to submit your application.']);
+        setErrors(['Your session expired — your payment is safe. Please sign in again and resubmit your application.']);
+      } else if (errMsg.includes('Failed to fetch') || errMsg.includes('network') || errMsg.toLowerCase().includes('internet')) {
+        setErrors(['Connection lost. Please check your internet and try again. No payment was taken.']);
       } else {
-        setErrors(['Submission failed. Please check your connection and try again.']);
+        setErrors(['Something went wrong. Please try again. If you already paid, your application will be saved — contact support@trycompanio.in']);
       }
     } finally {
       setSubmitting(false);
     }
   };
+
 
   if (submitted) return <WizardSuccess name={data.name || accountName} />;
 

@@ -364,8 +364,9 @@ export function makeHttpDataClient(): DataClient {
     },
 
     async getWallet() {
-      // Matches WALLET_DEFAULT in journeyState.ts.
-      return getOr<Wallet>('/api/wallet', { credits: 2, used: 0 });
+      // Matches schema default: 1 starter credit (Wallet.credits @default(1)).
+      // Using 2 here caused signed-out users to see 2 credits, confusing them.
+      return getOr<Wallet>('/api/wallet', { credits: 1, used: 0 });
     },
     async addCredits(count) {
       return post<Wallet>('/api/wallet/add-credits', { count });
