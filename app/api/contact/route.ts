@@ -20,6 +20,7 @@ import { sendEmail } from '@/lib/server/email';
 import { COMPANY } from '@/lib/company';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 const TOPICS = ['support', 'refund', 'safety', 'privacy', 'companion', 'other'] as const;
 

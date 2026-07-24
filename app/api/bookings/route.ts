@@ -11,6 +11,7 @@ import { bookingCreateBody } from '@/lib/server/validation';
 import { TX } from '@/lib/server/tx';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 export async function GET(req: Request) {
   return guard(async () => {

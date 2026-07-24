@@ -22,6 +22,7 @@ import { clientKey, rateLimit } from '@/lib/server/rateLimit';
 import { sendSignInCode } from '@/lib/server/otp';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 const body = z.object({
   email: z.string().trim().email().max(254),
